@@ -3,7 +3,7 @@ import {renderVoteScreen} from './vote-screen.js';
 const boolKeys=['loop','voteOnEnd','showLowerThird','scrollTitles','hideCaptions','skipVoting','allowSuggestions'];
 const defaultColors={background:'#0D1010',panel:'#111318',raised:'#171A1F',accent:'#00AFFF',text:'#FFFFFF',healthy:'#22C55E',warning:'#F59E0B',error:'#EF4444',info:'#3B82F6',community:'#8B5CF6'};
 const presetColors={cyan:defaultColors,purple:{...defaultColors,accent:'#8B5CF6'},green:{...defaultColors,accent:'#22C55E'},amber:{...defaultColors,accent:'#F59E0B'}};
-const ltDefault={x:3,y:0,width:34,scale:100,anchor:'bottom'};
+const ltDefault={x:3,y:0,width:34,scale:100,titleScale:100,anchor:'bottom',showChannelLabel:false,showNowPlaying:false,showDuration:false,showSkip:false};
 const voteDefault={heading:'UP NEXT',instruction:'!vote 1-4 in Twitch chat',cardGap:20,panelOpacity:94,showThumbnails:true,showCountdown:true,showVotes:true,accentBorders:true};
 let saved=null,draft=null,lastStatus=null,applying=false;
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -11,7 +11,7 @@ function tab(name){
   for(const el of document.querySelectorAll('[data-tab]')){const active=el.dataset.tab===name;el.classList.toggle('active',active);el.setAttribute('aria-selected',active?'true':'false');}
   for(const el of document.querySelectorAll('[data-panel]'))el.classList.toggle('hidden',el.dataset.panel!==name);
 }
-for(const el of document.querySelectorAll('[data-tab]'))el.addEventListener('click',()=>tab(el.dataset.tab));
+for(const el of document.querySelectorAll('[data-tab]'))el.addEventListener('click',()=>{tab(el.dataset.tab);if(el.dataset.tab==='lowerthird')requestAnimationFrame(updatePreview);});
 function number(id){return Number($(id).value);}
 function readDraft(){
   if(!draft)return;
@@ -19,7 +19,7 @@ function readDraft(){
   for(const k of boolKeys)draft[k]=$(k).checked;
   draft.voteSeconds=number('voteSeconds');draft.skipThreshold=number('skipThreshold');
   draft.twitchChannel=$('twitchChannel').value.trim();draft.twitchMode=$('twitchMode').value;
-  draft.lowerThird={x:number('ltX'),y:number('ltY'),width:number('ltWidth'),scale:number('ltScale'),anchor:$('ltAnchor').value};
+  draft.lowerThird={x:number('ltX'),y:number('ltY'),width:number('ltWidth'),scale:number('ltScale'),titleScale:number('ltTitleScale'),anchor:$('ltAnchor').value,showChannelLabel:$('ltShowChannel').checked,showNowPlaying:$('ltShowNowPlaying').checked,showDuration:$('ltShowDuration').checked,showSkip:$('ltShowSkip').checked};
   draft.voteScreen={heading:$('vsHeading').value,instruction:$('vsInstruction').value,cardGap:number('vsGap'),panelOpacity:number('vsOpacity'),showThumbnails:$('vsThumbs').checked,showCountdown:$('vsCountdown').checked,showVotes:$('vsVotes').checked,accentBorders:$('vsBorders').checked};
   for(const [key]of Object.entries(defaultColors))draft.colors[key]=$(`colorHex_${key}`).value;
 }
@@ -39,6 +39,8 @@ function populate(){
 function populateLower(){
   for(const [key,id]of Object.entries({x:'ltX',y:'ltY',width:'ltWidth',scale:'ltScale'}))$(id).value=Math.round(draft.lowerThird[key]*10)/10;
   $('ltAnchor').value=draft.lowerThird.anchor;
+  $('ltTitleScale').value=draft.lowerThird.titleScale;$('ltTitleScaleValue').textContent=`${draft.lowerThird.titleScale}%`;
+  for(const [key,id] of Object.entries({showChannelLabel:'ltShowChannel',showNowPlaying:'ltShowNowPlaying',showDuration:'ltShowDuration',showSkip:'ltShowSkip'}))$(id).checked=draft.lowerThird[key];
 }
 function updatePreview(){
   if(!draft)return;
@@ -46,7 +48,8 @@ function updatePreview(){
   const lt=draft.lowerThird,card=$('previewCard');
   applyLowerThird(card,lt,{preview:true});
   card.querySelector('.topline span').textContent=draft.channelLabel||'fKey Playback';
-  $('lowerReadout').textContent=`X: ${lt.x}% · ${lt.anchor.toUpperCase()}: ${lt.y}% · WIDTH: ${lt.width}% · SCALE: ${lt.scale}%`;
+  $('lowerReadout').textContent=`X: ${lt.x}% · ${lt.anchor.toUpperCase()}: ${lt.y}% · WIDTH: ${lt.width}% · SCALE: ${lt.scale}% · TITLE: ${lt.titleScale}%`;
+  $('ltTitleScaleValue').textContent=`${lt.titleScale}%`;
   $('voteReadout').textContent=`GAP ${draft.voteScreen.cardGap}px  ·  PANEL ${draft.voteScreen.panelOpacity}%`;
   renderVoteScreen($('votePreview'),null,draft,{preview:true});
 }
@@ -62,7 +65,7 @@ function buildColors(){
   }
 }
 function connectFields(){
-  for(const id of ['channelLabel',...boolKeys,'voteSeconds','skipThreshold','twitchChannel','twitchMode','ltX','ltY','ltWidth','ltScale','ltAnchor','vsHeading','vsInstruction','vsGap','vsOpacity','vsThumbs','vsCountdown','vsVotes','vsBorders']){
+  for(const id of ['channelLabel',...boolKeys,'voteSeconds','skipThreshold','twitchChannel','twitchMode','ltX','ltY','ltWidth','ltScale','ltTitleScale','ltAnchor','ltShowChannel','ltShowNowPlaying','ltShowDuration','ltShowSkip','vsHeading','vsInstruction','vsGap','vsOpacity','vsThumbs','vsCountdown','vsVotes','vsBorders']){
     const el=$(id);el.addEventListener('input',dirty);el.addEventListener('change',dirty);
   }
   for(const button of document.querySelectorAll('[data-preset]'))button.addEventListener('click',()=>{
@@ -132,4 +135,6 @@ async function updateStatus(){
   }catch(e){if(e.status===401)$('auth').classList.remove('hidden');}
 }
 async function load(){const state=await api('operator');saved=clone(state.settings);draft=clone(state.settings);populate();await updateStatus();}
-buildColors();connectFields();setupDrag();await initAuth(load);setInterval(()=>{if($('auth').classList.contains('hidden'))updateStatus();},2500);
+buildColors();connectFields();setupDrag();
+if('ResizeObserver' in window)new ResizeObserver(()=>{if(draft&&!$('lowerPreview').closest('.hidden'))updatePreview();}).observe($('lowerPreview'));
+await initAuth(load);setInterval(()=>{if($('auth').classList.contains('hidden'))updateStatus();},2500);

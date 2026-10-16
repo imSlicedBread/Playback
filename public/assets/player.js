@@ -34,8 +34,8 @@ function updateHud(s,{refreshTicker=false}={}){
   const title=s.current?.title||'';
   const wasHidden=hud.classList.contains('hidden');
   hide(hud,clean||!s.settings.showLowerThird||!s.current||Boolean(s.vote));
-  if(refreshTicker||(wasHidden&&!hud.classList.contains('hidden'))||hud.dataset.title!==title||hud.dataset.width!==String(s.settings.lowerThird.width)||hud.dataset.scroll!==String(s.settings.scrollTitles)){
-    hud.dataset.title=title;hud.dataset.width=String(s.settings.lowerThird.width);hud.dataset.scroll=String(s.settings.scrollTitles);
+  if(refreshTicker||(wasHidden&&!hud.classList.contains('hidden'))||hud.dataset.title!==title||hud.dataset.width!==String(s.settings.lowerThird.width)||hud.dataset.scroll!==String(s.settings.scrollTitles)||hud.dataset.layoutRevision!==String(s.layoutRevision)){
+    hud.dataset.title=title;hud.dataset.width=String(s.settings.lowerThird.width);hud.dataset.scroll=String(s.settings.scrollTitles);hud.dataset.layoutRevision=String(s.layoutRevision);
     setTicker($('hudTitle'),title,s.settings.scrollTitles);
   }
 }

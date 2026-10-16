@@ -1,4 +1,15 @@
-# fKey Playback v1.0.7 — centered transport controls
+# fKey Playback v1.0.9 — Customizable OBS lower third
+
+## New in v1.0.9 — Lower-third visibility and title text size
+
+- **Optional labels:** independently show or hide channel name, “NOW PLAYING”, video duration and skip count, all from **Settings → Lower Third**.
+- **Title-only default:** all four labels start hidden, leaving the video title visible. Saved older layouts keep their position, width and colors.
+- **Title size 50–300%:** independently scale video-title lettering without altering the overall lower-third size control.
+- **Matching preview:** the lower-third editor uses the same visibility and sizing renderer as the OBS Browser Source; empty rows collapse without leaving blank space.
+- **Live syncing:** saving changes increments the layout revision, updating active OBS output and remeasuring the scrolling-title ticker. Settings survive a restart.
+- **Skip votes keep working** when the skip counter is hidden; only its on-screen label changes.
+
+**Upgrade:** Stop Playback, back up the entire `data` folder, extract v1.0.9, restore `data`, restart and refresh the OBS Browser Source once. Open Settings → Lower Third and save your preferred combination.
 
 ## New in v1.0.8 — Windows boot auto-start
 
@@ -73,7 +84,7 @@ fKey Playback is a local OBS / 24-7 YouTube station made by **fKey Labs Inc.** T
 
 ## Download and install
 
-1. Download `Playback-v1.0.8.zip` below and extract into a dedicated folder.
+1. Download `Playback-v1.0.9.zip` below and extract into a dedicated folder.
 2. Install Node.js 22.13 or newer.
 3. On Windows run `start-player.bat`, on Linux/macOS run `./start-player.sh`.
 4. The dashboard opens automatically after the server starts. Sign in with the token in

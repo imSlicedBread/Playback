@@ -87,7 +87,7 @@ test('Worker errors quarantine unavailable video instead of looping forever',t=>
 test('Lower third, appearance, vote screen settings persist and strictly validate',t=>{
   const {engine,store}=newEngine(t);
   const settings=structuredClone(DEFAULT_SETTINGS);
-  settings.colors.accent='#12aBcD';settings.lowerThird={x:12.5,y:0,width:53,scale:160,anchor:'bottom'};
+  settings.colors.accent='#12aBcD';settings.lowerThird={...settings.lowerThird,x:12.5,y:0,width:53,scale:160,anchor:'bottom'};
   settings.voteScreen.heading='PICK THE NEXT FILM';settings.voteScreen.cardGap=32;
   const before=engine.state.layoutRevision;
   engine.saveSettings(settings);assert.equal(engine.state.layoutRevision,before+1);

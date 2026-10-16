@@ -1,6 +1,14 @@
-# fKey Playback 1.0.8 — Build and verification report
+# fKey Playback 1.0.9 — Build and verification report
 
 **Release target:** Local Windows OBS broadcasting station; portable Node.js 22.13+ distribution.
+
+## 1.0.9 implementation verification
+
+- New lower-third options are validated, persisted atomically, restored on restart and returned through the public OBS state API.
+- Both Settings preview and OBS output use `applyLowerThird` for hide/show and independent title sizing.
+- Title-only default collapses empty header/footer rows without blank space; ticker remeasures on layout revisions.
+- Isolated headless Chromium rendered title-only and mixed-label overlays, confirming collapsed rows and enlarged title size.
+- Live YouTube iframe playback, OBS audio routing and actual Windows boot behavior still require acceptance testing on the target PC.
 
 ## Executed checks
 
@@ -10,7 +18,7 @@
 - A real task registration, machine reboot and OBS startup must be acceptance-tested on the target Windows streaming PC.
 
 - `npm run check` — validated syntax of backend and all client-side JavaScript modules.
-- `npm test` — **37 tests passed; 0 failed**.
+- `npm test` — **44 passed; 0 failed; 1 Windows-specific PowerShell test skipped on Linux**.
 - HTTP integration tests — control/settings/vote/player routes load; operator endpoints reject unauthenticated writes; session token protects mutation; hostile origin blocked; worker leases enforce ownership; stale updates refused; layout revisions acknowledged; state survives process restart.
 - State-machine tests — queue, seek/pause/previous/replay/skip, fault quarantine, end-of-video vote, same-viewer change, tie break, countdown pause during server downtime, setting validation and migration fallback.
 - Twitch protocol tests — tagged and nickname fallback identity, strict !vote parsing, !skip and moderated !request commands.

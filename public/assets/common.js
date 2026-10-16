@@ -52,18 +52,34 @@ export function applyLowerThird(el,layout,{preview=false}={}){
   const width=Math.max(15,Math.min(90,n(layout?.width,34)));
   const y=Math.max(0,Math.min(94,n(layout?.y,0)));
   const scale=Math.max(.5,Math.min(2,n(layout?.scale,100)/100));
+  const titleScale=Math.max(.5,Math.min(3,n(layout?.titleScale,100)/100));
   const anchor=layout?.anchor==='top'?'top':'bottom';
   el.style.left=`${Math.min(x,100-width)}%`;el.style.width=`${width}%`;
   el.style.top=anchor==='top'?`${y}%`:'auto';
   el.style.bottom=anchor==='bottom'?`${y}%`:'auto';
-  if(!preview){
-    const factor=Math.max(.3,Math.min(2,window.innerWidth/1920))*scale;
-    el.style.padding=`${Math.round(15*factor)}px ${Math.round(18*factor)}px`;
-    const top=el.querySelector('.topline'),title=el.querySelector('.title-clip'),bottom=el.querySelector('.lowerline');
-    if(top)top.style.fontSize=`${Math.max(7,Math.round(16*factor))}px`;
-    if(title)title.style.fontSize=`${Math.max(11,Math.round(31*factor))}px`;
-    if(bottom)bottom.style.fontSize=`${Math.max(7,Math.round(14*factor))}px`;
+  // Only hide presentation elements. Viewer skip votes, playback state and duration
+  // remain active even when their corresponding HUD labels are hidden.
+  const show={channel:layout?.showChannelLabel===true,nowPlaying:layout?.showNowPlaying===true,
+    duration:layout?.showDuration===true,skip:layout?.showSkip===true};
+  for(const [key,enabled] of Object.entries(show)){
+    el.querySelector(`[data-lt-field="${key}"]`)?.classList.toggle('hidden',!enabled);
   }
+  const noTop=!show.channel&&!show.nowPlaying,noBottom=!show.duration&&!show.skip;
+  const top=el.querySelector('.topline'),bottom=el.querySelector('.lowerline');
+  top?.classList.toggle('hidden',noTop);bottom?.classList.toggle('hidden',noBottom);
+  top?.classList.toggle('only-right',!show.channel&&show.nowPlaying);
+  bottom?.classList.toggle('only-right',!show.duration&&show.skip);
+  el.classList.toggle('no-topline',noTop);
+  el.classList.toggle('no-bottomline',noBottom);
+  // Scale title text independently of card padding and supporting HUD labels.
+  // For the editor, measure its own 16:9 frame rather than the full browser.
+  const canvasWidth=preview?(el.closest('.preview-frame')?.clientWidth||960):window.innerWidth;
+  const factor=Math.max(.3,Math.min(2,canvasWidth/1920))*scale;
+  const title=el.querySelector('.title-clip');
+  if(!preview)el.style.padding=`${Math.round(15*factor)}px ${Math.round(18*factor)}px`;
+  if(top)top.style.fontSize=`${Math.max(preview?6:7,Math.round(16*factor))}px`;
+  if(title)title.style.fontSize=`${Math.max(preview?7:11,Math.round(31*factor*titleScale))}px`;
+  if(bottom)bottom.style.fontSize=`${Math.max(preview?6:7,Math.round(14*factor))}px`;
 }
 export function setTicker(el,title,enabled){
   const track=e('div',{class:'marquee-track'});const first=e('span',{text:title});track.append(first);el.replaceChildren(track);

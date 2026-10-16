@@ -1,6 +1,18 @@
-# fKey Playback 1.0.8 — made by fKey Labs Inc.
+# fKey Playback 1.0.9 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.0.9 — Customizable OBS lower third
+
+Open **Settings → Lower Third** to control exactly what the stream sees. The four optional labels are now **off by default**, producing a compact title-only lower third:
+
+- **Channel label** — show/hide the channel name above the title.
+- **“NOW PLAYING”** — show/hide the upper-right status label.
+- **Video duration** — show/hide total video runtime beneath the title.
+- **Skip vote count** — show/hide the skip-vote indicator without disabling voting.
+- **Video title text size** — independent 50–300% slider for the title font; **Text Scale** still resizes the rest of the lower third. Long titles continue to scroll left when that setting is enabled.
+
+Use the live 16:9 preview to adjust the overlay, then click **Save Settings**. An active `/player` OBS source applies changes on its next poll (normally 1–2 seconds); the settings are stored in `data/state.json` and survive restarts. Position, anchor, width, colors and queue are retained when upgrading. Since older saved states had no visibility flags, those four labels default to **hidden** upon the first v1.0.9 load; you can turn any of them back on. **Reset Lower Third** resets the layout to title-only defaults (save afterward). The `?clean=1` OBS source still suppresses the entire lower third.
 
 ## v1.0.8 — Start automatically with Windows
 

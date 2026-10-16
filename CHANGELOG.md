@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.9] — 2026-10-16
+
+- Added independent OBS lower-third visibility switches for channel label, “NOW PLAYING”, duration and skip counter.
+- Defaulted to a compact title-only lower third, retaining old positioning and color settings.
+- Added a 50–300% video-title text-size slider, separate from whole-overlay scaling.
+- Matched live editor preview and OBS output rendering, including collapsed rows and long-title ticker refresh after settings changes.
+- Validated settings at the API boundary, checkpointed changes across restarts and added new automated regression tests.
+
+
 ## [1.0.8] — 2026-10-16
 
 - Added unattended Windows AtStartup scheduled task running as LOCAL SERVICE, not SYSTEM.
