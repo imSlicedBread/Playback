@@ -1,6 +1,13 @@
-# fKey Playback 1.2.2 — made by fKey Labs Inc.
+# fKey Playback 1.2.3 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.2.3 — queue dropdown stability during live updates
+
+- Fixes the **Move** dropdown in Smart Rotation Queue closing every 1.3 seconds while the dashboard polls for playback changes.
+- Updates queue rows by their stable entry ID instead of destroying and recreating every DOM row. The dropdown remains mounted and retains its chosen destination while the queue updates.
+- Play, Play Next, Move, Up, Down and Remove actions use the latest queue position, even if another video was moved while the dashboard was open.
+- **Upgrade:** Stop Playback, back up the `data/` folder, install v1.2.3, and restore the folder. Refresh the dashboard once (Ctrl+F5). Queue, playhead, Twitch, OBS, rotations and importer settings are preserved.
 
 ## v1.2.2 — OBS lower-third opacity, manual height and improved preview
 

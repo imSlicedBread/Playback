@@ -1,4 +1,15 @@
-# fKey Playback v1.2.2 — Build and verification report
+# fKey Playback v1.2.3 — Build and verification report
+
+## v1.2.3 — Rotation Queue move dropdown regression
+
+- `npm run check`: passed.
+- `npm test`: **77 passed; 0 failed; 1 Windows-only test skipped** in Linux (78 tests total).
+- New regression tests verify stable row-key reuse, no replacement of active select nodes, changing action indices, and versioned dashboard assets.
+- Headless Chromium: opened a native queue Move `<select>`, kept it focused through >3 seconds of dashboard polling, changed to **Next rotation**, waited another >2 seconds while polling, and confirmed the same DOM node remained mounted with the chosen destination preserved. Updated title/play-count metadata live without remounting. Pressing **Move** submitted `nextRotation`, and the video moved to that lane. No JavaScript errors.
+- The queue server state machine and persistence are unchanged; only dashboard DOM reconciliation/versions were modified.
+- GitHub's official Windows release workflow continues to bundle yt-dlp.exe after SHA-256 verification. The local source-only ZIP does not contain the third-party executable.
+- Live OBS/YouTube/Twitch operation still requires on-device verification.
+
 
 ## Lower Third opacity and height verification
 

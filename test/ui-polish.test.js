@@ -58,5 +58,5 @@ test('Lower Third anchor edge and snap buttons share an aligned full-width respo
   assert.match(css,/\.lowerthird-anchor-toolbar select,\.lowerthird-anchor-toolbar button\{[^}]*width:100%/);
   assert.match(css,/@media\(max-width:1220px\)\{\.lowerthird-anchor-toolbar\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/@media\(max-width:540px\)\{\.lowerthird-anchor-toolbar\{grid-template-columns:1fr/);
-  assert.match(html,/style\.css\?v=1\.2\.2/);
+  assert.match(html,/style\.css\?v=1\.2\.3/);
 });

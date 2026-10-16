@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.3] — 2026-10-16
+
+- Fixed queue-row Move dropdowns closing during the regular 1.3-second operator dashboard refresh.
+- Reconciled existing rows by durable queue-entry ID and updated metadata without unmounting active inputs.
+- Preserved pending move choices and checkbox selections while polling.
+- Kept action callbacks bound to current queue indices after reordering.
+- Added automated regression tests and versioned UI assets to bypass cached client code.
+
 ## [1.2.2] — 2026-10-16
 
 - Added adjustable OBS lower-third background opacity (0–100%, default 89%), without dimming video titles.

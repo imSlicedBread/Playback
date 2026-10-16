@@ -61,5 +61,5 @@ jobs:
           gh release create "$TAG" "dist/Playback-${TAG}.zip" "dist/Playback-${TAG}.zip.sha256" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$(git rev-parse HEAD)" \
-            --title "fKey Playback ${TAG} — OBS Lower Third opacity, height and improved preview" \
+            --title "fKey Playback ${TAG} — Smart Rotation queue dropdown stability" \
             --notes-file RELEASE_NOTES.md

@@ -1,4 +1,4 @@
-import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js?v=1.2.2';
+import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js?v=1.2.3';
 import {renderVoteScreen} from './vote-screen.js';
 const boolKeys=['loop','voteOnEnd','showLowerThird','scrollTitles','hideCaptions','skipVoting','allowSuggestions'];
 const defaultColors={background:'#0D1010',panel:'#111318',raised:'#171A1F',accent:'#00AFFF',text:'#FFFFFF',healthy:'#22C55E',warning:'#F59E0B',error:'#EF4444',info:'#3B82F6',community:'#8B5CF6'};

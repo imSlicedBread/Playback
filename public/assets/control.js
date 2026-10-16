@@ -88,28 +88,58 @@ function updateBulkMove(){
   $('queueMoveSelected').disabled=![...queueSelection].some(id=>visible.has(id));
   $('queueSelectAll').checked=all.length>0&&all.every(v=>queueSelection.has(v.id));
 }
+// Polling updates metadata every 1.3s. Queue rows must retain their actual DOM
+// nodes: replacing an open native <select> closes its popup before a user can
+// choose a destination. Key each row by the durable queue-entry ID instead.
+const queueRows=new Map();
 function makeQueueRow(v,i,lane,list){
+  // Action handlers refer to the latest snapshot, not the stale video/index from
+  // the moment the row was first built. This also preserves correct reordering
+  // when another video moves while the user is looking at this row.
+  const view={video:v,index:i,lane,total:list.length};
   const img=e('img');img.alt='';img.src=thumbnail(v.videoId);
   const selected=e('input',{type:'checkbox',class:'queue-select',title:'Select video for bulk move'});
-  selected.checked=queueSelection.has(v.id);
-  selected.addEventListener('change',()=>{if(selected.checked)queueSelection.add(v.id);else queueSelection.delete(v.id);updateBulkMove();});
-  const info=e('div',{},e('strong',{text:v.title}),e('span',{text:v.videoId}),
-    e('small',{class:'small-note',text:`Plays ${v.playCount||0}${v.lastPlayedRotation?` · Last rotation ${v.lastPlayedRotation}`:''}`}));
+  selected.addEventListener('change',()=>{
+    if(selected.checked)queueSelection.add(view.video.id);
+    else queueSelection.delete(view.video.id);
+    updateBulkMove();
+  });
+  const title=e('strong');
+  const videoId=e('span');
+  const playHistory=e('small',{class:'small-note'});
+  const info=e('div',{},title,videoId,playHistory);
   const actions=e('div',{class:'queue-actions'});
-  const moveTo=(target)=>action('move',{id:v.id,destination:target});
-  const target=e('select',{class:'queue-move-select',title:'Move to rotation lane'},
-    ...[['current','Current'],['nextRotation','Next rotation'],['recycled','Recycle']].map(([value,label])=>{
-      const option=e('option',{value,text:label});option.selected=value===lane;return option;
-    }));
-  actions.append(
-    e('button',{class:'small',text:'Play',title:'Play now, resume interrupted video next',onClick:()=>action('playNow',{id:v.id})}),
-    e('button',{class:'small',text:'Play Next',disabled:lane==='playNext',onClick:()=>moveTo('playNext')}),
-    target,e('button',{class:'small',text:'Move',onClick:()=>moveTo(target.value)}),
-    e('button',{class:'small',text:'↑',disabled:i===0,onClick:()=>action('reorder',{id:v.id,to:i-1})}),
-    e('button',{class:'small',text:'↓',disabled:i===list.length-1,onClick:()=>action('reorder',{id:v.id,to:i+1})}),
-    e('button',{class:'small danger',text:'×',title:'Remove from all rotations',onClick:()=>action('remove',{id:v.id})})
-  );
-  return e('div',{class:'queue-item smart-queue-item'},selected,img,info,actions);
+  const moveTo=(destination)=>action('move',{id:view.video.id,destination});
+  const target=e('select',{class:'queue-move-select',title:'Move to rotation lane', 'aria-label':'Choose rotation lane'},
+    ...[['current','Current'],['nextRotation','Next rotation'],['recycled','Recycle']].map(([value,label])=>e('option',{value,text:label})));
+  const play=e('button',{class:'small',text:'Play',title:'Play now, resume interrupted video next',onClick:()=>action('playNow',{id:view.video.id})});
+  const playNext=e('button',{class:'small',text:'Play Next',onClick:()=>moveTo('playNext')});
+  const move=e('button',{class:'small',text:'Move',onClick:()=>moveTo(target.value)});
+  const previous=e('button',{class:'small',text:'↑',onClick:()=>action('reorder',{id:view.video.id,to:view.index-1})});
+  const next=e('button',{class:'small',text:'↓',onClick:()=>action('reorder',{id:view.video.id,to:view.index+1})});
+  const remove=e('button',{class:'small danger',text:'×',title:'Remove from all rotations',onClick:()=>action('remove',{id:view.video.id})});
+  actions.append(play,playNext,target,move,previous,next,remove);
+  const element=e('div',{class:'queue-item smart-queue-item'},selected,img,info,actions);
+  const update=(video,index,nextLane,total)=>{
+    view.video=video;view.index=index;view.lane=nextLane;view.total=total;
+    selected.checked=queueSelection.has(video.id);
+    if(img.dataset.videoId!==video.videoId){img.src=thumbnail(video.videoId);img.dataset.videoId=video.videoId;}
+    if(title.textContent!==video.title)title.textContent=video.title;
+    if(videoId.textContent!==video.videoId)videoId.textContent=video.videoId;
+    const history=`Plays ${video.playCount||0}${video.lastPlayedRotation?` · Last rotation ${video.lastPlayedRotation}`:''}`;
+    if(playHistory.textContent!==history)playHistory.textContent=history;
+    playNext.disabled=nextLane==='playNext';
+    previous.disabled=index===0;
+    next.disabled=index===total-1;
+    // IMPORTANT: Do not reset target.value on ordinary live polls. Its value
+    // may be a destination the user chose but has not clicked Move for yet.
+    if(target.dataset.sourceLane!==nextLane){
+      target.value=nextLane==='playNext'?'current':nextLane;
+      target.dataset.sourceLane=nextLane;
+    }
+  };
+  update(v,i,lane,list.length);
+  return {element,update};
 }
 function drawQueue(s){
   const counts=s.rotationCounts||{playNext:0,upcoming:s.queue?.length||0,recycled:0,nextRotation:0};
@@ -125,9 +155,29 @@ function drawQueue(s){
     tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active));
   }
   const list=currentLaneVideos(s),container=$('queue');
-  container.replaceChildren(...list.map((v,i)=>makeQueueRow(v,i,activeQueueLane,list)));
-  if(!list.length)container.append(e('div',{class:'empty',text:activeQueueLane==='recycled'?'No completed videos in this rotation.':activeQueueLane==='nextRotation'?'Nothing deferred to the next rotation.':'No videos in this lane.'}));
-  $('queueHelp').textContent=activeQueueLane==='recycled'? 'Recycled videos return automatically after the current Upcoming queue is exhausted.':activeQueueLane==='nextRotation'? 'These videos join Upcoming at the start of the next rotation.': 'Play Next overrides normal Upcoming order; already played videos stay in Recycled.';
+  const visible=new Set(list.map(v=>v.id));
+  for(const [id,row] of queueRows){
+    if(!visible.has(id)){row.element.remove();queueRows.delete(id);}
+  }
+  if(!list.length){
+    const msg=activeQueueLane==='recycled'?'No completed videos in this rotation.':activeQueueLane==='nextRotation'?'Nothing deferred to the next rotation.':'No videos in this lane.';
+    if(!container.firstElementChild?.classList.contains('empty')||container.childElementCount!==1){
+      container.replaceChildren(e('div',{class:'empty',text:msg}));
+    }else if(container.firstElementChild.textContent!==msg){container.firstElementChild.textContent=msg;}
+  }else{
+    container.querySelector(':scope > .empty')?.remove();
+    for(const [index,video] of list.entries()){
+      let row=queueRows.get(video.id);
+      if(!row){row=makeQueueRow(video,index,activeQueueLane,list);queueRows.set(video.id,row);}
+      else row.update(video,index,activeQueueLane,list.length);
+      // Moving an already-positioned node would also collapse a native select
+      // popup. Only insert when the list's actual order has changed.
+      if(container.children[index]!==row.element){
+        container.insertBefore(row.element,container.children[index]||null);
+      }
+    }
+  }
+  $('queueHelp').textContent=activeQueueLane==='recycled'?'Recycled videos return automatically after the current Upcoming queue is exhausted.':activeQueueLane==='nextRotation'?'These videos join Upcoming at the start of the next rotation.': 'Play Next overrides normal Upcoming order; already played videos stay in Recycled.';
   updateBulkMove();
 }
 for(const tab of document.querySelectorAll('[data-queue-lane]'))tab.addEventListener('click',()=>{

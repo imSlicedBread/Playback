@@ -1,3 +1,22 @@
+# fKey Playback v1.2.3 — Stable Queue Move Dropdowns
+
+## Fixed
+
+- The **Move to rotation lane** dropdown stays open during live dashboard updates rather than closing after approximately 1.3 seconds.
+- Selecting Current, Next rotation or Recycle stays selected until you click **Move**, and the move action uses your selected destination.
+- Queue rows refresh in place without replacing the active select. Button commands use current positions even if rows have been reordered.
+- No changes to playback state, rotation behavior, saved queues, OBS overlay or playlist importer.
+
+## Upgrade from v1.2.2
+
+Stop Playback and back up your complete `data/` directory. Extract `Playback-v1.2.3.zip` to a permanent folder, restore your saved `data/` directory, then restart Playback. Refresh the dashboard with **Ctrl+F5** to load the updated JavaScript. If you configured Windows autostart, reinstall the tasks only if the install path changes.
+
+**Windows distribution:** The official GitHub release bundles the checksum-verified upstream `yt-dlp.exe` and third-party licensing files. Linux/macOS users should install `yt-dlp` separately or set `YT_DLP_PATH`.
+
+**Operational scope:** The backend and UI regression suite can be verified automatically. Live YouTube/OBS playback and real Twitch connectivity require on-device acceptance tests.
+
+---
+
 # fKey Playback v1.2.2 — Lower Third opacity, height and editor improvements
 
 ### New in v1.2.2
