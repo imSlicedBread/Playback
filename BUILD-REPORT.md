@@ -1,11 +1,11 @@
-# fKey Playback 1.0.5 — Build and verification report
+# fKey Playback 1.0.7 — Build and verification report
 
 **Release target:** Local Windows OBS broadcasting station; portable Node.js 22.13+ distribution.
 
 ## Executed checks
 
 - `npm run check` — validated syntax of backend and all client-side JavaScript modules.
-- `npm test` — **35 tests passed; 0 failed**.
+- `npm test` — **37 tests passed; 0 failed**.
 - HTTP integration tests — control/settings/vote/player routes load; operator endpoints reject unauthenticated writes; session token protects mutation; hostile origin blocked; worker leases enforce ownership; stale updates refused; layout revisions acknowledged; state survives process restart.
 - State-machine tests — queue, seek/pause/previous/replay/skip, fault quarantine, end-of-video vote, same-viewer change, tie break, countdown pause during server downtime, setting validation and migration fallback.
 - Twitch protocol tests — tagged and nickname fallback identity, strict !vote parsing, !skip and moderated !request commands.
@@ -35,3 +35,10 @@
 - Twitch anonymous IRC is an unofficial best-effort service. For a hardened public-facing product, add official Twitch EventSub authorization/token refresh and strong authenticated public voter identity, external monitoring and a controlled HTTPS deployment.
 
 The release should be treated as a **local-station production candidate**, not as a certified uninterrupted public broadcast appliance.
+
+## v1.0.7 visual layout verification
+
+- Offline Chromium confirmed the transport-button cluster is centered to within **0 CSS px** of the full Now Playing panel midpoint at viewport widths 1440, 1034, 700 and 390 pixels.
+- Confirmed Jump to seconds remains a separate row beneath the buttons in all four layouts.
+- Dashboard stylesheet and script URLs use the v1.0.7 version query, bypassing the previous five-minute asset cache.
+- Two additional automated tests check markup order, full-width CSS centering, separate jump row, and versioned assets.

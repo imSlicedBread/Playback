@@ -1,6 +1,11 @@
 # Changelog
 
-## v1.0.5 — automatic dashboard browser opening
+## v1.0.7 — transport placement correction
+
+- Centered Previous / Pause / Replay / Next horizontally at the specified X, across the full Now Playing panel.
+- Kept Jump to seconds in a separate row and added versioned dashboard CSS/JS assets to avoid stale styles.
+
+## v1.0.6 — automatic dashboard browser opening
 
 - Restored automatic default-browser launch of the operator dashboard when starting the interactive Windows batch launcher.
 - Added macOS/Linux interactive launcher support with headless Linux detection.

@@ -1,6 +1,6 @@
 {
   "name": "fkeylabs-playback",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "private": true,
   "type": "module",
   "description": "fKey Playback made by fKey Labs Inc.: persistent local OBS / YouTube broadcast station",

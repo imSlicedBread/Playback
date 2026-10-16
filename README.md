@@ -1,6 +1,12 @@
-# fKey Playback 1.0.5 — made by fKey Labs Inc.
+# fKey Playback 1.0.7 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.0.7 — Transport buttons centered at X
+
+- Place Previous / Pause / Replay / Next at the horizontal center of the whole Now Playing panel, not left-aligned or centered within a narrow subcontainer.
+- Keep the Jump to seconds field in a separate full-width row beneath the buttons.
+- Bypass stale dashboard CSS using a versioned asset URL; refresh the dashboard to apply the layout.
 
 ## v1.0.5 — Open the dashboard automatically on launch
 
@@ -9,6 +15,10 @@
 - Only the **operator dashboard** opens — **not `/player`**, which is reserved for the OBS Browser Source. The automated Windows sign-in/supervised launcher remains headless to avoid opening tabs during unattended restarts.
 - **Optional:** set `PB_OPEN_BROWSER=0` in the launch environment to suppress automatic browser opening. Running `node server.js` or `npm start` also starts the server without opening a browser by default. Custom `PORT` values are respected.
 - A missing browser or desktop launcher does not stop the Playback server; use the dashboard URL printed in the terminal manually.
+
+## v1.0.6 — Transport controls between seek and volume bars
+
+- Move the Previous, Pause, Replay and Next row between the timeline and volume bars; v1.0.7 centers that row at the full Now Playing panel midpoint.
 
 ## v1.0.4 — YouTube volume and mute controls
 
@@ -67,7 +77,7 @@ You can create one OBS Browser Source at 1920 × 1080; OBS audio configuration i
 
 ## Updating from Playback v1.0.0 or the previous prototype
 
-**From Playback 1.0.0–1.0.4:** Stop the server, back up your entire `data/` directory, extract 1.0.5 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
+**From Playback 1.0.0–1.0.6:** Stop the server, back up your entire `data/` directory, extract 1.0.7 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
 
 
 **Your earlier v0.14 archive cannot be treated as a verified drop-in upgrade:** its complete source was not accessible when this package was made. To migrate safely:
