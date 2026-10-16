@@ -1,6 +1,19 @@
-# fKey Playback 1.0.9 — made by fKey Labs Inc.
+# fKey Playback 1.1.0 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.1.0 — YouTube playlist importer / extractor
+
+In the **Control** dashboard, open **YOUTUBE PLAYLIST IMPORTER** below Now Playing and Add Video:
+
+1. Paste a public YouTube `playlist?list=...` URL or a `watch?v=...&list=...` link.
+2. Choose a start position and batch size (50, 100, 250 or 500 entries). Click **Extract Videos**.
+3. Review the extracted titles and thumbnails, uncheck videos you do not want (or use Select All / Select None). You can also **Copy Selected URLs** or **Export Selected CSV** without changing playback. Choose whether to skip already queued videos and duplicates.
+4. Click **Import Selected to Queue**. Video order is preserved. The current video's playhead, OBS source and settings remain unchanged. For large playlists use **Extract Next Batch**.
+
+**Extractor setup (one time):** To extract playlists without a YouTube API key, install the independent open-source [`yt-dlp`](https://github.com/yt-dlp/yt-dlp/releases/latest) program. On Windows, download its official `yt-dlp.exe` and place it in `tools/yt-dlp.exe` inside the extracted Playback folder; or install it globally with `winget install yt-dlp.yt-dlp` and restart Playback. On Linux/macOS place `yt-dlp` in PATH (or in `tools/yt-dlp`). If the server runs as a Windows boot task, the **local `tools/yt-dlp.exe` location is recommended** because a user-only PATH is not available to Local Service. You can also supply an absolute executable path via `YT_DLP_PATH`.
+
+**Official API alternative:** Set `YOUTUBE_API_KEY` in the server environment to retrieve playlist metadata using YouTube Data API v3 without installing `yt-dlp`. API access is subject to your YouTube quota. A full batch may take some time; only one extraction runs at a time. Previews are temporary (15 minutes), are not saved, and do not alter the queue until imported. Entries marked deleted/private/unavailable are skipped. Playlist entries beyond 500 must be extracted as additional batches. The queue supports up to 2,000 videos total. Extracted titles can still be corrected with the existing title resolver. `yt-dlp` is an optional external executable and **is not bundled** with Playback. Importing metadata does **not** download videos, bypass embed restrictions, or grant broadcasting permission.
 
 ## v1.0.9 — Customizable OBS lower third
 

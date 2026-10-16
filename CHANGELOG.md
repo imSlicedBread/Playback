@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0] — 2026-10-16
+
+- Added authenticated YouTube playlist URL extraction and selectable preview.
+- Import up to 500 playlist entries per batch in playlist order, with a start index for larger playlists.
+- Added duplicate suppression for videos already playing, in the queue or repeated in a playlist.
+- Added Copy Selected URLs and Export Selected CSV actions, with spreadsheet formula injection hardening.
+- Added bounded `yt-dlp` metadata extractor (no API key), with official YouTube Data API v3 alternative.
+- Added timeouts, URL validation, extraction concurrency limit, ephemeral previews, and atomic queue imports.
+- Preserved the current video/playhead and preexisting settings.
+
+
 ## [1.0.9] — 2026-10-16
 
 - Added independent OBS lower-third visibility switches for channel label, “NOW PLAYING”, duration and skip counter.

@@ -173,5 +173,107 @@ $('muteToggle').addEventListener('click',()=>{
 $('addForm').addEventListener('submit',ev=>{ev.preventDefault();action('add',{url:$('newUrl').value,title:$('newTitle').value});});
 $('playNew').addEventListener('click',()=>action('add',{url:$('newUrl').value,title:$('newTitle').value,now:true}));
 $('bulkAdd').addEventListener('click',()=>action('bulk',{lines:$('bulk').value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean)}));
+// Extract playlist metadata first; only import the checked entries on confirmation.
+// Preview is not part of drawNow() or refresh(): live polling must preserve selection.
+let playlistPreview=null,playlistBusy=false;
+function previewSelection(){
+  const selected=[...$('playlistVideos').querySelectorAll('input[type="checkbox"]:checked')];
+  $('playlistSelected').textContent=`${selected.length} of ${playlistPreview?.videos.length||0} selected`;
+  $('playlistImportButton').disabled=playlistBusy||!selected.length;
+  $('playlistCopyLinks').disabled=playlistBusy||!selected.length;
+  $('playlistExportCsv').disabled=playlistBusy||!selected.length;
+  return selected.map(input=>Number(input.dataset.index));
+}
+function setPlaylistBusy(value){
+  playlistBusy=value;
+  $('playlistExtractButton').disabled=value;
+  $('playlistImportButton').disabled=value||!previewSelection().length;
+  $('playlistNextButton').disabled=value;
+  $('playlistSelectAll').disabled=value;
+  $('playlistSelectNone').disabled=value;
+}
+function renderPlaylistPreview(result){
+  playlistPreview=result;
+  $('playlistPreview').classList.remove('hidden');
+  $('playlistName').textContent=result.title;
+  $('playlistCount').textContent=`${result.videos.length} available · ${result.unavailable} unavailable/skipped · positions ${result.start}–${result.start+result.limit-1}${Number.isInteger(result.total)?` · ${result.total} playlist entries`:''}`;
+  $('playlistVideos').replaceChildren();
+  const existing=new Set([state?.current?.videoId,...(state?.queue||[]).map(v=>v.videoId)]);
+  const rows=document.createDocumentFragment();
+  result.videos.forEach((video,index)=>{
+    const checkbox=e('input',{type:'checkbox'});
+    checkbox.checked=true;checkbox.dataset.index=String(index);
+    const image=e('img');image.src=thumbnail(video.videoId);image.alt='';image.loading='lazy';
+    const label=e('label',{class:'playlist-video-row'},checkbox,image,e('span',{text:video.title,title:video.title}),e('small',{text:`#${video.position}${existing.has(video.videoId)?' · already queued':''}`}));
+    rows.append(label);
+  });
+  $('playlistVideos').append(rows);
+  $('playlistNextButton').classList.toggle('hidden',!result.hasMore);
+  previewSelection();
+}
+async function extractPlaylist({next=false}={}){
+  if(playlistBusy)return;
+  const url=$('playlistUrl').value.trim();
+  const start=next&&playlistPreview?playlistPreview.start+playlistPreview.limit:Number($('playlistStart').value);
+  const limit=Number($('playlistLimit').value);
+  if(!url||!Number.isInteger(start)||start<1||!Number.isInteger(limit)||limit<1){showNotice('playlistStatus','Enter a playlist link and valid batch settings.','error');return;}
+  $('playlistPreview').classList.add('hidden');playlistPreview=null;
+  setPlaylistBusy(true);
+  $('playlistStart').value=String(start);
+  showNotice('playlistStatus',`Extracting videos ${start}–${start+limit-1} from YouTube. This can take a minute for a large playlist…`);
+  try{
+    const result=await api('playlist/extract',{method:'POST',data:{url,start,limit}});
+    renderPlaylistPreview(result);
+    showNotice('playlistStatus',result.videos.length?`Extracted ${result.videos.length} available videos. Select the ones you want, then import.`:'No available videos in this playlist batch. Try a different range.','success');
+  }catch(err){
+    showNotice('playlistStatus',err.message,'error');
+    if(err.status===401)$('auth').classList.remove('hidden');
+  }finally{setPlaylistBusy(false);}
+}
+$('playlistExtractForm').addEventListener('submit',ev=>{ev.preventDefault();void extractPlaylist();});
+$('playlistNextButton').addEventListener('click',()=>void extractPlaylist({next:true}));
+$('playlistVideos').addEventListener('change',previewSelection);
+$('playlistSelectAll').addEventListener('click',()=>{$('playlistVideos').querySelectorAll('input[type="checkbox"]').forEach(el=>{el.checked=true;});previewSelection();});
+$('playlistSelectNone').addEventListener('click',()=>{$('playlistVideos').querySelectorAll('input[type="checkbox"]').forEach(el=>{el.checked=false;});previewSelection();});
+function selectedPlaylistVideos(){
+  return previewSelection().map(index=>playlistPreview.videos[index]);
+}
+$('playlistCopyLinks').addEventListener('click',async()=>{
+  if(!playlistPreview||playlistBusy)return;
+  const links=selectedPlaylistVideos().map(video=>`https://www.youtube.com/watch?v=${video.videoId}`).join('\n');
+  if(!links)return;
+  try{await navigator.clipboard.writeText(links);showNotice('playlistStatus',`Copied ${selectedPlaylistVideos().length} video URLs.`,'success');}
+  catch{showNotice('playlistStatus','Clipboard unavailable. Use Export Selected CSV instead.','error');}
+});
+$('playlistExportCsv').addEventListener('click',()=>{
+  if(!playlistPreview||playlistBusy)return;
+  const videos=selectedPlaylistVideos();if(!videos.length)return;
+  // Guard spreadsheet applications against formula injection in untrusted video titles.
+  const csvValue=value=>{
+    let s=String(value??'');if(/^[=+\-@\t\r]/.test(s))s=`'${s}`;
+    return `"${s.replaceAll('"','""')}"`;
+  };
+  const rows=[['Playlist position','Video ID','Title','YouTube URL','Duration (seconds)'],
+    ...videos.map(v=>[v.position,v.videoId,v.title,`https://www.youtube.com/watch?v=${v.videoId}`,v.duration||''])];
+  const csv=rows.map(row=>row.map(csvValue).join(',')).join('\r\n');
+  const blob=new Blob([String.fromCharCode(0xFEFF),csv],{type:'text/csv;charset=utf-8'});
+  const download=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=download;link.download=`playback-playlist-${playlistPreview.playlistId}-${playlistPreview.start}.csv`;
+  document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(download),1000);
+  showNotice('playlistStatus',`Exported ${videos.length} playlist videos to CSV.`,'success');
+});
+
+$('playlistImportButton').addEventListener('click',async()=>{
+  if(playlistBusy||!playlistPreview)return;
+  const indexes=previewSelection();if(!indexes.length)return;
+  setPlaylistBusy(true);
+  try{
+    const result=await api('playlist/import',{method:'POST',data:{id:playlistPreview.id,indexes,skipDuplicates:$('playlistSkipDuplicates').checked}});
+    $('playlistVideos').querySelectorAll('input[type="checkbox"]:checked').forEach(el=>{el.checked=false;});
+    showNotice('playlistStatus',`Imported ${result.added} videos in playlist order. Skipped ${result.skipped} duplicates. ${result.queued} videos now queued.`,'success');
+    await refresh();
+  }catch(err){showNotice('playlistStatus',err.message,'error');if(err.status===401)$('auth').classList.remove('hidden');}
+  finally{setPlaylistBusy(false);previewSelection();}
+});
 await initAuth(refresh);
 setInterval(()=>{if($('auth').classList.contains('hidden'))refresh();},1300);

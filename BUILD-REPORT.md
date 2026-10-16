@@ -1,6 +1,15 @@
-# fKey Playback 1.0.9 — Build and verification report
+# fKey Playback 1.1.0 — Build and verification report
 
 **Release target:** Local Windows OBS broadcasting station; portable Node.js 22.13+ distribution.
+
+## 1.1.0 playlist importer verification
+
+- Full build passed `npm run check` and `npm test` locally and from a fresh extracted ZIP.
+- ZIP integrity verified; 52 packaged source, test, and documentation files; `yt-dlp` is intentionally not bundled.
+- Offline Chromium rendered a representative playlist preview at 1440px with URL input, options, selectable rows, copy/export controls and import button.
+
+- New tests cover URL validation, provider output normalization, yt-dlp argument safety, YouTube Data API pagination, authenticated extraction/import, selected video ordering, deduplication, and restart preservation.
+- External YouTube network extraction and Windows `yt-dlp.exe` execution require final station validation; the archive does not bundle yt-dlp.
 
 ## 1.0.9 implementation verification
 
@@ -18,7 +27,7 @@
 - A real task registration, machine reboot and OBS startup must be acceptance-tested on the target Windows streaming PC.
 
 - `npm run check` — validated syntax of backend and all client-side JavaScript modules.
-- `npm test` — **44 passed; 0 failed; 1 Windows-specific PowerShell test skipped on Linux**.
+- `npm test` — **53 passed; 0 failed; 1 Windows-specific PowerShell test skipped on Linux** (54 tests total).
 - HTTP integration tests — control/settings/vote/player routes load; operator endpoints reject unauthenticated writes; session token protects mutation; hostile origin blocked; worker leases enforce ownership; stale updates refused; layout revisions acknowledged; state survives process restart.
 - State-machine tests — queue, seek/pause/previous/replay/skip, fault quarantine, end-of-video vote, same-viewer change, tie break, countdown pause during server downtime, setting validation and migration fallback.
 - Twitch protocol tests — tagged and nickname fallback identity, strict !vote parsing, !skip and moderated !request commands.

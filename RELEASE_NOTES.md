@@ -1,4 +1,15 @@
-# fKey Playback v1.0.9 — Customizable OBS lower third
+# fKey Playback v1.1.0 — Playlist video importer / extractor
+
+## New in v1.1.0
+
+- Paste YouTube playlist links in the Control dashboard and extract the ordered video list, including titles and video IDs, before importing.
+- Preview and select individual videos, skip duplicates, copy links or export CSV, and import in batches of up to 500 without changing what is currently playing. Advance to the next batch for larger playlists.
+- Choose a no-key `yt-dlp` command-line extractor (must be installed separately) or configure `YOUTUBE_API_KEY` to use the official API.
+- Locked-down, operator-only extraction and import endpoints, with safe YouTube URL validation and atomic persistence.
+
+**Windows setup:** Download `yt-dlp.exe` from https://github.com/yt-dlp/yt-dlp/releases/latest and place it in `tools/yt-dlp.exe` within the Playback installation. The release does not bundle yt-dlp. Alternatively set `YOUTUBE_API_KEY` for the server. See README.md for details.
+
+**Upgrade:** Stop Playback, back up and move your existing `data/` directory into the unpacked v1.1.0 folder, restart and refresh the dashboard. No change to existing playlist files or OBS URLs is required.
 
 ## New in v1.0.9 — Lower-third visibility and title text size
 
@@ -84,7 +95,7 @@ fKey Playback is a local OBS / 24-7 YouTube station made by **fKey Labs Inc.** T
 
 ## Download and install
 
-1. Download `Playback-v1.0.9.zip` below and extract into a dedicated folder.
+1. Download `Playback-v1.1.0.zip` below and extract into a dedicated folder.
 2. Install Node.js 22.13 or newer.
 3. On Windows run `start-player.bat`, on Linux/macOS run `./start-player.sh`.
 4. The dashboard opens automatically after the server starts. Sign in with the token in

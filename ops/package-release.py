@@ -16,7 +16,7 @@ for name in ('README.md', 'LICENSE', 'SECURITY.md', 'TRADEMARKS.md',
              'package.json', 'server.js', 'start-player.bat', 'start-player.sh',
              'INSTALL-AUTO-START.bat', 'UNINSTALL-AUTO-START.bat', 'CHECK-AUTO-START.bat'):
     files.append(root / name)
-for folder in ('lib', 'public', 'ops', 'test'):
+for folder in ('lib', 'public', 'ops', 'test', 'tools'):
     files.extend(p for p in (root / folder).rglob('*') if p.is_file())
 with ZipFile(archive, mode='w', compression=ZIP_DEFLATED, compresslevel=9) as z:
     for file in sorted(files):

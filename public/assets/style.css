@@ -57,3 +57,23 @@ html.obs,body.obs{width:100%;height:100%;overflow:hidden;background:#000}.obs-st
 .volume-range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:18px;margin-top:-6px;border:2px solid #eefaff;border-radius:2px;background:var(--accent)}
 .volume-range::-moz-range-thumb{width:12px;height:16px;border:2px solid #eefaff;border-radius:2px;background:var(--accent)}
 .volume-range:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* Playlist importer: isolated preview that does not re-render during operator polling. */
+.playlist-import-panel{margin-top:18px}
+.playlist-import-panel .hint{margin:0 0 14px}
+.playlist-inputs{display:grid;grid-template-columns:minmax(230px,1fr) 145px 165px auto;gap:12px;align-items:end}
+.playlist-inputs button{min-height:39px}
+.playlist-preview{margin-top:14px;display:grid;gap:12px;border-top:1px solid var(--border);padding-top:14px}
+.playlist-preview-header,.playlist-preview-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.playlist-preview-header strong{font-size:13px;overflow-wrap:anywhere}
+.playlist-video-list{max-height:385px;overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--border);background:var(--bg)}
+.playlist-video-row{display:grid;grid-template-columns:20px 46px minmax(0,1fr) auto;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:8px 12px;cursor:pointer}
+.playlist-video-row:last-child{border-bottom:none}
+.playlist-video-row:hover{background:var(--raised)}
+.playlist-video-row input{margin:0}
+.playlist-video-row img{width:46px;aspect-ratio:16/9;object-fit:cover;background:var(--raised)}
+.playlist-video-row span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.playlist-video-row small{font-size:10px;color:var(--muted);white-space:nowrap}
+.playlist-preview-footer .toggle{font-size:11px}
+@media(max-width:1000px){.playlist-inputs{grid-template-columns:minmax(200px,1fr) repeat(2,minmax(105px,145px))}.playlist-inputs button{grid-column:1/-1}}
+@media(max-width:600px){.playlist-inputs{grid-template-columns:1fr 1fr}.playlist-inputs label:first-child{grid-column:1/-1}.playlist-inputs button{grid-column:1/-1}.playlist-video-row{grid-template-columns:20px 42px minmax(0,1fr)}.playlist-video-row small{grid-column:3}}

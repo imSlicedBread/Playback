@@ -100,8 +100,8 @@ test('Lower Third editor exposes all toggles with same field IDs as OBS and refr
     assert.ok(obs.includes(`data-lt-field="${marker}"`));
   }
   assert.match(playerScript,/hud\.dataset\.layoutRevision/);
-  assert.match(settings,/style\.css\?v=1\.0\.9/);
-  assert.match(obs,/style\.css\?v=1\.0\.9/);
+  assert.match(settings,/style\.css\?v=1\.1\.0/);
+  assert.match(obs,/style\.css\?v=1\.1\.0/);
 });
 
 test('Saved lower-third visibility reaches OBS public API and survives server restart',async t=>{
