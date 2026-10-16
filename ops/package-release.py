@@ -15,7 +15,7 @@ for name in ('README.md', 'LICENSE', 'SECURITY.md', 'TRADEMARKS.md',
              'CHANGELOG.md', 'RELEASE_NOTES.md', 'BUILD-REPORT.md',
              'package.json', 'server.js', 'start-player.bat', 'start-player.sh'):
     files.append(root / name)
-for folder in ('lib', 'public', 'ops'):
+for folder in ('lib', 'public', 'ops', 'test'):
     files.extend(p for p in (root / folder).rglob('*') if p.is_file())
 with ZipFile(archive, mode='w', compression=ZIP_DEFLATED, compresslevel=9) as z:
     for file in sorted(files):

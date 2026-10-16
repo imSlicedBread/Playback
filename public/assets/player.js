@@ -1,8 +1,9 @@
 import {$,api,applyTheme,formatTime,applyLowerThird,setTicker} from './common.js';
 import {renderVoteScreen} from './vote-screen.js';
+import {applyYouTubeAudio} from './youtube-audio.js';
 const clean=new URL(location.href).searchParams.get('clean')==='1';
 const hud=$('hud'),voteMount=$('voteMount');
-let data=null,player=null,ytReady=false,appliedGen=-1,workerId=null,lastClaim=0,lastAck=0,visibleVote='',reportedEndGen=-1,reportedErrorGen=-1;
+let data=null,player=null,ytReady=false,appliedGen=-1,lastAudioKey='',workerId=null,lastClaim=0,lastAck=0,visibleVote='',reportedEndGen=-1,reportedErrorGen=-1;
 try{workerId=sessionStorage.getItem('playback-worker-id');}catch{}
 if(!/^[0-9a-f-]{36}$/i.test(workerId||''))workerId=crypto.randomUUID();
 try{sessionStorage.setItem('playback-worker-id',workerId);}catch{}
@@ -46,9 +47,17 @@ function updateVote(s){
   renderVoteScreen(voteMount,s.vote,s.settings);
   hide(voteMount,false);
 }
+function syncAudio(s,{force=false}={}){
+  if(!player||!ytReady)return;
+  const audio=s.audio||{volume:100,muted:false};
+  const key=`${audio.volume}:${audio.muted}`;
+  if((force||key!==lastAudioKey)&&applyYouTubeAudio(player,audio))lastAudioKey=key;
+}
 function applyPlayback(s){
   if(!player||!ytReady)return;
   const c=s.current;
+  const newGeneration=appliedGen!==s.generation;
+  syncAudio(s,{force:newGeneration});
   if(!c){
     if(appliedGen!==s.generation){try{player.stopVideo();}catch{}}appliedGen=s.generation;return;
   }
@@ -96,7 +105,7 @@ window.onYouTubeIframeAPIReady=()=>{
     height:'100%',width:'100%',host:'https://www.youtube-nocookie.com',
     playerVars:{autoplay:1,controls:0,playsinline:1,enablejsapi:1,cc_load_policy:0,iv_load_policy:3,rel:0,origin:location.origin},
     events:{onReady:()=>{ytReady=true;poll();},onStateChange:ev=>{
-      if(ev.data===window.YT.PlayerState.PLAYING){concealCaptions();}
+      if(ev.data===window.YT.PlayerState.PLAYING){concealCaptions();if(data)syncAudio(data,{force:true});}
       if(ev.data===window.YT.PlayerState.ENDED && data?.current && !data.vote && reportedEndGen!==data.generation){
         reportedEndGen=data.generation;asWorker('ended',{generation:data.generation}).then(r=>{if(r?.accepted)poll();});
       }

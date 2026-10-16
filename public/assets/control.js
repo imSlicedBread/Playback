@@ -1,5 +1,6 @@
 import {$,e,api,thumbnail,formatTime,showNotice,applyTheme,initAuth} from './common.js';
 let state=null,busy=false,scrubbing=false,scrubVideoId=null;
+let audioDesired=null,audioPreview=null,audioSending=false,audioTimer=null,audioEditing=false,lastAudibleVolume=50,lastAudioSend=0;
 async function action(action,props={}){
   if(busy)return;busy=true;
   try{await api('control',{method:'POST',data:{action,...props}});showNotice('controlMessage','Saved','success');await refresh();}
@@ -21,6 +22,44 @@ function paintSeek(position,duration){
   }
   $('seekCurrent').textContent=formatTime(seconds);
   $('seekTotal').textContent=formatTime(max||Number.NaN);
+}
+function currentAudio(){return audioPreview||state?.audio||{volume:100,muted:false};}
+function paintAudio(audio){
+  const volume=audio.volume;
+  $('volumeSlider').value=String(volume);
+  $('volumeSlider').style.setProperty('--volume-fill',`${audio.muted?0:volume}%`);
+  $('volumeSlider').setAttribute('aria-valuetext',`${volume} percent${audio.muted?', muted':''}`);
+  $('volumePercent').textContent=`${volume}%${audio.muted?' · MUTED':''}`;
+  $('muteToggle').textContent=audio.muted?'Unmute':'Mute';
+  $('muteToggle').setAttribute('aria-pressed',String(audio.muted));
+  $('muteToggle').setAttribute('aria-label',audio.muted?'Unmute YouTube audio':'Mute YouTube audio');
+  if(volume>0)lastAudibleVolume=volume;
+}
+async function flushAudio(){
+  clearTimeout(audioTimer);audioTimer=null;
+  if(audioSending||!audioDesired)return;
+  const audio=audioDesired;audioDesired=null;audioSending=true;lastAudioSend=Date.now();
+  try{await api('control',{method:'POST',data:{action:'audio',...audio}});}
+  catch(err){audioDesired=null;showNotice('controlMessage',err.message,'error');if(err.status===401)$('auth').classList.remove('hidden');}
+  finally{
+    audioSending=false;
+    if(audioDesired)scheduleAudio();
+    else {audioEditing=false;audioPreview=null;await refresh();}
+  }
+}
+function scheduleAudio({immediate=false}={}){
+  clearTimeout(audioTimer);
+  // Limit disk writes/API requests while keeping long slider drags responsive.
+  // Final changes are committed immediately when the pointer is released.
+  const delay=immediate?0:Math.max(0,450-(Date.now()-lastAudioSend));
+  audioTimer=setTimeout(()=>void flushAudio(),delay);
+}
+function queueAudio(audio,{immediate=false}={}){
+  audioDesired=audio;
+  audioPreview=audio;
+  audioEditing=true;
+  paintAudio(audio);
+  scheduleAudio({immediate});
 }
 function drawNow(s){
   const c=s.current,el=$('now');
@@ -79,6 +118,7 @@ async function refresh(){
   try{
     const s=await api('operator');state=s;applyTheme(s.settings.colors);
     drawNow(s);drawQueue(s);drawVote(s);drawSuggestions(s);
+    if(!audioEditing&&!audioSending&&!audioDesired)paintAudio(s.audio||{volume:100,muted:false});
     $('workerDot').className='dot'+(s.workerActive?' ok':'');$('workerStatus').textContent=s.workerActive?'OBS player connected':'Output unavailable';
     $('duration').textContent=formatTime(s.current?.duration||Number.NaN);
     $('skipVotes').textContent=`${s.skipCount} / ${s.settings.skipThreshold}`;
@@ -118,6 +158,18 @@ $('seekSlider').addEventListener('change',async()=>{
   finally{scrubbing=false;scrubVideoId=null;await refresh();}
 });
 $('seekSlider').addEventListener('pointercancel',()=>{scrubbing=false;scrubVideoId=null;refresh();});
+// Keep the slider node stable; polling must not snap an in-progress drag back.
+$('volumeSlider').addEventListener('input',()=>{
+  const volume=Math.round(Number($('volumeSlider').value));
+  queueAudio({volume,muted:volume===0});
+});
+$('volumeSlider').addEventListener('change',()=>{if(audioDesired)scheduleAudio({immediate:true});});
+$('muteToggle').addEventListener('click',()=>{
+  const audio=currentAudio();
+  const muted=!audio.muted;
+  const volume=!muted&&audio.volume===0?lastAudibleVolume:audio.volume;
+  queueAudio({volume,muted},{immediate:true});
+});
 $('addForm').addEventListener('submit',ev=>{ev.preventDefault();action('add',{url:$('newUrl').value,title:$('newTitle').value});});
 $('playNew').addEventListener('click',()=>action('add',{url:$('newUrl').value,title:$('newTitle').value,now:true}));
 $('bulkAdd').addEventListener('click',()=>action('bulk',{lines:$('bulk').value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean)}));

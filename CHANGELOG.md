@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.4 — YouTube volume and mute controls
+
+- Added a **0–100% YouTube volume slider** and **Mute / Unmute** button directly below Now Playing's seek bar.
+- Persisted volume and mute independently of video playback, settings edits and queue state; restored them after restarting.
+- Connected volume and mute to the OBS source's official YouTube IFrame API (`setVolume`, `mute`, `unMute`).
+- Added operator authorization and strict volume validation, plus HTTP integration, persistence, YouTube API and offline Chromium tests.
+- Preserved the official Playback logo, interactive seek bar and automatic YouTube title recovery.
+
 ## v1.0.3 — sidebar cleanup and interactive seek bar
 
 - Removed redundant “fKey” from the sidebar label; the official f-keycap logo and the company credit remain.

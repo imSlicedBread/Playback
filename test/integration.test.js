@@ -180,3 +180,50 @@ test('Restored seek bar uses the official sidebar logo and seeks the authoritati
   assert.equal(stale.body.accepted,false);
   assert.equal((await (await fetch(`${base}/api/public`)).json()).current.position,450);
 });
+
+test('Dashboard controls saved OBS audio through authenticated volume/mute action and survives restarts',async t=>{
+  const {app,base,dir}=await setup(t);
+  const [control,source,audioModule] = await Promise.all([
+    fetch(`${base}/control`).then(r=>r.text()),
+    fetch(`${base}/assets/player.js`).then(r=>r.text()),
+    fetch(`${base}/assets/youtube-audio.js`).then(r=>r.text())
+  ]);
+  assert.match(control,/id="volumeSlider"[^>]*max="100"/);
+  assert.match(control,/id="muteToggle"/);
+  assert.match(source,/syncAudio\(s/);
+  assert.match(source,/applyYouTubeAudio\(player,audio\)/);
+  assert.match(source,/syncAudio\(data,\{force:true\}\)/);
+  assert.match(audioModule,/\.setVolume\(/);
+  assert.match(audioModule,/\.mute\(/);
+  assert.match(audioModule,/\.unMute\(/);
+  assert.deepEqual((await (await fetch(`${base}/api/public`)).json()).audio,{volume:100,muted:false});
+  assert.equal((await post(base,'control',{action:'audio',volume:18,muted:false})).status,401);
+  const login=await post(base,'login',{token:'testing-token'});
+  const cookie=login.cookie.split(';')[0];
+  await post(base,'control',{action:'add',url:videoIds[0]},cookie);
+  const before=await (await fetch(`${base}/api/public`)).json();
+  const revision=before.generation, layoutRevision=before.layoutRevision;
+  assert.equal((await post(base,'control',{action:'audio',volume:18,muted:false},cookie)).status,200);
+  let output=await (await fetch(`${base}/api/public`)).json();
+  assert.deepEqual(output.audio,{volume:18,muted:false});
+  assert.equal(output.layoutRevision,layoutRevision);
+  assert.equal(output.generation,revision);
+  assert.equal((await post(base,'control',{action:'audio',volume:18,muted:true},cookie)).status,200);
+  output=await (await fetch(`${base}/api/public`)).json();
+  assert.deepEqual(output.audio,{volume:18,muted:true});
+  for(const volume of [-1,101,14.5,'70']){
+    assert.equal((await post(base,'control',{action:'audio',volume,muted:false},cookie)).status,400);
+  }
+  assert.equal((await post(base,'control',{action:'audio',volume:60,muted:'false'},cookie)).status,400);
+  assert.deepEqual((await (await fetch(`${base}/api/public`)).json()).audio,{volume:18,muted:true});
+  // An unrelated Settings Save must not overwrite the operator's audio level.
+  const settings=output.settings;
+  settings.voteSeconds=21;
+  assert.equal((await post(base,'settings',{settings},cookie)).status,200);
+  assert.deepEqual((await (await fetch(`${base}/api/public`)).json()).audio,{volume:18,muted:true});
+  await app.close();
+  const restart=await startApp(t,dir);
+  t.after(async()=>{if(restart.app.server.listening)await restart.app.close();});
+  const recovered=await (await fetch(`${restart.base}/api/public`)).json();
+  assert.deepEqual(recovered.audio,{volume:18,muted:true});
+});

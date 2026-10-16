@@ -172,3 +172,34 @@ test('Iframe title heartbeat requires current generation and matching video ID',
   const restored=new PlaybackEngine(store,{clock:()=>clock.now+1000});
   assert.equal(restored.state.current.title,'Video&#39; actual title');
 });
+
+test('Operator audio persists without changing video generation or lower-third revision', t=>{
+  const {engine,store}=newEngine(t);
+  engine.add(ids[0]);
+  const generation=engine.state.generation;
+  const layoutRevision=engine.state.layoutRevision;
+  assert.deepEqual(engine.publicState().audio,{volume:100,muted:false});
+  assert.deepEqual(engine.setAudio(42,false),{volume:42,muted:false});
+  assert.equal(engine.state.generation,generation);
+  assert.equal(engine.state.layoutRevision,layoutRevision);
+  assert.deepEqual(engine.setAudio(42,true),{volume:42,muted:true});
+  engine.skip();
+  const restored=new PlaybackEngine(store,{clock:()=>20000});
+  assert.deepEqual(restored.publicState().audio,{volume:42,muted:true});
+  restored.setAudio(42,false);
+  assert.equal(restored.publicState().audio.muted,false);
+  restored.setAudio(0,false);
+  assert.deepEqual(restored.publicState().audio,{volume:0,muted:true});
+});
+
+test('Audio control strictly validates levels and old saves default to full volume',t=>{
+  const {engine}=newEngine(t);
+  const revision=engine.state.revision;
+  for(const n of [-1,101,38.5,'75',NaN,Infinity,null]){
+    assert.throws(()=>engine.setAudio(n,false),/Volume must/);
+  }
+  assert.throws(()=>engine.setAudio(40,'false'),/Mute must/);
+  assert.equal(engine.state.revision,revision,'invalid requests must not mutate durable state');
+  assert.deepEqual(migrateState({schemaVersion:1,settings:{loop:false}}).audio,{volume:100,muted:false});
+  assert.deepEqual(migrateState({schemaVersion:1,audio:{volume:900,muted:'false'}}).audio,{volume:100,muted:false});
+});

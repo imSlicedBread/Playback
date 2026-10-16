@@ -1,9 +1,17 @@
-# fKey Playback v1.0.3 — Seek bar and sidebar fix
+# fKey Playback v1.0.4 — YouTube volume and mute controls
 
 fKey Playback is a local OBS / 24-7 YouTube station made by **fKey Labs Inc.** This is a **local-station production candidate**, not a guarantee of uninterrupted YouTube streaming.
 
 
-## v1.0.3 — Sidebar and seek-bar repair
+## New in v1.0.4 — Volume and mute
+
+- **Volume 0–100%**, **Mute / Unmute**, and a level indicator are now included below the seek bar in the operator dashboard.
+- This controls the active YouTube iframe in OBS; adjustments follow the next video and survive shutdown/restart.
+- Mute retains the chosen level, and slider changes unmute automatically when the value exceeds zero.
+- The volume slider is keyboard and pointer accessible. Rapid changes are coalesced to limit disk writes while adjusting audio.
+- The **OBS Audio Mixer fader is separate**; keep the Browser Source audio enabled. Live OBS integration still requires testing on your station.
+
+## Previously in v1.0.3 — Sidebar and seek-bar repair
 
 - Dashboard and Settings now label the sidebar **Playback**, alongside the official logo and the credit **made by fKey Labs Inc.**
 - The operator dashboard again has a full-width playback seek bar beneath Now Playing. Drag the thumb, click anywhere on the track, or press Left/Right arrows while focused. The current time and total duration are shown above the bar.
@@ -36,7 +44,7 @@ fKey Playback is a local OBS / 24-7 YouTube station made by **fKey Labs Inc.** T
 
 ## Download and install
 
-1. Download `Playback-v1.0.3.zip` below and extract into a dedicated folder.
+1. Download `Playback-v1.0.4.zip` below and extract into a dedicated folder.
 2. Install Node.js 22.13 or newer.
 3. On Windows run `start-player.bat`, on Linux/macOS run `./start-player.sh`.
 4. Open `http://127.0.0.1:4177/control`, sign in with the token in

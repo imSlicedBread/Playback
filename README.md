@@ -1,6 +1,13 @@
-# fKey Playback 1.0.3 — made by fKey Labs Inc.
+# fKey Playback 1.0.4 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.0.4 — YouTube volume and mute controls
+
+- A **0–100% volume slider and Mute / Unmute button** are located immediately below the Now Playing seek bar on the operator dashboard.
+- Drag or click the volume slider, or focus it and use the arrow keys. It applies to **YouTube playback inside the OBS Browser Source**, with rapid changes throttled to avoid excessive writes. Muting preserves the selected level; dragging above zero unmutes, while setting zero mutes.
+- Volume and mute are persisted in `data/state.json`, synchronized to any connected `/player` output in about 1–2 seconds, and restored across video changes and server/OBS restarts. They also work before a video starts.
+- The control **does not alter OBS's Audio Mixer fader**, desktop/system output volume, or other OBS sources. Make sure the Browser Source's audio is enabled in OBS; browser autoplay restrictions still apply.
 
 ## v1.0.3 — Sidebar and seek bar
 
@@ -37,11 +44,11 @@ You can create one OBS Browser Source at 1920 × 1080; OBS audio configuration i
 
 ## Production-station capabilities
 
-- **Durable state:** JSON snapshot written using temp file, file fsync, atomic rename, and a previous snapshot. Stores exact queue identity, active video, playhead, duration, pause state, vote tallies, remaining countdown, history, suggestions, layout and colors. Closing and restarting the app resumes the saved position; offline time does **not** run down vote time.
+- **Durable state:** JSON snapshot written using temp file, file fsync, atomic rename, and a previous snapshot. Stores exact queue identity, active video, playhead, duration, pause state, volume and mute preference, vote tallies, remaining countdown, history, suggestions, layout and colors. Closing and restarting the app resumes the saved position; offline time does **not** run down vote time.
 - **Protected operator API:** randomly generated token on first run; HTTP-only, SameSite-strict session cookie; origin checks; input and YouTube ID validation; login and voting rate limits; static-file allowlisting. Localhost only by default.
 - **Single authoritative OBS playback worker:** browser-source lease, generation checks to reject stale heartbeats/end events, and restart recovery. If an embed fails, it is quarantined from the loop to avoid an endless error cycle.
 - **Operator vote override:** start, cancel or immediately choose a vote round from the dashboard.
-- **Full queue controls:** add, batch import (300 at once), play now, reorder, remove, previous, replay, play/pause, skip, clickable/draggable seek bar with current/total time, precise seek in seconds, and optional playlist loop. The timeline remains interactive during background polling.
+- **Full queue controls:** add, batch import (300 at once), play now, reorder, remove, previous, replay, play/pause, skip, clickable/draggable seek bar with current/total time, precise seek in seconds, **YouTube audio volume (0–100%) and mute/unmute**, and optional playlist loop. The timeline and audio controls remain interactive during background polling.
 - **2 × 2 end voting:** candidate thumbnails, number, title, count and countdown; tie-breaks favor earliest available choice. One vote per recognized Twitch identity or local browser cookie per round, with vote changes allowed. Operator may choose instantly.
 - **Twitch IRC reader:** disabled by default; anonymous public chat read (unofficial) or authenticated IRC with environment variables. Parses `!vote 1` ... `!vote 4`, `!skip`, and `!request YOUTUBE_URL` (or `!suggest YOUTUBE_URL`); no Twitch chat messages are stored. In Settings, enter the channel, choose mode and Save.
 - **OBS lower-third editor:** drag, resize, set X / Y / Width / Scale, choose top or bottom anchor, snap to top/bottom. Bottom-anchor Y = 0 uses CSS `bottom:0` in OBS, so it actually docks to the frame. Position and colors update at the next polling interval (~1 second).
@@ -52,7 +59,7 @@ You can create one OBS Browser Source at 1920 × 1080; OBS audio configuration i
 
 ## Updating from Playback v1.0.0 or the previous prototype
 
-**From Playback 1.0.0–1.0.2:** Stop the server, back up your entire `data/` directory, extract 1.0.3 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
+**From Playback 1.0.0–1.0.3:** Stop the server, back up your entire `data/` directory, extract 1.0.4 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
 
 
 **Your earlier v0.14 archive cannot be treated as a verified drop-in upgrade:** its complete source was not accessible when this package was made. To migrate safely:
@@ -107,7 +114,7 @@ npm test
 npm start
 ```
 
-Automated tests cover queue actions, restart checkpoints, worker lease/generation protection, voting and ties, metadata lookup and title recovery, captions/ticker config validation, UI route protection, save-and-ack protocols, Twitch IRC message parsing and JSON input hardening. **Real YouTube playback, OBS browser-rendered placement and real Twitch connectivity require a final on-device test** in OBS, with your stream and channel.
+Automated tests cover queue actions, restart checkpoints, worker lease/generation protection, voting and ties, metadata lookup and title recovery, **authenticated audio and mute controls, volume persistence and YouTube IFrame audio API calls**, captions/ticker config validation, UI route protection, save-and-ack protocols, Twitch IRC message parsing and JSON input hardening. **Real YouTube playback, OBS browser-rendered placement and real Twitch connectivity require a final on-device test** in OBS, with your stream and channel.
 
 ## fKeyLabs visual identity
 
