@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+"""Produce a reproducible, credential-free distribution ZIP and checksum."""
+from hashlib import sha256
+from pathlib import Path
+from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
+import json
+
+root = Path(__file__).resolve().parents[1]
+version = json.loads((root / 'package.json').read_text(encoding='utf-8'))['version']
+out = root / 'dist'
+out.mkdir(exist_ok=True)
+archive = out / f'Playback-v{version}.zip'
+files = []
+for name in ('README.md', 'LICENSE', 'SECURITY.md', 'TRADEMARKS.md',
+             'CHANGELOG.md', 'RELEASE_NOTES.md', 'BUILD-REPORT.md',
+             'package.json', 'server.js', 'start-player.bat', 'start-player.sh'):
+    files.append(root / name)
+for folder in ('lib', 'public', 'ops'):
+    files.extend(p for p in (root / folder).rglob('*') if p.is_file())
+with ZipFile(archive, mode='w', compression=ZIP_DEFLATED, compresslevel=9) as z:
+    for file in sorted(files):
+        relative = file.relative_to(root).as_posix()
+        info = ZipInfo(f'Playback/{relative}', date_time=(2026, 10, 16, 0, 0, 0))
+        info.create_system = 3
+        info.external_attr = ((0o755 if relative == 'start-player.sh' else 0o644) << 16)
+        info.compress_type = ZIP_DEFLATED
+        z.writestr(info, file.read_bytes(), compress_type=ZIP_DEFLATED, compresslevel=9)
+checksum = sha256(archive.read_bytes()).hexdigest()
+(out / f'{archive.name}.sha256').write_text(f'{checksum}  {archive.name}\n', encoding='utf-8')
+print(f'{archive} ({archive.stat().st_size} bytes)')
+print(f'SHA-256 {checksum}')

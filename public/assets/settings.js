@@ -1,0 +1,135 @@
+import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js';
+import {renderVoteScreen} from './vote-screen.js';
+const boolKeys=['loop','voteOnEnd','showLowerThird','scrollTitles','hideCaptions','skipVoting','allowSuggestions'];
+const defaultColors={background:'#0D1010',panel:'#111318',raised:'#171A1F',accent:'#00AFFF',text:'#FFFFFF',healthy:'#22C55E',warning:'#F59E0B',error:'#EF4444',info:'#3B82F6',community:'#8B5CF6'};
+const presetColors={cyan:defaultColors,purple:{...defaultColors,accent:'#8B5CF6'},green:{...defaultColors,accent:'#22C55E'},amber:{...defaultColors,accent:'#F59E0B'}};
+const ltDefault={x:3,y:0,width:34,scale:100,anchor:'bottom'};
+const voteDefault={heading:'UP NEXT',instruction:'!vote 1-4 in Twitch chat',cardGap:20,panelOpacity:94,showThumbnails:true,showCountdown:true,showVotes:true,accentBorders:true};
+let saved=null,draft=null,lastStatus=null,applying=false;
+const clone=x=>JSON.parse(JSON.stringify(x));
+function tab(name){
+  for(const el of document.querySelectorAll('[data-tab]')){const active=el.dataset.tab===name;el.classList.toggle('active',active);el.setAttribute('aria-selected',active?'true':'false');}
+  for(const el of document.querySelectorAll('[data-panel]'))el.classList.toggle('hidden',el.dataset.panel!==name);
+}
+for(const el of document.querySelectorAll('[data-tab]'))el.addEventListener('click',()=>tab(el.dataset.tab));
+function number(id){return Number($(id).value);}
+function readDraft(){
+  if(!draft)return;
+  draft.channelLabel=$('channelLabel').value;
+  for(const k of boolKeys)draft[k]=$(k).checked;
+  draft.voteSeconds=number('voteSeconds');draft.skipThreshold=number('skipThreshold');
+  draft.twitchChannel=$('twitchChannel').value.trim();draft.twitchMode=$('twitchMode').value;
+  draft.lowerThird={x:number('ltX'),y:number('ltY'),width:number('ltWidth'),scale:number('ltScale'),anchor:$('ltAnchor').value};
+  draft.voteScreen={heading:$('vsHeading').value,instruction:$('vsInstruction').value,cardGap:number('vsGap'),panelOpacity:number('vsOpacity'),showThumbnails:$('vsThumbs').checked,showCountdown:$('vsCountdown').checked,showVotes:$('vsVotes').checked,accentBorders:$('vsBorders').checked};
+  for(const [key]of Object.entries(defaultColors))draft.colors[key]=$(`colorHex_${key}`).value;
+}
+function populate(){
+  if(!draft)return;applying=true;
+  $('channelLabel').value=draft.channelLabel;
+  for(const k of boolKeys)$(k).checked=draft[k];
+  $('voteSeconds').value=draft.voteSeconds;$('skipThreshold').value=draft.skipThreshold;
+  $('twitchChannel').value=draft.twitchChannel;$('twitchMode').value=draft.twitchMode;
+  populateLower();
+  const vs=draft.voteScreen;
+  $('vsHeading').value=vs.heading;$('vsInstruction').value=vs.instruction;$('vsGap').value=vs.cardGap;$('vsOpacity').value=vs.panelOpacity;
+  $('vsThumbs').checked=vs.showThumbnails;$('vsCountdown').checked=vs.showCountdown;$('vsVotes').checked=vs.showVotes;$('vsBorders').checked=vs.accentBorders;
+  for(const key of Object.keys(defaultColors)){ $(`colorHex_${key}`).value=draft.colors[key];$(`colorPick_${key}`).value=draft.colors[key]; }
+  applying=false;updatePreview();
+}
+function populateLower(){
+  for(const [key,id]of Object.entries({x:'ltX',y:'ltY',width:'ltWidth',scale:'ltScale'}))$(id).value=Math.round(draft.lowerThird[key]*10)/10;
+  $('ltAnchor').value=draft.lowerThird.anchor;
+}
+function updatePreview(){
+  if(!draft)return;
+  applyTheme(draft.colors);
+  const lt=draft.lowerThird,card=$('previewCard');
+  applyLowerThird(card,lt,{preview:true});
+  card.querySelector('.topline span').textContent=draft.channelLabel||'fKey Playback';
+  $('lowerReadout').textContent=`X: ${lt.x}% · ${lt.anchor.toUpperCase()}: ${lt.y}% · WIDTH: ${lt.width}% · SCALE: ${lt.scale}%`;
+  $('voteReadout').textContent=`GAP ${draft.voteScreen.cardGap}px  ·  PANEL ${draft.voteScreen.panelOpacity}%`;
+  renderVoteScreen($('votePreview'),null,draft,{preview:true});
+}
+function dirty(){if(applying||!draft)return;readDraft();updatePreview();showNotice('saveState','Unsaved changes — click Save Settings to update OBS.','');}
+function buildColors(){
+  const inputs=$('colorInputs');inputs.replaceChildren();
+  for(const [key,value]of Object.entries(defaultColors)){
+    const pick=e('input',{type:'color',id:`colorPick_${key}`});pick.value=value;
+    const hex=e('input',{type:'text',id:`colorHex_${key}`,maxlength:'7'});hex.value=value;
+    pick.addEventListener('input',()=>{hex.value=pick.value;dirty();});
+    hex.addEventListener('input',()=>{if(/^#[0-9a-f]{6}$/i.test(hex.value))pick.value=hex.value;dirty();});
+    inputs.append(e('div',{class:'color-item'},pick,e('span',{text:key.toUpperCase()}),hex));
+  }
+}
+function connectFields(){
+  for(const id of ['channelLabel',...boolKeys,'voteSeconds','skipThreshold','twitchChannel','twitchMode','ltX','ltY','ltWidth','ltScale','ltAnchor','vsHeading','vsInstruction','vsGap','vsOpacity','vsThumbs','vsCountdown','vsVotes','vsBorders']){
+    const el=$(id);el.addEventListener('input',dirty);el.addEventListener('change',dirty);
+  }
+  for(const button of document.querySelectorAll('[data-preset]'))button.addEventListener('click',()=>{
+    readDraft();draft.colors=clone(presetColors[button.dataset.preset]);populate();showNotice('saveState','New palette previewed. Save to broadcast.','');
+  });
+  $('resetColors').addEventListener('click',()=>{readDraft();draft.colors=clone(defaultColors);populate();dirty();});
+  $('resetLower').addEventListener('click',()=>{readDraft();draft.lowerThird=clone(ltDefault);populate();dirty();});
+  $('resetVote').addEventListener('click',()=>{readDraft();draft.voteScreen=clone(voteDefault);populate();dirty();});
+  $('snapBottom').addEventListener('click',()=>{readDraft();draft.lowerThird.anchor='bottom';draft.lowerThird.y=0;populate();dirty();});
+  $('snapTop').addEventListener('click',()=>{readDraft();draft.lowerThird.anchor='top';draft.lowerThird.y=0;populate();dirty();});
+  $('discard').addEventListener('click',()=>{if(saved){draft=clone(saved);populate();showNotice('saveState','Unsaved changes discarded.','');}});
+  $('save').addEventListener('click',async()=>{
+    try{readDraft();$('save').disabled=true;const response=await api('settings',{method:'POST',data:{settings:draft}});
+      saved=clone(draft);showNotice('saveState',`Settings saved — layout revision ${response.revision}.`,'success');await updateStatus();}
+    catch(e){showNotice('saveState',e.message,'error');}finally{$('save').disabled=false;}
+  });
+}
+function setupDrag(){
+  const frame=$('lowerPreview'),card=$('previewCard'),handle=$('resizeHandle');let start=null;
+  card.addEventListener('pointerdown',ev=>{
+    if(ev.target===handle||!draft)return;
+    ev.preventDefault();card.setPointerCapture(ev.pointerId);readDraft();
+    start={kind:'move',clientX:ev.clientX,clientY:ev.clientY,lt:clone(draft.lowerThird)};
+  });
+  handle.addEventListener('pointerdown',ev=>{
+    if(!draft)return;ev.preventDefault();ev.stopPropagation();handle.setPointerCapture(ev.pointerId);readDraft();
+    start={kind:'resize',clientX:ev.clientX,clientY:ev.clientY,lt:clone(draft.lowerThird)};
+  });
+  function move(ev){if(!start)return;const dx=(ev.clientX-start.clientX)/frame.clientWidth*100,dy=(ev.clientY-start.clientY)/frame.clientHeight*100;
+    const lt=clone(start.lt);
+    if(start.kind==='resize'){lt.width=Math.round(Math.max(15,Math.min(90,lt.width+dx,100-lt.x))*10)/10;}
+    else {lt.x=Math.round(Math.max(0,Math.min(100-lt.width,lt.x+dx))*10)/10;lt.y=Math.round(Math.max(0,Math.min(94,lt.y+(lt.anchor==='bottom'?-dy:dy)))*10)/10;}
+    draft.lowerThird=lt;populateLower();updatePreview();showNotice('saveState','Unsaved lower-third layout. Save to update OBS.');
+  }
+  card.addEventListener('pointermove',ev=>{if(start?.kind==='move')move(ev);});
+  handle.addEventListener('pointermove',ev=>{if(start?.kind==='resize')move(ev);});
+  const end=()=>start=null;
+  card.addEventListener('pointerup',end);card.addEventListener('pointercancel',end);handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',end);
+  card.addEventListener('keydown',ev=>{
+    if(!draft||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(ev.key))return;ev.preventDefault();readDraft();
+    const step=ev.shiftKey?5:1,lt=draft.lowerThird;
+    if(ev.key==='ArrowLeft')lt.x=Math.max(0,lt.x-step);
+    if(ev.key==='ArrowRight')lt.x=Math.min(100-lt.width,lt.x+step);
+    if(ev.key==='ArrowUp')lt.y=Math.max(0,Math.min(94,lt.y+(lt.anchor==='bottom'?step:-step)));
+    if(ev.key==='ArrowDown')lt.y=Math.max(0,Math.min(94,lt.y+(lt.anchor==='bottom'?-step:step)));
+    populateLower();updatePreview();showNotice('saveState','Unsaved layout — save to update OBS.');
+  });
+  handle.addEventListener('keydown',ev=>{
+    if(!draft||!['ArrowLeft','ArrowRight'].includes(ev.key))return;ev.stopPropagation();ev.preventDefault();readDraft();
+    draft.lowerThird.width=Math.max(15,Math.min(90,100-draft.lowerThird.x,draft.lowerThird.width+(ev.key==='ArrowRight'?1:-1)*(ev.shiftKey?5:1)));
+    populateLower();updatePreview();showNotice('saveState','Unsaved width — save to update OBS.');
+  });
+}
+async function updateStatus(){
+  if(!saved)return;
+  try{
+    const s=await api('operator');lastStatus=s;
+    $('twitchConnection').textContent=`${s.twitch.state} / ${s.twitch.mode.toUpperCase()}${s.twitch.channel?' / #'+s.twitch.channel:''}${s.twitch.detail?' — '+s.twitch.detail:''}`;
+    const outputs=s.outputs||[];
+    let status='Waiting for connected OBS output';
+    if(outputs.some(x=>x.layoutRevision>=s.layoutRevision&&!x.clean&&s.settings.showLowerThird))status='Applied in connected output page';
+    else if(outputs.some(x=>x.clean))status='Output connected in clean mode (lower third hidden)';
+    else if(outputs.some(x=>x.layoutRevision<s.layoutRevision))status='Connected output uses older layout';
+    else if(outputs.length&&!s.settings.showLowerThird)status='Output connected; lower third disabled';
+    $('outputStatus').textContent=status;
+    $('syncState').textContent=`Server layout revision ${s.layoutRevision}. Output acknowledgment confirms loaded settings, not OBS display visibility.`;
+  }catch(e){if(e.status===401)$('auth').classList.remove('hidden');}
+}
+async function load(){const state=await api('operator');saved=clone(state.settings);draft=clone(state.settings);populate();await updateStatus();}
+buildColors();connectFields();setupDrag();await initAuth(load);setInterval(()=>{if($('auth').classList.contains('hidden'))updateStatus();},2500);
