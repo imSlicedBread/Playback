@@ -8,6 +8,7 @@ if errorlevel 1 (
   exit /b 1
 )
 set NODE_ENV=production
+if not defined PB_OPEN_BROWSER set "PB_OPEN_BROWSER=1"
 node server.js
 if errorlevel 1 (
   echo.

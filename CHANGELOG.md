@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.0.5 — automatic dashboard browser opening
+
+- Restored automatic default-browser launch of the operator dashboard when starting the interactive Windows batch launcher.
+- Added macOS/Linux interactive launcher support with headless Linux detection.
+- Open the dashboard **only after the server binds**, using the actual listening port; do not open the OBS player or create a second playback worker.
+- Preserve unattended startup via `ops/start-player-supervised.bat` and `npm start` without launching a browser.
+- Support `PB_OPEN_BROWSER=0` to disable automatic opening; browser-launch failure never terminates the server.
+- Added cross-platform launch command, opt-in, failure and launcher-configuration tests.
+
 ## v1.0.4 — YouTube volume and mute controls
 
 - Added a **0–100% YouTube volume slider** and **Mute / Unmute** button directly below Now Playing's seek bar.

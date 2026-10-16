@@ -1,6 +1,14 @@
-# fKey Playback 1.0.4 — made by fKey Labs Inc.
+# fKey Playback 1.0.5 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.0.5 — Open the dashboard automatically on launch
+
+- **Windows:** double-click `start-player.bat`. Once the station successfully starts, the default browser opens `http://127.0.0.1:4177/control` automatically. Leave the command window running.
+- **macOS/Linux desktop:** `./start-player.sh` also opens the operator dashboard in your default browser once the server starts. Headless Linux sessions skip browser opening.
+- Only the **operator dashboard** opens — **not `/player`**, which is reserved for the OBS Browser Source. The automated Windows sign-in/supervised launcher remains headless to avoid opening tabs during unattended restarts.
+- **Optional:** set `PB_OPEN_BROWSER=0` in the launch environment to suppress automatic browser opening. Running `node server.js` or `npm start` also starts the server without opening a browser by default. Custom `PORT` values are respected.
+- A missing browser or desktop launcher does not stop the Playback server; use the dashboard URL printed in the terminal manually.
 
 ## v1.0.4 — YouTube volume and mute controls
 
@@ -21,7 +29,7 @@
 
 1. Extract the full ZIP to a persistent folder, such as `C:\Playback`. **Do not launch from inside the ZIP.**
 2. Install Node.js 22.13 or newer (LTS recommended).
-3. Double-click `start-player.bat`, then open <http://127.0.0.1:4177/control>.
+3. Double-click `start-player.bat`. The dashboard opens automatically in your default browser **after the server is ready**. If it does not, use <http://127.0.0.1:4177/control>.
 4. On first run the station creates `data/admin-token.txt`. Open it on the station and paste the token into the operator login dialog. Keep it private.
 5. Add a YouTube URL to the queue. Add four more if you want four choices at the end of a video.
 6. In OBS Studio, create a **Browser Source**, set URL to <http://127.0.0.1:4177/player>, width **1920**, height **1080**, and leave the browser source active. The player is separate from the operator dashboard.
@@ -59,7 +67,7 @@ You can create one OBS Browser Source at 1920 × 1080; OBS audio configuration i
 
 ## Updating from Playback v1.0.0 or the previous prototype
 
-**From Playback 1.0.0–1.0.3:** Stop the server, back up your entire `data/` directory, extract 1.0.4 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
+**From Playback 1.0.0–1.0.4:** Stop the server, back up your entire `data/` directory, extract 1.0.5 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
 
 
 **Your earlier v0.14 archive cannot be treated as a verified drop-in upgrade:** its complete source was not accessible when this package was made. To migrate safely:

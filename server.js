@@ -1,6 +1,7 @@
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createApp} from './lib/http.js';
+import {openDashboard} from './lib/open-dashboard.js';
 
 const PORT=Number(process.env.PORT||4177);
 const HOST=process.env.HOST||'127.0.0.1';
@@ -10,7 +11,8 @@ const app=createApp({host:HOST,port:PORT,dataDir:DATA_DIR});
 try {
   const address=await app.listen();
   const p=address.port;
-  console.log(`fKey Playback made by fKey Labs Inc. 1.0.4 ready\n  Dashboard: http://127.0.0.1:${p}/control\n  Settings:  http://127.0.0.1:${p}/settings\n  OBS:       http://127.0.0.1:${p}/player\n  Viewer:    http://127.0.0.1:${p}/vote\n  Token:     ${path.join(DATA_DIR,'admin-token.txt')}\n  State:     ${path.join(DATA_DIR,'state.json')}`);
+  console.log(`fKey Playback made by fKey Labs Inc. 1.0.5 ready\n  Dashboard: http://127.0.0.1:${p}/control\n  Settings:  http://127.0.0.1:${p}/settings\n  OBS:       http://127.0.0.1:${p}/player\n  Viewer:    http://127.0.0.1:${p}/vote\n  Token:     ${path.join(DATA_DIR,'admin-token.txt')}\n  State:     ${path.join(DATA_DIR,'state.json')}`);
+  openDashboard({port:p});
   let closing=false;const shutdown=()=>{if(closing)return;closing=true;app.close().then(()=>process.exit(0));setTimeout(()=>process.exit(1),4000).unref();};
   process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);
 }catch(e){app.cleanup();console.error('Failed to start:',e.message);process.exitCode=1;}

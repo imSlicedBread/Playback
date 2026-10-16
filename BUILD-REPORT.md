@@ -1,11 +1,11 @@
-# fKey Playback 1.0.4 — Build and verification report
+# fKey Playback 1.0.5 — Build and verification report
 
 **Release target:** Local Windows OBS broadcasting station; portable Node.js 22.13+ distribution.
 
 ## Executed checks
 
 - `npm run check` — validated syntax of backend and all client-side JavaScript modules.
-- `npm test` — **30 tests passed; 0 failed**.
+- `npm test` — **35 tests passed; 0 failed**.
 - HTTP integration tests — control/settings/vote/player routes load; operator endpoints reject unauthenticated writes; session token protects mutation; hostile origin blocked; worker leases enforce ownership; stale updates refused; layout revisions acknowledged; state survives process restart.
 - State-machine tests — queue, seek/pause/previous/replay/skip, fault quarantine, end-of-video vote, same-viewer change, tie break, countdown pause during server downtime, setting validation and migration fallback.
 - Twitch protocol tests — tagged and nickname fallback identity, strict !vote parsing, !skip and moderated !request commands.
@@ -19,6 +19,13 @@
 - Settings saves preserve audio selections without clobbering them, and older state files automatically initialize to 100% unmuted.
 - Mocked YouTube IFrame calls assert the actual `setVolume`, `mute`, and `unMute` invocations and safe fallback behavior.
 - Offline Chromium dashboard exercise confirmed slider input, mute/unmute, retained level and polling stability. Browser access to localhost was blocked by environment policy; **live OBS/YouTube audio still needs an on-device acceptance test**.
+
+## Automatic browser-opening verification
+
+- Five new unit tests verify that the Windows launcher opts in, the browser command opens `/control` only (never OBS `/player`), actual server ports are used, and macOS/Linux commands are platform-specific.
+- Headless Linux skips browser launching. A browser-launch error is handled as non-fatal, preserving server uptime.
+- The Windows supervised autostart helper does not opt in, so unattended restarts do not open browser tabs.
+- **Actual default-browser launching on a graphical Windows installation must be confirmed on your machine**, because the build environment is not an interactive Windows desktop.
 
 ## Restrictions and remaining acceptance tests
 

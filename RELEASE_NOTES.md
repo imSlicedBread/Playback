@@ -1,9 +1,17 @@
-# fKey Playback v1.0.4 — YouTube volume and mute controls
+# fKey Playback v1.0.5 — Automatic dashboard opening
 
 fKey Playback is a local OBS / 24-7 YouTube station made by **fKey Labs Inc.** This is a **local-station production candidate**, not a guarantee of uninterrupted YouTube streaming.
 
 
-## New in v1.0.4 — Volume and mute
+## New in v1.0.5 — Browser opens automatically
+
+- Double-click **`start-player.bat`** on Windows. Playback waits until its backend has started successfully, then automatically opens your default browser to the operator dashboard at `http://127.0.0.1:4177/control`.
+- `start-player.sh` also opens the dashboard for interactive macOS/Linux desktop users. On headless Linux, Playback runs without trying to launch a browser.
+- The launch operation does **not** open the OBS `/player` page, preserving one authoritative playback worker.
+- `npm start` and Windows task-scheduler supervised starts remain browser-free. Set `PB_OPEN_BROWSER=0` before launching to opt out.
+- The default browser is controlled by your operating system; opening it is best-effort. If it does not open, use the dashboard URL in the server console.
+
+## Previously in v1.0.4 — Volume and mute
 
 - **Volume 0–100%**, **Mute / Unmute**, and a level indicator are now included below the seek bar in the operator dashboard.
 - This controls the active YouTube iframe in OBS; adjustments follow the next video and survive shutdown/restart.
@@ -44,10 +52,10 @@ fKey Playback is a local OBS / 24-7 YouTube station made by **fKey Labs Inc.** T
 
 ## Download and install
 
-1. Download `Playback-v1.0.4.zip` below and extract into a dedicated folder.
+1. Download `Playback-v1.0.5.zip` below and extract into a dedicated folder.
 2. Install Node.js 22.13 or newer.
 3. On Windows run `start-player.bat`, on Linux/macOS run `./start-player.sh`.
-4. Open `http://127.0.0.1:4177/control`, sign in with the token in
+4. The dashboard opens automatically after the server starts. Sign in with the token in
    `data/admin-token.txt`, and configure your video queue and Twitch channel.
 5. Add an OBS Browser Source using `http://127.0.0.1:4177/player` and size 1920x1080.
 
