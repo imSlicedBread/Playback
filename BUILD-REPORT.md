@@ -1,15 +1,24 @@
-# fKey Playback 1.1.0 — Build and verification report
+# fKey Playback 1.2.0 — Build and verification report
+
+## 1.2.0 validation
+
+- Full Node.js syntax and test suite run against the extracted package.
+- Rotation tests cover v1.1 migration, durable current playhead, new-before-recycled ordering, automatic rollover, deferred next rotation, play now/interrupted playback, queue move/reorder/sort/shuffle, vote eligibility, unavailable videos and API authorization.
+- GUI queue tabs and playlist importer destinations use server-owned lane state.
+- Official GitHub Actions release downloads yt-dlp v2026.08.19 from its release, verifies a pinned SHA-256 and ships the upstream licensing files. Windows CI also runs `yt-dlp.exe --version`.
+- Local container network is restricted; local development source ZIP does not include the external binary. Only the GitHub release workflow can supply it. Do not label source archives prebundled.
+- Live YouTube/OBS connectivity and actual Windows boot startup require on-device checks.
 
 **Release target:** Local Windows OBS broadcasting station; portable Node.js 22.13+ distribution.
 
 ## 1.1.0 playlist importer verification
 
 - Full build passed `npm run check` and `npm test` locally and from a fresh extracted ZIP.
-- ZIP integrity verified; 52 packaged source, test, and documentation files; `yt-dlp` is intentionally not bundled.
+- Historical 1.1.0 ZIP: `yt-dlp` was not bundled; starting in 1.2.0 the official Windows ZIP includes it.
 - Offline Chromium rendered a representative playlist preview at 1440px with URL input, options, selectable rows, copy/export controls and import button.
 
 - New tests cover URL validation, provider output normalization, yt-dlp argument safety, YouTube Data API pagination, authenticated extraction/import, selected video ordering, deduplication, and restart preservation.
-- External YouTube network extraction and Windows `yt-dlp.exe` execution require final station validation; the archive does not bundle yt-dlp.
+- Historical 1.1.0 release did not include yt-dlp. From 1.2.0 forward, the Windows CI checks the bundled exe and the GitHub release includes it.
 
 ## 1.0.9 implementation verification
 

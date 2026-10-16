@@ -79,22 +79,70 @@ function drawNow(s){
   const copy=e('div',{class:'now-copy'},e('div',{class:'eyebrow',text:s.vote?'END SCREEN VOTE':(c.paused?'PAUSED':'PLAYING')}),e('h2',{text:c.title}));
   el.append(img,copy);
 }
-function makeQueueRow(v,i){
+const queueLanes={playNext:'priorityQueue',current:'upcomingQueue',recycled:'recycledQueue',nextRotation:'nextRotationQueue'};
+let activeQueueLane='current';
+const queueSelection=new Set();
+function currentLaneVideos(s=state){return s?.[queueLanes[activeQueueLane]]||[];}
+function updateBulkMove(){
+  const all=currentLaneVideos(),visible=new Set(all.map(v=>v.id));
+  $('queueMoveSelected').disabled=![...queueSelection].some(id=>visible.has(id));
+  $('queueSelectAll').checked=all.length>0&&all.every(v=>queueSelection.has(v.id));
+}
+function makeQueueRow(v,i,lane,list){
   const img=e('img');img.alt='';img.src=thumbnail(v.videoId);
+  const selected=e('input',{type:'checkbox',class:'queue-select',title:'Select video for bulk move'});
+  selected.checked=queueSelection.has(v.id);
+  selected.addEventListener('change',()=>{if(selected.checked)queueSelection.add(v.id);else queueSelection.delete(v.id);updateBulkMove();});
+  const info=e('div',{},e('strong',{text:v.title}),e('span',{text:v.videoId}),
+    e('small',{class:'small-note',text:`Plays ${v.playCount||0}${v.lastPlayedRotation?` · Last rotation ${v.lastPlayedRotation}`:''}`}));
   const actions=e('div',{class:'queue-actions'});
+  const moveTo=(target)=>action('move',{id:v.id,destination:target});
+  const target=e('select',{class:'queue-move-select',title:'Move to rotation lane'},
+    ...[['current','Current'],['nextRotation','Next rotation'],['recycled','Recycle']].map(([value,label])=>{
+      const option=e('option',{value,text:label});option.selected=value===lane;return option;
+    }));
   actions.append(
-    e('button',{class:'small',text:'Play',onClick:()=>action('playNow',{id:v.id})}),
+    e('button',{class:'small',text:'Play',title:'Play now, resume interrupted video next',onClick:()=>action('playNow',{id:v.id})}),
+    e('button',{class:'small',text:'Play Next',disabled:lane==='playNext',onClick:()=>moveTo('playNext')}),
+    target,e('button',{class:'small',text:'Move',onClick:()=>moveTo(target.value)}),
     e('button',{class:'small',text:'↑',disabled:i===0,onClick:()=>action('reorder',{id:v.id,to:i-1})}),
-    e('button',{class:'small',text:'↓',disabled:i===state.queue.length-1,onClick:()=>action('reorder',{id:v.id,to:i+1})}),
-    e('button',{class:'small danger',text:'×',title:'Remove',onClick:()=>action('remove',{id:v.id})})
+    e('button',{class:'small',text:'↓',disabled:i===list.length-1,onClick:()=>action('reorder',{id:v.id,to:i+1})}),
+    e('button',{class:'small danger',text:'×',title:'Remove from all rotations',onClick:()=>action('remove',{id:v.id})})
   );
-  return e('div',{class:'queue-item'},img,e('div',{},e('strong',{text:v.title}),e('span',{text:v.videoId})),actions);
+  return e('div',{class:'queue-item smart-queue-item'},selected,img,info,actions);
 }
 function drawQueue(s){
-  $('queueCount').textContent=`${s.queue.length} IN QUEUE`;
-  const container=$('queue');container.replaceChildren(...s.queue.map(makeQueueRow));
-  if(!s.queue.length)container.append(e('div',{class:'empty',text:'The queue is empty.'}));
+  const counts=s.rotationCounts||{playNext:0,upcoming:s.queue?.length||0,recycled:0,nextRotation:0};
+  const playable=(counts.playNext||0)+(counts.upcoming||0);
+  $('queueCount').textContent=`${playable} AVAILABLE`;
+  $('rotationNumber').textContent=`ROTATION ${s.rotationNumber||1}`;
+  $('rotationSummary').textContent=`${counts.playNext} priority · ${counts.upcoming} upcoming · ${counts.recycled} recycled · ${counts.nextRotation} deferred`;
+  for(const [lane,count] of Object.entries({playNext:counts.playNext,current:counts.upcoming,recycled:counts.recycled,nextRotation:counts.nextRotation})){
+    document.querySelector(`[data-count="${lane}"]`).textContent=count||0;
+  }
+  for(const tab of document.querySelectorAll('[data-queue-lane]')){
+    const active=tab.dataset.queueLane===activeQueueLane;
+    tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active));
+  }
+  const list=currentLaneVideos(s),container=$('queue');
+  container.replaceChildren(...list.map((v,i)=>makeQueueRow(v,i,activeQueueLane,list)));
+  if(!list.length)container.append(e('div',{class:'empty',text:activeQueueLane==='recycled'?'No completed videos in this rotation.':activeQueueLane==='nextRotation'?'Nothing deferred to the next rotation.':'No videos in this lane.'}));
+  $('queueHelp').textContent=activeQueueLane==='recycled'? 'Recycled videos return automatically after the current Upcoming queue is exhausted.':activeQueueLane==='nextRotation'? 'These videos join Upcoming at the start of the next rotation.': 'Play Next overrides normal Upcoming order; already played videos stay in Recycled.';
+  updateBulkMove();
 }
+for(const tab of document.querySelectorAll('[data-queue-lane]'))tab.addEventListener('click',()=>{
+  activeQueueLane=tab.dataset.queueLane;queueSelection.clear();drawQueue(state);
+});
+$('queueSelectAll').addEventListener('change',()=>{
+  for(const v of currentLaneVideos())if($('queueSelectAll').checked)queueSelection.add(v.id);else queueSelection.delete(v.id);
+  drawQueue(state);
+});
+$('queueMoveSelected').addEventListener('click',async()=>{
+  const ids=currentLaneVideos().filter(v=>queueSelection.has(v.id)).map(v=>v.id);
+  if(!ids.length)return;
+  await action('moveMany',{ids,destination:$('queueMoveTarget').value});queueSelection.clear();drawQueue(state);
+});
+$('queueApplySort').addEventListener('click',()=>action('sortUpcoming',{order:$('queueSort').value}));
 function drawVote(s){
   $('countdown').textContent=s.vote?`${s.vote.remaining}s REMAINING`:'INACTIVE';
   $('startVote').disabled=Boolean(s.vote)||!s.current||!s.queue.length;
@@ -170,9 +218,9 @@ $('muteToggle').addEventListener('click',()=>{
   const volume=!muted&&audio.volume===0?lastAudibleVolume:audio.volume;
   queueAudio({volume,muted},{immediate:true});
 });
-$('addForm').addEventListener('submit',ev=>{ev.preventDefault();action('add',{url:$('newUrl').value,title:$('newTitle').value});});
+$('addForm').addEventListener('submit',ev=>{ev.preventDefault();action('add',{url:$('newUrl').value,title:$('newTitle').value,destination:$('addDestination').value});});
 $('playNew').addEventListener('click',()=>action('add',{url:$('newUrl').value,title:$('newTitle').value,now:true}));
-$('bulkAdd').addEventListener('click',()=>action('bulk',{lines:$('bulk').value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean)}));
+$('bulkAdd').addEventListener('click',()=>action('bulk',{lines:$('bulk').value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean),destination:$('addDestination').value}));
 // Extract playlist metadata first; only import the checked entries on confirmation.
 // Preview is not part of drawNow() or refresh(): live polling must preserve selection.
 let playlistPreview=null,playlistBusy=false;
@@ -198,7 +246,7 @@ function renderPlaylistPreview(result){
   $('playlistName').textContent=result.title;
   $('playlistCount').textContent=`${result.videos.length} available · ${result.unavailable} unavailable/skipped · positions ${result.start}–${result.start+result.limit-1}${Number.isInteger(result.total)?` · ${result.total} playlist entries`:''}`;
   $('playlistVideos').replaceChildren();
-  const existing=new Set([state?.current?.videoId,...(state?.queue||[]).map(v=>v.videoId)]);
+  const existing=new Set([state?.current?.videoId,...(state?.queue||[]).map(v=>v.videoId),...(state?.recycledQueue||[]).map(v=>v.videoId),...(state?.nextRotationQueue||[]).map(v=>v.videoId)]);
   const rows=document.createDocumentFragment();
   result.videos.forEach((video,index)=>{
     const checkbox=e('input',{type:'checkbox'});
@@ -268,9 +316,9 @@ $('playlistImportButton').addEventListener('click',async()=>{
   const indexes=previewSelection();if(!indexes.length)return;
   setPlaylistBusy(true);
   try{
-    const result=await api('playlist/import',{method:'POST',data:{id:playlistPreview.id,indexes,skipDuplicates:$('playlistSkipDuplicates').checked}});
+    const result=await api('playlist/import',{method:'POST',data:{id:playlistPreview.id,indexes,skipDuplicates:$('playlistSkipDuplicates').checked,destination:$('playlistDestination').value,order:$('playlistOrder').value}});
     $('playlistVideos').querySelectorAll('input[type="checkbox"]:checked').forEach(el=>{el.checked=false;});
-    showNotice('playlistStatus',`Imported ${result.added} videos in playlist order. Skipped ${result.skipped} duplicates. ${result.queued} videos now queued.`,'success');
+    showNotice('playlistStatus',`Imported ${result.added} videos into ${result.destination}. Skipped ${result.skipped} duplicates. ${result.queued} videos ready in rotation.`,'success');
     await refresh();
   }catch(err){showNotice('playlistStatus',err.message,'error');if(err.status===401)$('auth').classList.remove('hidden');}
   finally{setPlaylistBusy(false);previewSelection();}

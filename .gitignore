@@ -1,23 +1,10 @@
-node_modules/
 data/
-*.log
-*.tmp
-.DS_Store
-.env
-# Operator credentials and saved state
-data*/
-**/admin-token.txt
-**/session-secret.txt
-**/voter-secret.txt
-**/state.json
-*.sqlite
-*.db
-.env.*
-!.env.example
-# Build archives
 dist/
-*.zip
-*.tar.xz
-*.tar.br
-coverage/
-.nyc_output/
+*.log
+node_modules/
+.DS_Store
+.DIR/
+tools/yt-dlp.exe
+tools/yt-dlp
+tools/yt-dlp-manifest.json
+tools/yt-dlp-licenses/

@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0] — 2026-10-16
+
+- Added durable Play Next, Upcoming, Recycled and Next Rotation lanes with automatic rollover.
+- Preserved old queue/playhead during schema v1 to v2 migration, with a pre-migration backup.
+- Integrated lane-aware OBS voting, history, play-next/now, moving, bulk actions, sorting, shuffle and importer destination controls.
+- Added a prebundled, checksum-verified official yt-dlp.exe to Windows GitHub release ZIPs, with third-party notices and source links.
+- Added rotation/voting/restart/security and bundle packaging tests.
+
+
 ## [1.1.0] — 2026-10-16
 
 - Added authenticated YouTube playlist URL extraction and selectable preview.

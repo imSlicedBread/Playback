@@ -77,3 +77,26 @@ html.obs,body.obs{width:100%;height:100%;overflow:hidden;background:#000}.obs-st
 .playlist-preview-footer .toggle{font-size:11px}
 @media(max-width:1000px){.playlist-inputs{grid-template-columns:minmax(200px,1fr) repeat(2,minmax(105px,145px))}.playlist-inputs button{grid-column:1/-1}}
 @media(max-width:600px){.playlist-inputs{grid-template-columns:1fr 1fr}.playlist-inputs label:first-child{grid-column:1/-1}.playlist-inputs button{grid-column:1/-1}.playlist-video-row{grid-template-columns:20px 42px minmax(0,1fr)}.playlist-video-row small{grid-column:3}}
+
+/* Rotation-aware station UI */
+.rotation-overview{display:flex;gap:14px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:11px 12px;background:var(--raised);border:1px solid var(--border);margin-bottom:10px}
+.rotation-overview strong{font-size:12px;color:var(--accent)}
+.queue-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:10px 0 12px}
+.queue-tabs button{white-space:normal;font-size:10px;min-height:44px;padding:6px 4px;letter-spacing:0}
+.queue-tab span{margin-left:4px;color:var(--accent);font-weight:700}
+.queue-tab.active{background:var(--raised);border-color:var(--accent)}
+.queue-bulk-actions,.queue-order-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:flex-end;margin:8px 0}
+.queue-bulk-actions label:not(.queue-select-all),.queue-order-actions label{flex:1;min-width:130px}
+.queue-bulk-actions select,.queue-order-actions select{padding:6px;font-size:11px;min-height:33px}
+.queue-select-all{display:flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer;font-size:11px}
+.queue-select-all input{width:16px;height:16px}
+.smart-queue-item{grid-template-columns:18px 68px minmax(0,1fr);gap:9px;align-items:start}
+.smart-queue-item>img{width:68px}
+.smart-queue-item>.queue-actions{grid-column:2/4;justify-content:flex-start;margin-top:2px}
+.smart-queue-item .queue-actions button{padding:4px 7px;min-height:30px}
+.smart-queue-item .queue-move-select{width:118px;min-height:30px;padding:4px;font-size:10px}
+.smart-queue-item .queue-select{width:16px;height:16px;margin:8px 0}
+.playlist-rotation-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(max-width:540px){.queue-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.playlist-rotation-options{grid-template-columns:1fr}.smart-queue-item .queue-actions{gap:4px}}
+.smart-queue-item>div:not(.queue-actions) small{display:block;line-height:1.45;margin-top:3px}
+.smart-queue-item .queue-actions button,.smart-queue-item .queue-move-select{white-space:nowrap}

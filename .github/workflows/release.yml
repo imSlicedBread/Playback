@@ -22,8 +22,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm run check
-      - run: npm test
+      - name: Validate JavaScript
+        run: npm run check
+      - name: Run tests
+        run: npm test
+      - name: Download verified prebundled yt-dlp (Windows)
+        if: matrix.os == 'windows-latest'
+        run: python ops/bundle-yt-dlp.py
+      - name: Test bundled yt-dlp on Windows
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: .\tools\yt-dlp.exe --version
 
   release:
     name: Package and release version
@@ -34,8 +43,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Package reproducible archive
-        run: python3 ops/package-release.py
+      - name: Fetch official yt-dlp executable and notices (SHA-256 verified)
+        run: python3 ops/bundle-yt-dlp.py
+      - name: Package reproducible archive (requires prebundled yt-dlp)
+        run: python3 ops/package-release.py --require-yt-dlp
       - name: Publish tagged GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -50,5 +61,5 @@ jobs:
           gh release create "$TAG" "dist/Playback-${TAG}.zip" "dist/Playback-${TAG}.zip.sha256" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$(git rev-parse HEAD)" \
-            --title "fKey Playback ${TAG} — Local station release" \
+            --title "fKey Playback ${TAG} — Smart Rotation Queue + bundled yt-dlp" \
             --notes-file RELEASE_NOTES.md

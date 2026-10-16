@@ -1,6 +1,29 @@
-# fKey Playback 1.1.0 — made by fKey Labs Inc.
+# fKey Playback 1.2.0 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.2.0 — Smart Rotation Queues and bundled Windows playlist extractor
+
+Playback now maintains **four separate, durable queue lanes** rather than appending completed videos to the end of the same list:
+
+| Lane | What it does |
+| --- | --- |
+| **Play Next** | Pinned requests take priority over the ordinary queue, in order. |
+| **Upcoming** | Videos that have **not played in the current rotation**, including new playlist imports. |
+| **Recycled** | Videos that already completed (or were skipped), waiting for a later rotation. |
+| **Next Rotation** | Explicitly deferred videos. They are promoted ahead of Recycled when the current rotation ends. |
+
+When Play Next and Upcoming are both empty, Playback starts **Rotation N+1** (with looping enabled). Next Rotation and Recycled move into Upcoming; completed and skipped videos never jump ahead of new uploads. Failed/private/unsupported videos go to history as unavailable instead of looping forever. Operator **Play Now** preserves the interrupted video's timestamp in Play Next so you can resume it afterward. Previous and Replay remain available. Playlist voting draws only from Play Next and Upcoming; the last available round can roll over to recycled videos at the rotation boundary.
+
+Under **Control → Smart Rotation Queue**, use the four tabs to review each lane, **Play Now**, **Play Next**, **Move to Current Rotation**, **Move to Next Rotation**, **Move to Recycled**, or **Remove** any queued item. Multi-select and **Move Selected** provide bulk management. Use **Sort Upcoming** for arrival order, title, oldest/newest published (when metadata exists), or random shuffle. Playback's queue has a **2,000-entry total capacity across all four lanes and the currently playing video**. Existing saved 1.x `data/state.json` is automatically migrated, preserving the current playback position, queue, voting and settings; it backs up `data/state.before-rotation-migration.json` before migration. Back up `data/` yourself before replacing the installation. Downgrading to 1.1.x after migration is not supported.
+
+The playlist importer now lets you choose **Play Next**, **Current Rotation**, or **Next Rotation**, plus playlist order, oldest-first, or newest-first when upload dates are available. Duplicates can be avoided across all four lanes; imported content still does not interrupt the current video.
+
+### yt-dlp included in the official Windows ZIP
+
+The **official GitHub v1.2.0 Windows release** prepackages upstream `tools/yt-dlp.exe` version **2026.08.19** for Windows x64. It is downloaded by GitHub Actions from the official upstream release and checked against SHA-256 `66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a` before publishing. No manual yt-dlp installation, separate Python installation, or YouTube Data API key is required. It is **not committed into the source repository**. Linux/macOS still need a locally installed `yt-dlp` or `YT_DLP_PATH`. Source-only builds from a checkout must run `python ops/bundle-yt-dlp.py` first on an Internet-connected machine. Do not download binaries from unofficial mirrors.
+
+**Third-party licenses:** The bundled upstream `yt-dlp.exe` is a separately invoked executable whose PyInstaller distribution contains GPLv3+ code. It is not covered by Playback's MIT license. See `tools/README.md` and the upstream third-party license files bundled in the official ZIP. Sources: https://github.com/yt-dlp/yt-dlp/tree/2026.08.19 and https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19.
 
 ## v1.1.0 — YouTube playlist importer / extractor
 
@@ -11,9 +34,9 @@ In the **Control** dashboard, open **YOUTUBE PLAYLIST IMPORTER** below Now Playi
 3. Review the extracted titles and thumbnails, uncheck videos you do not want (or use Select All / Select None). You can also **Copy Selected URLs** or **Export Selected CSV** without changing playback. Choose whether to skip already queued videos and duplicates.
 4. Click **Import Selected to Queue**. Video order is preserved. The current video's playhead, OBS source and settings remain unchanged. For large playlists use **Extract Next Batch**.
 
-**Extractor setup (one time):** To extract playlists without a YouTube API key, install the independent open-source [`yt-dlp`](https://github.com/yt-dlp/yt-dlp/releases/latest) program. On Windows, download its official `yt-dlp.exe` and place it in `tools/yt-dlp.exe` inside the extracted Playback folder; or install it globally with `winget install yt-dlp.yt-dlp` and restart Playback. On Linux/macOS place `yt-dlp` in PATH (or in `tools/yt-dlp`). If the server runs as a Windows boot task, the **local `tools/yt-dlp.exe` location is recommended** because a user-only PATH is not available to Local Service. You can also supply an absolute executable path via `YT_DLP_PATH`.
+**Extractor setup:** The official v1.2.0 Windows release ZIP already includes `tools/yt-dlp.exe`. On Linux/macOS install `yt-dlp` in PATH or set `YT_DLP_PATH`. If running from source, see the v1.2.0 setup above.
 
-**Official API alternative:** Set `YOUTUBE_API_KEY` in the server environment to retrieve playlist metadata using YouTube Data API v3 without installing `yt-dlp`. API access is subject to your YouTube quota. A full batch may take some time; only one extraction runs at a time. Previews are temporary (15 minutes), are not saved, and do not alter the queue until imported. Entries marked deleted/private/unavailable are skipped. Playlist entries beyond 500 must be extracted as additional batches. The queue supports up to 2,000 videos total. Extracted titles can still be corrected with the existing title resolver. `yt-dlp` is an optional external executable and **is not bundled** with Playback. Importing metadata does **not** download videos, bypass embed restrictions, or grant broadcasting permission.
+**Official API alternative:** Set `YOUTUBE_API_KEY` in the server environment to retrieve playlist metadata using YouTube Data API v3 without installing `yt-dlp`. API access is subject to your YouTube quota. A full batch may take some time; only one extraction runs at a time. Previews are temporary (15 minutes), are not saved, and do not alter the queue until imported. Entries marked deleted/private/unavailable are skipped. Playlist entries beyond 500 must be extracted as additional batches. The four rotation lanes and current video together support up to 2,000 entries. Extracted titles can still be corrected with the existing title resolver. `yt-dlp` is prebundled in official Windows v1.2.0 release packages and remains optional for source checkouts / non-Windows platforms. Importing metadata does **not** download videos, bypass embed restrictions, or grant broadcasting permission.
 
 ## v1.0.9 — Customizable OBS lower third
 
@@ -118,7 +141,7 @@ You can create one OBS Browser Source at 1920 × 1080; OBS audio configuration i
 
 ## Updating from Playback v1.0.0 or the previous prototype
 
-**From Playback 1.0.0–1.0.7:** Stop the server, back up your entire `data/` directory, extract 1.0.8 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
+**From Playback 1.0.0–1.0.7:** Stop the server, back up your entire `data/` directory, extract 1.2.0 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
 
 
 **Your earlier v0.14 archive cannot be treated as a verified drop-in upgrade:** its complete source was not accessible when this package was made. To migrate safely:
