@@ -1,8 +1,22 @@
-# fKey Playback v1.0.1 — Title recovery fix
+# fKey Playback v1.0.3 — Seek bar and sidebar fix
 
 fKey Playback is a local OBS / 24-7 YouTube station made by **fKey Labs Inc.** This is a **local-station production candidate**, not a guarantee of uninterrupted YouTube streaming.
 
-## Fixed in v1.0.1
+
+## v1.0.3 — Sidebar and seek-bar repair
+
+- Dashboard and Settings now label the sidebar **Playback**, alongside the official logo and the credit **made by fKey Labs Inc.**
+- The operator dashboard again has a full-width playback seek bar beneath Now Playing. Drag the thumb, click anywhere on the track, or press Left/Right arrows while focused. The current time and total duration are shown above the bar.
+- Seeking is disabled during voting or until YouTube supplies the duration; the existing **Jump to seconds** input remains available for exact seeking. The seek bar remains mounted while the station refreshes, so it won't interrupt an active drag.
+- Seeking updates the server-authoritative playhead and resumes from that position in the OBS browser source. State remains persisted across restarts.
+
+## Also included from v1.0.2
+
+- Replaced the temporary placeholder brand icon with the official uploaded fKey Playback logo.
+- Updated the Control page, Settings page, Viewer Voting page, auth screens, and browser tab icon to use the official logo.
+- Retains the v1.0.1 YouTube title-recovery improvements and all prior playback fixes.
+
+## Also included from v1.0.1
 
 - Real YouTube video titles now appear in the OBS lower third, dashboard, queue and voting choices after a background metadata lookup or when the playing YouTube iframe reports its title.
 - Recovered titles persist across shutdowns and restarts. Custom titles remain unchanged.
@@ -22,7 +36,7 @@ fKey Playback is a local OBS / 24-7 YouTube station made by **fKey Labs Inc.** T
 
 ## Download and install
 
-1. Download `Playback-v1.0.1.zip` below and extract into a dedicated folder.
+1. Download `Playback-v1.0.3.zip` below and extract into a dedicated folder.
 2. Install Node.js 22.13 or newer.
 3. On Windows run `start-player.bat`, on Linux/macOS run `./start-player.sh`.
 4. Open `http://127.0.0.1:4177/control`, sign in with the token in

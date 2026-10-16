@@ -142,3 +142,41 @@ test('YouTube iframe title metadata changes OBS lower-third output without opera
     videoId:videoIds[1],title:'Wrong video'})).status,200);
   assert.equal((await (await fetch(`${base}/api/public`)).json()).current.title,corrected.current.title);
 });
+
+test('Restored seek bar uses the official sidebar logo and seeks the authoritative playhead',async t=>{
+  const {base}=await setup(t);
+  const [control,settings,script,logo] = await Promise.all([
+    fetch(`${base}/control`).then(r=>r.text()),
+    fetch(`${base}/settings`).then(r=>r.text()),
+    fetch(`${base}/assets/control.js`).then(r=>r.text()),
+    fetch(`${base}/assets/logo.png`)
+  ]);
+  assert.match(control,/<img src="\/assets\/logo\.png" alt="fKey Playback logo" class="brand-mark"><span>Playback<small class="sub">made by fKey Labs Inc\.<\/small><\/span>/);
+  assert.match(settings,/<img src="\/assets\/logo\.png" alt="fKey Playback logo" class="brand-mark"><span>Playback<small class="sub">made by fKey Labs Inc\.<\/small><\/span>/);
+  assert.doesNotMatch(control,/<span>fKey Playback<small/);
+  assert.match(control,/id="seekSlider"[^>]*type="range"|type="range"[^>]*id="seekSlider"/);
+  assert.match(control,/id="seekCurrent"/);
+  assert.match(control,/id="seekTotal"/);
+  assert.match(script,/seekSlider'\)\.addEventListener\('input'/);
+  assert.match(script,/seekSlider'\)\.addEventListener\('change'/);
+  assert.match(script,/action\('seek',\{position\}\)/);
+  assert.equal(logo.status,200);
+  assert.match(logo.headers.get('content-type'),/image\/png/);
+  assert.ok((await logo.arrayBuffer()).byteLength>12000);
+  const login=await post(base,'login',{token:'testing-token'});
+  const cookie=login.cookie.split(';')[0];
+  await post(base,'control',{action:'add',url:videoIds[0],title:'Seeking test'},cookie);
+  const initial=await (await fetch(`${base}/api/public`)).json();
+  const workerId=crypto.randomUUID();
+  await post(base,'worker/claim',{workerId});
+  await post(base,'worker/progress',{workerId,generation:initial.generation,position:40,duration:600});
+  const move=await post(base,'control',{action:'seek',position:450},cookie);
+  assert.equal(move.status,200);
+  const after=await (await fetch(`${base}/api/public`)).json();
+  assert.equal(after.current.position,450);
+  assert.equal(after.current.duration,600);
+  assert.ok(after.generation>initial.generation);
+  const stale=await post(base,'worker/progress',{workerId,generation:initial.generation,position:42,duration:600});
+  assert.equal(stale.body.accepted,false);
+  assert.equal((await (await fetch(`${base}/api/public`)).json()).current.position,450);
+});

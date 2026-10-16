@@ -1,6 +1,12 @@
-# fKey Playback 1.0.1 — made by fKey Labs Inc.
+# fKey Playback 1.0.3 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.0.3 — Sidebar and seek bar
+
+- Removed the redundant **fKey** text from the sidebar above Playback. The official icon and **made by fKey Labs Inc.** credit remain intact.
+- Restored the draggable/clickable/keyboard-accessible **Now Playing seek bar** with elapsed/total time and an optional exact-seconds jump field. It uses the real playback position and doesn't reset while dragging when dashboard state refreshes.
+- Preserved the v1.0.2 official logo and the v1.0.1 automatic title recovery fix.
 
 **Deployable local-station release candidate** for OBS Browser Source on one computer. Requires **Node.js 22.13+**, with no npm dependencies or account required for local use. This is a freshly built implementation based on the provided 24/7 Player specifications, not a byte-for-byte recompilation of the earlier v0.14 ZIP. Live YouTube and Twitch integration must be tested on your station before uninterrupted operation is assumed.
 
@@ -35,7 +41,7 @@ You can create one OBS Browser Source at 1920 × 1080; OBS audio configuration i
 - **Protected operator API:** randomly generated token on first run; HTTP-only, SameSite-strict session cookie; origin checks; input and YouTube ID validation; login and voting rate limits; static-file allowlisting. Localhost only by default.
 - **Single authoritative OBS playback worker:** browser-source lease, generation checks to reject stale heartbeats/end events, and restart recovery. If an embed fails, it is quarantined from the loop to avoid an endless error cycle.
 - **Operator vote override:** start, cancel or immediately choose a vote round from the dashboard.
-- **Full queue controls:** add, batch import (300 at once), play now, reorder, remove, previous, replay, play/pause, skip, seek and optional playlist loop.
+- **Full queue controls:** add, batch import (300 at once), play now, reorder, remove, previous, replay, play/pause, skip, clickable/draggable seek bar with current/total time, precise seek in seconds, and optional playlist loop. The timeline remains interactive during background polling.
 - **2 × 2 end voting:** candidate thumbnails, number, title, count and countdown; tie-breaks favor earliest available choice. One vote per recognized Twitch identity or local browser cookie per round, with vote changes allowed. Operator may choose instantly.
 - **Twitch IRC reader:** disabled by default; anonymous public chat read (unofficial) or authenticated IRC with environment variables. Parses `!vote 1` ... `!vote 4`, `!skip`, and `!request YOUTUBE_URL` (or `!suggest YOUTUBE_URL`); no Twitch chat messages are stored. In Settings, enter the channel, choose mode and Save.
 - **OBS lower-third editor:** drag, resize, set X / Y / Width / Scale, choose top or bottom anchor, snap to top/bottom. Bottom-anchor Y = 0 uses CSS `bottom:0` in OBS, so it actually docks to the frame. Position and colors update at the next polling interval (~1 second).
@@ -46,7 +52,7 @@ You can create one OBS Browser Source at 1920 × 1080; OBS audio configuration i
 
 ## Updating from Playback v1.0.0 or the previous prototype
 
-**From Playback 1.0.0:** Stop the server, back up your entire `data/` directory, extract 1.0.1 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
+**From Playback 1.0.0–1.0.2:** Stop the server, back up your entire `data/` directory, extract 1.0.3 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
 
 
 **Your earlier v0.14 archive cannot be treated as a verified drop-in upgrade:** its complete source was not accessible when this package was made. To migrate safely:
@@ -105,11 +111,11 @@ Automated tests cover queue actions, restart checkpoints, worker lease/generatio
 
 ## fKeyLabs visual identity
 
-Dark black `#0D1010`, carbon `#111318`, slate `#171A1F`, white text, restrained cyan `#00AFFF`, semantic status colors and JetBrains Mono (system installed if available). The package includes a generated keycap-f SVG fallback; substitute your exact `MainLogov1.png` if desired. The original logo image could not be embedded from the earlier project archive.
+Dark black `#0D1010`, carbon `#111318`, slate `#171A1F`, white text, restrained cyan `#00AFFF`, semantic status colors and JetBrains Mono (system installed if available). The package includes the **official fKey Playback logo** provided by the owner at `public/assets/logo.png`. The old placeholder keycap asset is retired.
 
 ## Release notes
 
-Release 1.0.1: fixes missing titles in OBS with YouTube oEmbed discovery and IFrame metadata persistence; keeps title scrolling on layout changes. Release 1.0.0 introduced operator access protection, atomic station state, worker leases and staleness checks, auto advance and vote handling, Twitch IRC vote parser, settings tabs, vote screen editor, lower third top/bottom anchor consistency, and responsive control interface. No npm dependencies.
+Release 1.0.3: removes redundant sidebar text and restores a true interactive seek bar. Release 1.0.2: adopts the official logo. Release 1.0.1: fixes missing titles in OBS with YouTube oEmbed discovery and IFrame metadata persistence; keeps title scrolling on layout changes. Release 1.0.0 introduced operator access protection, atomic station state, worker leases and staleness checks, auto advance and vote handling, Twitch IRC vote parser, settings tabs, vote screen editor, lower third top/bottom anchor consistency, and responsive control interface. No npm dependencies.
 
 ## License and brand
 

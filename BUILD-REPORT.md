@@ -1,17 +1,17 @@
-# fKey Playback 1.0.1 — Build and verification report
+# fKey Playback 1.0.3 — Build and verification report
 
 **Release target:** Local Windows OBS broadcasting station; portable Node.js 22.13+ distribution.
 
 ## Executed checks
 
 - `npm run check` — validated syntax of backend and all client-side JavaScript modules.
-- `npm test` — **24 tests passed; 0 failed**.
+- `npm test` — **25 tests passed; 0 failed**.
 - HTTP integration tests — control/settings/vote/player routes load; operator endpoints reject unauthenticated writes; session token protects mutation; hostile origin blocked; worker leases enforce ownership; stale updates refused; layout revisions acknowledged; state survives process restart.
 - State-machine tests — queue, seek/pause/previous/replay/skip, fault quarantine, end-of-video vote, same-viewer change, tie break, countdown pause during server downtime, setting validation and migration fallback.
 - Twitch protocol tests — tagged and nickname fallback identity, strict !vote parsing, !skip and moderated !request commands.
 - Referrer policy test — verifies a header compatible with YouTube IFrame API's embed identification requirements.
 - Metadata tests — validate restricted oEmbed title lookup, current/queued-video title recovery, duplicate preservation, manual-title priority, stale iframe metadata rejection, and title persistence after restart.
-- Offline Chromium DOM/CSS test — confirmed that a long recovered title is displayed and `move-title` animation starts when it exceeds the lower third width (616px in the tested viewport).
+- Offline Chromium DOM/CSS tests — the previously recovered-title marquee animates only for overflow. The operator dashboard slider is verified with native pointer clicks, prolonged drag spanning refresh intervals, and keyboard arrows. Server mutation works, the slider remains mounted during refresh, and the seek control disables during votes or before duration is known.
 
 ## Restrictions and remaining acceptance tests
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.0.3 — sidebar cleanup and interactive seek bar
+
+- Removed redundant “fKey” from the sidebar label; the official f-keycap logo and the company credit remain.
+- Restored the draggable, clickable, keyboard-accessible seek bar in the operator dashboard with elapsed and total time.
+- Prevented polling updates from interrupting an in-progress seek operation.
+- Retained precise jump-to-seconds, the saved playhead, title metadata recovery, and OBS output synchronization.
+
+
+## v1.0.2 — official logo update
+
+- Replaced the placeholder brand icon with the official fKey Playback logo provided by the project owner.
+- Updated Control, Settings, Viewer Voting, auth screens, and browser tab icons to use the official logo.
+- Version bump for a fresh GitHub release.
+
+
 ## [1.0.1] — 2026-10-16
 
 - Fixed missing YouTube titles in the OBS lower third when a video was added by URL alone.

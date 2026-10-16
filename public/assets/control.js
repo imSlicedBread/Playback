@@ -1,20 +1,43 @@
 import {$,e,api,thumbnail,formatTime,showNotice,applyTheme,initAuth} from './common.js';
-let state=null,busy=false;
+let state=null,busy=false,scrubbing=false,scrubVideoId=null;
 async function action(action,props={}){
   if(busy)return;busy=true;
   try{await api('control',{method:'POST',data:{action,...props}});showNotice('controlMessage','Saved','success');await refresh();}
   catch(err){showNotice('controlMessage',err.message,'error');if(err.status===401)$('auth').classList.remove('hidden');}
   finally{busy=false;}
 }
+function paintSeek(position,duration){
+  const slider=$('seekSlider');
+  const max=Number.isFinite(duration)&&duration>0?duration:0;
+  const seconds=Math.max(0,Math.min(Number.isFinite(position)?position:0,max||86400));
+  if(max>0){
+    slider.max=String(max);
+    slider.value=String(Math.min(seconds,max));
+    slider.style.setProperty('--seek-fill',`${(Math.min(seconds,max)/max*100).toFixed(2)}%`);
+    slider.setAttribute('aria-valuetext',`${formatTime(seconds)} of ${formatTime(max)}`);
+  }else{
+    slider.max='1';slider.value='0';slider.style.setProperty('--seek-fill','0%');
+    slider.setAttribute('aria-valuetext','Video duration unavailable');
+  }
+  $('seekCurrent').textContent=formatTime(seconds);
+  $('seekTotal').textContent=formatTime(max||Number.NaN);
+}
 function drawNow(s){
-  const c=s.current;const el=$('now');el.replaceChildren();$('nowId').textContent=c?.videoId||'NO VIDEO';
+  const c=s.current,el=$('now');
+  if(scrubVideoId!==null && (c?.id||null)!==scrubVideoId){
+    scrubbing=false;scrubVideoId=null;
+  }
+  el.replaceChildren();$('nowId').textContent=c?.videoId||'NO VIDEO';
   $('pause').textContent=c?.paused?'▶ Resume':'Ⅱ Pause';$('pause').disabled=!c||Boolean(s.vote);
   $('skip').disabled=!c;$('replay').disabled=!c;$('back').disabled=!s.history.length;
   $('seek').disabled=!c||Boolean(s.vote);
+  const knownDuration=Number.isFinite(c?.duration)&&c.duration>0;
+  $('seekSlider').disabled=!c||Boolean(s.vote)||!knownDuration;
+  $('seekHint').textContent=!c?'Start a video to enable seeking.':s.vote?'Seeking is unavailable during voting.':!knownDuration?'Waiting for video duration. Use the seconds field for precise seeks.':'Drag to seek, click a position, or use arrow keys.';
+  if(!scrubbing)paintSeek(c?.position||0,c?.duration||0);
   if(!c){el.append(e('div',{class:'empty',text:'No active video. Add videos to begin.'}));return;}
   const img=e('img',{class:'thumb'});img.src=thumbnail(c.videoId);img.alt='Video thumbnail';
-  const progress=e('progress',{class:'progress',max:c.duration||1,value:Math.min(c.position||0,c.duration||1)});
-  const copy=e('div',{class:'now-copy'},e('div',{class:'eyebrow',text:s.vote?'END SCREEN VOTE':(c.paused?'PAUSED':'PLAYING')}),e('h2',{text:c.title}),e('div',{class:'small-note',text:`${formatTime(c.position||0)} / ${formatTime(c.duration||0)}`}),progress);
+  const copy=e('div',{class:'now-copy'},e('div',{class:'eyebrow',text:s.vote?'END SCREEN VOTE':(c.paused?'PAUSED':'PLAYING')}),e('h2',{text:c.title}));
   el.append(img,copy);
 }
 function makeQueueRow(v,i){
@@ -69,7 +92,32 @@ $('startVote').addEventListener('click',()=>action('startVote'));
 $('cancelVote').addEventListener('click',()=>action('cancelVote'));
 $('back').addEventListener('click',()=>action('previous'));
 $('replay').addEventListener('click',()=>action('replay'));
-$('seek').addEventListener('click',()=>action('seek',{position:Number($('seekValue').value)}));
+$('seek').addEventListener('click',()=>{
+  const raw=$('seekValue').value.trim(),position=Number(raw);
+  if(!raw||!Number.isFinite(position)||position<0){showNotice('controlMessage','Enter a valid seek position in seconds.','error');return;}
+  action('seek',{position});
+});
+// Keep the range input outside drawNow() so the 1.3s state refresh never
+// destroys an active pointer or keyboard interaction.
+$('seekSlider').addEventListener('pointerdown',()=>{
+  if(!state?.current||state.vote)return;
+  scrubbing=true;scrubVideoId=state.current.id;
+});
+$('seekSlider').addEventListener('input',()=>{
+  if(!state?.current||state.vote)return;
+  scrubbing=true;scrubVideoId=state.current.id;
+  const slider=$('seekSlider'),seconds=Number(slider.value),duration=Number(slider.max);
+  paintSeek(seconds,duration);
+  $('seekValue').value=String(Math.floor(seconds));
+});
+$('seekSlider').addEventListener('change',async()=>{
+  const c=state?.current,slider=$('seekSlider');
+  if(!c||state.vote||slider.disabled||c.id!==scrubVideoId){scrubbing=false;scrubVideoId=null;await refresh();return;}
+  const position=Number(slider.value);
+  try{await action('seek',{position});}
+  finally{scrubbing=false;scrubVideoId=null;await refresh();}
+});
+$('seekSlider').addEventListener('pointercancel',()=>{scrubbing=false;scrubVideoId=null;refresh();});
 $('addForm').addEventListener('submit',ev=>{ev.preventDefault();action('add',{url:$('newUrl').value,title:$('newTitle').value});});
 $('playNew').addEventListener('click',()=>action('add',{url:$('newUrl').value,title:$('newTitle').value,now:true}));
 $('bulkAdd').addEventListener('click',()=>action('bulk',{lines:$('bulk').value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean)}));
