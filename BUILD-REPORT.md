@@ -1,3 +1,14 @@
+# fKey Playback v1.2.2 — Build and verification report
+
+## Lower Third opacity and height verification
+
+- Node.js syntax validation: passed (`npm run check`).
+- Node tests: **74 passed / 0 failed / 1 Windows-only PowerShell test skipped locally** (75 tests total); includes seven new tests covering old-state defaults, strict height/opacity validation, frame bounds, saved-state recovery, shared preview/OBS style computation, editor controls, and authenticated API propagation.
+- Offline Chromium interaction check (actual Chromium browser rendering, isolated from network): 1600, 1250, 800 and 480px viewports all retained 16:9 canvas ratio and had no JavaScript errors. The inspector sits alongside the canvas on large viewports and stacks below it on narrow ones.
+- Offline Chromium pointer test: diagonal drag of the bottom-anchored top-right handle updated both width and height; Auto Height reset and live opacity/height style updates passed.
+- End-to-end live OBS rendering was not available in this environment. Chrome's managed network policy blocked navigation to the local HTTP server, so browser checks used isolated DOM/CSS/JS rendering; API and restart persistence were verified separately with live HTTP tests.
+- Release archive and source contents are rechecked after packaging. GitHub Actions verifies Windows and Ubuntu checks and bundles upstream yt-dlp for the Windows release.
+
 # fKey Playback 1.2.1 — Build and verification report
 
 ## 1.2.0 validation

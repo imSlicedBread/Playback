@@ -1,6 +1,18 @@
-# fKey Playback 1.2.1 — made by fKey Labs Inc.
+# fKey Playback 1.2.2 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.2.2 — OBS lower-third opacity, manual height and improved preview
+
+In **Settings → Lower Third**, the 16:9 preview now shares the horizontal workspace with a **Position & Dimensions** inspector on wide screens, and stacks above it on tablets/phones. Frame guides and a safe-area outline make it easier to position text. The mock video background lets you see background opacity changes as you make them.
+
+- **Background opacity (0–100%)**: Adjusts only the lower-third card's background, not the text, border/accent, OBS video, or other overlays. The default is **89%**, matching older versions. **0%** makes the background fully transparent; **100%** makes it solid.
+- **Height (%)**: **0 = Auto Height** (fit the text as before), or choose an explicit **4–65% of the OBS frame height**. Use the **Auto Height** button to return to content-driven sizing. The existing width, X/Y position, title text size, overall text scale, vertical anchor, and visibility switches still work.
+- **Two-dimensional resize**: Drag the cyan corner of the lower-third card to change width **and** height. With **Bottom edge** anchoring, the handle appears on the **top-right**, expanding upward while the bottom stays pinned. With **Top edge**, the handle moves to the **bottom-right**. Keyboard users can focus the handle: Left/Right adjust width and Up/Down adjust height (Shift = 5% steps). Dragging the card itself still changes its X/Y position.
+- **Live preview and saving**: Preview uses the shared OBS layout renderer. Click **Save Settings** to update the active `/player` OBS Browser Source and checkpoint new settings in `data/state.json`. **Discard Changes** and **Reset Lower Third** also account for the new options. Height + Y margin must fit inside the video frame; extremely large text may not fit into a manually forced small height, so use Auto Height if text is clipped.
+
+Old settings migrate with **Auto Height / 89% background opacity**, preserving the previous appearance. You do not need to recreate the OBS Browser Source, but refresh it once after upgrading to load the versioned JavaScript and CSS. The YouTube title, skip voting, playlists and existing queue remain unchanged. The included source-only ZIP does **not** contain `yt-dlp.exe`; the official GitHub Windows release continues to bundle the verified executable.
+
 
 
 ## v1.2.1 — Playlist importer reset and lower-third toolbar alignment

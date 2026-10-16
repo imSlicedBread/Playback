@@ -1,37 +1,75 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>fKey Playback — Settings</title><link rel="icon" type="image/png" href="/assets/logo.png"><link rel="stylesheet" href="/assets/style.css?v=1.2.1"></head><body>
-<div class="shell"><aside class="sidebar"><a href="/control" class="brand"><img src="/assets/logo.png" alt="fKey Playback logo" class="brand-mark"><span>Playback<small class="sub">made by fKey Labs Inc.</small></span></a><div class="nav-label">STATION</div><nav class="nav-links"><a href="/control">▣ &nbsp; Control</a><a class="active" href="/settings">⚙ &nbsp; Settings</a><a href="/vote" target="_blank">☷ &nbsp; Voting Portal</a><a href="/player" target="_blank">▣ &nbsp; OBS Output ↗</a></nav><div class="sidebar-footer">PLAYBACK 1.2.1<br>LOCAL STATION / 24·7</div></aside>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>fKey Playback — Settings</title><link rel="icon" type="image/png" href="/assets/logo.png"><link rel="stylesheet" href="/assets/style.css?v=1.2.2"></head><body>
+<div class="shell"><aside class="sidebar"><a href="/control" class="brand"><img src="/assets/logo.png" alt="fKey Playback logo" class="brand-mark"><span>Playback<small class="sub">made by fKey Labs Inc.</small></span></a><div class="nav-label">STATION</div><nav class="nav-links"><a href="/control">▣ &nbsp; Control</a><a class="active" href="/settings">⚙ &nbsp; Settings</a><a href="/vote" target="_blank">☷ &nbsp; Voting Portal</a><a href="/player" target="_blank">▣ &nbsp; OBS Output ↗</a></nav><div class="sidebar-footer">PLAYBACK 1.2.2<br>LOCAL STATION / 24·7</div></aside>
 <main class="settings-content"><div class="headline"><div><div class="eyebrow">STATION / CONFIGURATION</div><h1>Settings_</h1><p>Playback, Twitch chat, appearance, lower third and vote screen editors.</p></div><div class="right"><span id="outputStatus" class="status">Waiting for output</span><button id="logout" class="ghost">Sign out</button></div></div>
 <div class="tabs" role="tablist" aria-label="Settings sections"><button class="tab active" data-tab="playback" role="tab" aria-selected="true">Playback</button><button class="tab" data-tab="lowerthird" role="tab" aria-selected="false">Lower Third</button><button class="tab" data-tab="votescreen" role="tab" aria-selected="false">Vote Screen</button><button class="tab" data-tab="twitch" role="tab" aria-selected="false">Twitch Chat</button><button class="tab" data-tab="appearance" role="tab" aria-selected="false">Appearance</button></div>
 <section class="settings-section" data-panel="playback"><div class="grid equal"><div class="panel stack"><h2>PLAYBACK / CHANNEL</h2><label>Channel label<input id="channelLabel" maxlength="42" value="fKey Playback"></label><label class="toggle"><input type="checkbox" id="loop"> Loop playlist when videos finish</label><label class="toggle"><input type="checkbox" id="showLowerThird"> Show OBS lower third</label><label class="toggle"><input type="checkbox" id="scrollTitles"> Scroll long titles left</label><label class="toggle"><input type="checkbox" id="hideCaptions"> Hide YouTube captions (best effort)</label><p class="hint">Captions embedded in the video cannot be removed. YouTube embed preferences may override suppression.</p></div><div class="panel stack"><h2>VOTING / COMMUNITY</h2><label class="toggle"><input type="checkbox" id="voteOnEnd"> Show 2 × 2 vote screen when a video ends</label><label>Vote timer (seconds, 5–120)<input id="voteSeconds" type="number" min="5" max="120"></label><label class="toggle"><input type="checkbox" id="skipVoting"> Allow vote to skip during playback</label><label>Skip vote threshold (1–100)<input id="skipThreshold" type="number" min="1" max="100"></label><label class="toggle"><input type="checkbox" id="allowSuggestions"> Accept viewer video suggestions</label></div></div></section>
-<section class="settings-section hidden" data-panel="lowerthird"><div class="panel stack"><div class="panel-header"><h2>OBS / LOWER-THIRD EDITOR</h2><span class="eyebrow">16:9 PREVIEW</span></div><p class="hint">Drag the card to move it. Drag the cyan square to resize horizontally. Bottom-edge Y=0 means absolutely flush with the video bottom; top-edge Y=0 means flush with the video top. Saving updates every active OBS source.</p><div id="lowerPreview" class="preview-frame"><div class="watermark">OBS FRAME • PREVIEW</div><div id="previewCard" class="lowerthird preview" tabindex="0" aria-label="Drag to position lower third"><div class="topline"><span data-lt-field="channel">fKey Playback</span><span data-lt-field="nowPlaying">NOW PLAYING</span></div><div class="title-clip">Preview of a long video title</div><div class="lowerline"><span data-lt-field="duration">DURATION 12:43</span><span data-lt-field="skip">SKIP 0/3</span></div><span class="resize-handle" id="resizeHandle" tabindex="0" role="slider" aria-label="Lower third width"></span></div></div><div class="field-grid four"><label>X — Left (%)<input type="number" id="ltX" min="0" max="85" step="0.1"></label><label>Y — Anchor margin (%)<input type="number" id="ltY" min="0" max="94" step="0.1"></label><label>Width (%)<input type="number" id="ltWidth" min="15" max="90" step="0.1"></label><label>Text Scale (%)<input type="number" id="ltScale" min="50" max="200" step="1"></label></div><div class="lowerthird-options">
-  <div class="lowerthird-options-heading">VISIBLE ELEMENTS <span class="hint">Uncheck to hide in OBS. The video title always stays visible.</span></div>
-  <div class="lowerthird-options-grid">
-    <label class="toggle"><input type="checkbox" id="ltShowChannel"> Channel label</label>
-    <label class="toggle"><input type="checkbox" id="ltShowNowPlaying"> “NOW PLAYING” heading</label>
-    <label class="toggle"><input type="checkbox" id="ltShowDuration"> Video duration</label>
-    <label class="toggle"><input type="checkbox" id="ltShowSkip"> Skip vote count</label>
+<section class="settings-section hidden" data-panel="lowerthird">
+<div class="panel stack lowerthird-editor-panel">
+  <div class="panel-header"><h2>OBS / LOWER-THIRD EDITOR</h2><span class="eyebrow">16:9 LIVE LAYOUT PREVIEW</span></div>
+  <p class="hint">Position the title card directly on the broadcast frame. Its size, placement, and background transparency use the same values in the OBS output. Save Settings to apply the changes.</p>
+  <div class="lowerthird-editor-workspace">
+    <div class="lowerthird-preview-column">
+      <div class="lowerthird-workspace-heading"><span>OUTPUT CANVAS <span class="hint">1920 × 1080 reference</span></span><span class="hint">16:9 / SAFE AREA 5%</span></div>
+      <div id="lowerPreview" class="preview-frame">
+        <div class="preview-grid-lines" aria-hidden="true"></div>
+        <div class="preview-safe-area" aria-hidden="true"></div>
+        <div class="watermark" aria-hidden="true">OBS FRAME · PREVIEW</div>
+        <div id="previewCard" class="lowerthird preview" tabindex="0" aria-label="Drag to position lower third">
+          <div class="topline"><span data-lt-field="channel">fKey Playback</span><span data-lt-field="nowPlaying">NOW PLAYING</span></div>
+          <div class="title-clip">Preview of a long video title</div>
+          <div class="lowerline"><span data-lt-field="duration">DURATION 12:43</span><span data-lt-field="skip">SKIP 0/3</span></div>
+          <span class="resize-handle" id="resizeHandle" tabindex="0" role="slider" aria-label="Resize lower third width and height" aria-valuemin="4" aria-valuemax="65" aria-valuenow="4" title="Drag diagonally to resize width and height. Arrow keys adjust size."></span>
+        </div>
+        <div class="preview-frame-tag" aria-hidden="true">OUTPUT · 16:9</div>
+      </div>
+      <p class="hint preview-instructions"><strong>DRAG</strong> the title card to move it. <strong>DRAG THE CYAN CORNER</strong> diagonally to resize width and height. For bottom anchoring the resize handle appears at the top-right, keeping the card's bottom edge fixed.</p>
+    </div>
+    <div class="lowerthird-inspector">
+      <div class="lowerthird-options-heading">POSITION & DIMENSIONS <span class="hint">% of OBS canvas</span></div>
+      <div class="field-grid lowerthird-dimensions">
+        <label>X — Left (%)<input type="number" id="ltX" min="0" max="85" step="0.1"></label>
+        <label>Y — Anchor margin (%)<input type="number" id="ltY" min="0" max="94" step="0.1"></label>
+        <label>Width (%)<input type="number" id="ltWidth" min="15" max="90" step="0.1"></label>
+        <label>Height (%)<input type="number" id="ltHeight" min="0" max="65" step="0.1" aria-describedby="heightHint"></label>
+        <label>Text Scale (%)<input type="number" id="ltScale" min="50" max="200" step="1"></label>
+      </div>
+      <div class="lowerthird-height-tools"><span class="hint" id="heightHint">Height 0 = fit title automatically.</span><button type="button" class="small" id="ltAutoHeight">Auto Height</button></div>
+      <div class="lowerthird-opacity-setting">
+        <div class="lowerthird-scale-label"><label for="ltOpacity">BACKGROUND OPACITY</label><output id="ltOpacityValue" for="ltOpacity">89%</output></div>
+        <input type="range" id="ltOpacity" min="0" max="100" step="1" value="89" aria-label="Lower third background opacity percentage">
+        <p class="hint">0% = transparent card background; 100% = solid. Title text remains readable.</p>
+      </div>
+      <div class="lowerthird-title-scale">
+        <div class="lowerthird-scale-label"><label for="ltTitleScale">VIDEO TITLE TEXT SIZE</label><output id="ltTitleScaleValue" for="ltTitleScale">100%</output></div>
+        <input type="range" id="ltTitleScale" min="50" max="300" step="5" value="100" aria-label="Video title text size percentage">
+      </div>
+      <div class="lowerthird-anchor-section" aria-label="Lower third anchor and positioning controls">
+        <div class="lowerthird-options-heading">VERTICAL ANCHOR</div>
+        <div class="lowerthird-anchor-toolbar">
+          <label for="ltAnchor">Anchor edge<select id="ltAnchor"><option value="bottom">Bottom edge</option><option value="top">Top edge</option></select></label>
+          <button type="button" id="snapBottom">Snap to Bottom</button>
+          <button type="button" id="snapTop">Snap to Top</button>
+          <button type="button" id="resetLower">Reset Lower Third</button>
+        </div>
+        <div class="readout lowerthird-readout" id="lowerReadout" aria-live="polite">—</div>
+      </div>
+    </div>
   </div>
-  <div class="lowerthird-title-scale">
-    <label for="ltTitleScale">VIDEO TITLE TEXT SIZE</label>
-    <input type="range" id="ltTitleScale" min="50" max="300" step="5" value="100" aria-label="Video title text size percentage">
-    <output id="ltTitleScaleValue" for="ltTitleScale">100%</output>
+  <div class="lowerthird-options">
+    <div class="lowerthird-options-heading">VISIBLE ELEMENTS <span class="hint">Uncheck to hide in OBS. The video title always stays visible.</span></div>
+    <div class="lowerthird-options-grid">
+      <label class="toggle"><input type="checkbox" id="ltShowChannel"> Channel label</label>
+      <label class="toggle"><input type="checkbox" id="ltShowNowPlaying"> “NOW PLAYING” heading</label>
+      <label class="toggle"><input type="checkbox" id="ltShowDuration"> Video duration</label>
+      <label class="toggle"><input type="checkbox" id="ltShowSkip"> Skip vote count</label>
+    </div>
+    <p class="hint">Title size adjusts the lettering; Text Scale adjusts the full card. Visibility settings do not disable voting or change audio.</p>
   </div>
-  <p class="hint">Title size adjusts only the title lettering (50–300%). The existing Text Scale adjusts the whole lower third. Hiding the skip label does not disable viewer skip voting.</p>
-</div>
-<div class="lowerthird-anchor-section" aria-label="Lower third anchor and positioning controls">
-  <div class="lowerthird-options-heading">VERTICAL ANCHOR <span class="hint">Choose the reference edge or snap the lower third to a frame edge.</span></div>
-  <div class="lowerthird-anchor-toolbar">
-    <label for="ltAnchor">Anchor edge<select id="ltAnchor"><option value="bottom">Bottom edge</option><option value="top">Top edge</option></select></label>
-    <button type="button" id="snapBottom">Snap to Bottom</button>
-    <button type="button" id="snapTop">Snap to Top</button>
-    <button type="button" id="resetLower">Reset Lower Third</button>
-  </div>
-  <div class="readout lowerthird-readout" id="lowerReadout" aria-live="polite">—</div>
-</div></div></section>
+</div></section>
 <section class="settings-section hidden" data-panel="votescreen"><div class="grid equal"><div class="panel stack"><h2>VOTE SCREEN EDITOR</h2><label>Heading<input id="vsHeading" maxlength="60"></label><label>Voting instructions<input id="vsInstruction" maxlength="120"></label><label>Card gap (pixels)<input type="range" id="vsGap" min="0" max="60" step="1"></label><label>Card opacity (%)<input type="range" id="vsOpacity" min="30" max="100" step="1"></label><label class="toggle"><input type="checkbox" id="vsThumbs"> Show video thumbnails</label><label class="toggle"><input type="checkbox" id="vsCountdown"> Show countdown</label><label class="toggle"><input type="checkbox" id="vsVotes"> Show vote counts</label><label class="toggle"><input type="checkbox" id="vsBorders"> Accent borders on cards</label><div class="readout" id="voteReadout"></div></div><div class="panel stack"><h2>LIVE STYLE PREVIEW</h2><div id="votePreview"></div><p class="hint">The vote screen preview and OBS output use the same card renderer and layout settings. Options shown here are representative examples.</p><button id="resetVote">Reset Vote Screen</button></div></div></section>
 <section class="settings-section hidden" data-panel="twitch"><div class="grid equal"><div class="panel stack"><h2>TWITCH / READ CHAT</h2><label>Channel username (without #)<input id="twitchChannel" placeholder="yourchannel" maxlength="25"></label><label>Connection mode<select id="twitchMode"><option value="disabled">Disabled</option><option value="anonymous">Anonymous • read-only IRC</option><option value="authenticated">Authenticated • IRC token from server environment</option></select></label><p class="hint">The anonymous method is unofficial and may stop working. For authenticated mode, set <code>TWITCH_USERNAME</code> and <code>TWITCH_OAUTH_TOKEN</code> in the launch environment; credentials are never entered in this page.</p><div class="status" id="twitchConnection">Status unknown</div></div><div class="panel stack"><h2>CHAT COMMANDS</h2><div class="metric-row"><div class="metric"><strong>!vote 1</strong><small>FIRST VIDEO</small></div><div class="metric"><strong>!vote 2</strong><small>SECOND VIDEO</small></div><div class="metric"><strong>!vote 3</strong><small>THIRD VIDEO</small></div><div class="metric"><strong>!vote 4</strong><small>FOURTH VIDEO</small></div></div><div class="metric-row"><div class="metric"><strong>!skip</strong><small>SKIP VOTE</small></div><div class="metric"><strong>!request URL</strong><small>SUGGEST VIDEO</small></div></div><p class="hint">One Twitch account counts once per round. A second vote changes the first vote. Twitch chat messages are not stored.</p></div></div></section>
 <section class="settings-section hidden" data-panel="appearance"><div class="grid equal"><div class="panel stack"><h2>COLOR PRESETS</h2><div class="inline"><button type="button" data-preset="cyan">fKeyLabs / Cyan</button><button type="button" data-preset="purple">Studio / Purple</button><button type="button" data-preset="green">Signal / Green</button><button type="button" data-preset="amber">Sunset / Amber</button></div><button id="resetColors">Reset Colors to fKeyLabs Default</button><p class="hint">The primary keycap's white lowercase f remains unchanged. Keep contrast high for OBS viewers.</p></div><div class="panel stack"><h2>COLOR TOKENS</h2><div id="colorInputs" class="grid equal"></div></div></div></section>
 <div class="settings-footer"><div><div id="saveState" class="notice" aria-live="polite">Unsaved settings are previewed here only.</div><div id="syncState" class="small-note"></div></div><div class="inline"><button id="discard">Discard Changes</button><button id="save" class="primary">Save Settings</button></div></div>
 </main></div>
 <div id="auth" class="auth-overlay hidden"><form id="loginForm" class="auth-box stack"><div class="inline"><img src="/assets/logo.png" alt="fKey Playback logo" class="brand-mark auth-mark"><strong>FKEY PLAYBACK / OPERATOR ACCESS</strong></div><h2>Authenticate to edit settings_</h2><p class="hint">Read <code>data/admin-token.txt</code> on the station and enter the operator token.</p><label>Operator token<input id="token" required autocomplete="off" type="password"></label><button class="primary" type="submit">Unlock Settings</button><p id="authError" class="notice error" aria-live="polite"></p></form></div>
-<script type="module" src="/assets/settings.js?v=1.0.9"></script></body></html>
+<script type="module" src="/assets/settings.js?v=1.2.2"></script></body></html>

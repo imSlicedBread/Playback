@@ -51,12 +51,18 @@ export function applyLowerThird(el,layout,{preview=false}={}){
   const x=Math.max(0,Math.min(85,n(layout?.x,3)));
   const width=Math.max(15,Math.min(90,n(layout?.width,34)));
   const y=Math.max(0,Math.min(94,n(layout?.y,0)));
+  const height=n(layout?.height,0);
+  const opacity=Math.max(0,Math.min(100,n(layout?.backgroundOpacity,89)));
   const scale=Math.max(.5,Math.min(2,n(layout?.scale,100)/100));
   const titleScale=Math.max(.5,Math.min(3,n(layout?.titleScale,100)/100));
   const anchor=layout?.anchor==='top'?'top':'bottom';
   el.style.left=`${Math.min(x,100-width)}%`;el.style.width=`${width}%`;
   el.style.top=anchor==='top'?`${y}%`:'auto';
   el.style.bottom=anchor==='bottom'?`${y}%`:'auto';
+  el.style.height=height>=4?`${Math.min(height,100-y)}%`:'auto';
+  el.style.backgroundColor=`rgba(13, 16, 16, ${(opacity/100).toFixed(2)})`;
+  el.classList.toggle('manual-height',height>=4);
+  el.classList.toggle('bottom-anchored',anchor==='bottom');
   // Only hide presentation elements. Viewer skip votes, playback state and duration
   // remain active even when their corresponding HUD labels are hidden.
   const show={channel:layout?.showChannelLabel===true,nowPlaying:layout?.showNowPlaying===true,
@@ -76,7 +82,7 @@ export function applyLowerThird(el,layout,{preview=false}={}){
   const canvasWidth=preview?(el.closest('.preview-frame')?.clientWidth||960):window.innerWidth;
   const factor=Math.max(.3,Math.min(2,canvasWidth/1920))*scale;
   const title=el.querySelector('.title-clip');
-  if(!preview)el.style.padding=`${Math.round(15*factor)}px ${Math.round(18*factor)}px`;
+  el.style.padding=`${Math.round(15*factor)}px ${Math.round(18*factor)}px`;
   if(top)top.style.fontSize=`${Math.max(preview?6:7,Math.round(16*factor))}px`;
   if(title)title.style.fontSize=`${Math.max(preview?7:11,Math.round(31*factor*titleScale))}px`;
   if(bottom)bottom.style.fontSize=`${Math.max(preview?6:7,Math.round(14*factor))}px`;

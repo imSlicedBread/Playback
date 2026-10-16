@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.2] — 2026-10-16
+
+- Added adjustable OBS lower-third background opacity (0–100%, default 89%), without dimming video titles.
+- Added explicit lower-third height (Auto or 4–65% of the OBS frame), preserved in the authoritative settings state.
+- Added diagonal corner resize in the editor, with keyboard width/height editing and anchor-aware handle placement.
+- Redesigned the editor as a responsive 16:9 canvas and side inspector with grid and safe-area guides.
+- Preserved old saved layouts as Auto Height with previous opacity; updates persist and sync to the OBS Browser Source.
+- Added validation, API persistence, WYSIWYG renderer and responsive Chromium tests.
+
 ## [1.2.1] — 2026-10-16
 
 - Clear the YouTube playlist preview, selections, playlist URL, and starting index after a confirmed queue import so the importer is ready for another playlist.

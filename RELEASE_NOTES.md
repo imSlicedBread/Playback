@@ -1,3 +1,23 @@
+# fKey Playback v1.2.2 — Lower Third opacity, height and editor improvements
+
+### New in v1.2.2
+
+- **Card background opacity**: 0% (transparent) to 100% (solid), leaving the video title fully opaque. Defaults to the previous 89% appearance.
+- **Lower Third height**: Set an explicit height (4–65% of OBS frame) or leave 0 for Auto Height.
+- **Drag-to-resize width and height**: Cyan corner now resizes in both directions, keeping the selected anchor edge fixed. Focus the handle and use arrow keys for fine control.
+- **Better editor workspace**: Responsive large 16:9 preview alongside the geometry/opacity inspector on desktop, with safe-area and alignment guides; stacks vertically on narrow screens.
+- **Persistent OBS synchronization**: New fields are validated and saved, and the OBS Browser Source uses the same renderer as the preview. Existing saved layouts migrate without changing their previous appearance.
+
+### Upgrading from v1.2.1
+
+Stop Playback and back up the complete `data/` directory. Extract the official `Playback-v1.2.2.zip` to a permanent folder, restore the saved data, and restart Playback. Windows autostart users should reinstall the scheduled tasks only when the installation path changes. Refresh the OBS Browser Source once after upgrading; then open **Settings → Lower Third**, edit, and click **Save Settings**. Existing playlist rotations, progress, imported videos, visibility toggles, custom colors and voting settings are retained.
+
+**Windows executable:** The official GitHub Windows ZIP contains the pinned upstream `yt-dlp.exe` and third-party notices, checksum-verified before release. Linux/macOS builds need an independently installed `yt-dlp` or `YT_DLP_PATH`.
+
+**Limitations:** Playback is designed for a trusted local workstation. The Node backend may start at Windows boot, but OBS and its YouTube browser source still require an interactive desktop. Actual OBS rendering and live Twitch/YouTube connectivity must be checked on your computer before relying on unattended broadcasts. A manual height too small for selected text scales can clip content; use Auto Height to prevent this.
+
+---
+
 # fKey Playback v1.2.1 — Playlist importer reset and lower-third alignment
 
 fKey Playback is a local OBS/YouTube station made by **fKey Labs Inc.**

@@ -1,9 +1,9 @@
-import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js';
+import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js?v=1.2.2';
 import {renderVoteScreen} from './vote-screen.js';
 const boolKeys=['loop','voteOnEnd','showLowerThird','scrollTitles','hideCaptions','skipVoting','allowSuggestions'];
 const defaultColors={background:'#0D1010',panel:'#111318',raised:'#171A1F',accent:'#00AFFF',text:'#FFFFFF',healthy:'#22C55E',warning:'#F59E0B',error:'#EF4444',info:'#3B82F6',community:'#8B5CF6'};
 const presetColors={cyan:defaultColors,purple:{...defaultColors,accent:'#8B5CF6'},green:{...defaultColors,accent:'#22C55E'},amber:{...defaultColors,accent:'#F59E0B'}};
-const ltDefault={x:3,y:0,width:34,scale:100,titleScale:100,anchor:'bottom',showChannelLabel:false,showNowPlaying:false,showDuration:false,showSkip:false};
+const ltDefault={x:3,y:0,width:34,height:0,backgroundOpacity:89,scale:100,titleScale:100,anchor:'bottom',showChannelLabel:false,showNowPlaying:false,showDuration:false,showSkip:false};
 const voteDefault={heading:'UP NEXT',instruction:'!vote 1-4 in Twitch chat',cardGap:20,panelOpacity:94,showThumbnails:true,showCountdown:true,showVotes:true,accentBorders:true};
 let saved=null,draft=null,lastStatus=null,applying=false;
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -19,7 +19,7 @@ function readDraft(){
   for(const k of boolKeys)draft[k]=$(k).checked;
   draft.voteSeconds=number('voteSeconds');draft.skipThreshold=number('skipThreshold');
   draft.twitchChannel=$('twitchChannel').value.trim();draft.twitchMode=$('twitchMode').value;
-  draft.lowerThird={x:number('ltX'),y:number('ltY'),width:number('ltWidth'),scale:number('ltScale'),titleScale:number('ltTitleScale'),anchor:$('ltAnchor').value,showChannelLabel:$('ltShowChannel').checked,showNowPlaying:$('ltShowNowPlaying').checked,showDuration:$('ltShowDuration').checked,showSkip:$('ltShowSkip').checked};
+  draft.lowerThird={x:number('ltX'),y:number('ltY'),width:number('ltWidth'),height:number('ltHeight'),backgroundOpacity:number('ltOpacity'),scale:number('ltScale'),titleScale:number('ltTitleScale'),anchor:$('ltAnchor').value,showChannelLabel:$('ltShowChannel').checked,showNowPlaying:$('ltShowNowPlaying').checked,showDuration:$('ltShowDuration').checked,showSkip:$('ltShowSkip').checked};
   draft.voteScreen={heading:$('vsHeading').value,instruction:$('vsInstruction').value,cardGap:number('vsGap'),panelOpacity:number('vsOpacity'),showThumbnails:$('vsThumbs').checked,showCountdown:$('vsCountdown').checked,showVotes:$('vsVotes').checked,accentBorders:$('vsBorders').checked};
   for(const [key]of Object.entries(defaultColors))draft.colors[key]=$(`colorHex_${key}`).value;
 }
@@ -37,9 +37,10 @@ function populate(){
   applying=false;updatePreview();
 }
 function populateLower(){
-  for(const [key,id]of Object.entries({x:'ltX',y:'ltY',width:'ltWidth',scale:'ltScale'}))$(id).value=Math.round(draft.lowerThird[key]*10)/10;
+  for(const [key,id]of Object.entries({x:'ltX',y:'ltY',width:'ltWidth',height:'ltHeight',scale:'ltScale'}))$(id).value=Math.round(draft.lowerThird[key]*10)/10;
   $('ltAnchor').value=draft.lowerThird.anchor;
   $('ltTitleScale').value=draft.lowerThird.titleScale;$('ltTitleScaleValue').textContent=`${draft.lowerThird.titleScale}%`;
+  $('ltOpacity').value=draft.lowerThird.backgroundOpacity;$('ltOpacityValue').textContent=`${draft.lowerThird.backgroundOpacity}%`;
   for(const [key,id] of Object.entries({showChannelLabel:'ltShowChannel',showNowPlaying:'ltShowNowPlaying',showDuration:'ltShowDuration',showSkip:'ltShowSkip'}))$(id).checked=draft.lowerThird[key];
 }
 function updatePreview(){
@@ -48,7 +49,11 @@ function updatePreview(){
   const lt=draft.lowerThird,card=$('previewCard');
   applyLowerThird(card,lt,{preview:true});
   card.querySelector('.topline span').textContent=draft.channelLabel||'fKey Playback';
-  $('lowerReadout').textContent=`X: ${lt.x}% · ${lt.anchor.toUpperCase()}: ${lt.y}% · WIDTH: ${lt.width}% · SCALE: ${lt.scale}% · TITLE: ${lt.titleScale}%`;
+  $('lowerReadout').textContent=`X: ${lt.x}% · ${lt.anchor.toUpperCase()}: ${lt.y}% · WIDTH: ${lt.width}% · HEIGHT: ${lt.height?`${lt.height}%`:'AUTO'} · OPACITY: ${lt.backgroundOpacity}% · SCALE: ${lt.scale}% · TITLE: ${lt.titleScale}%`;
+  const handle=$('resizeHandle');
+  handle.setAttribute('aria-valuenow',String(lt.height || 0));
+  handle.setAttribute('aria-valuetext',`${lt.width}% wide; ${lt.height?`${lt.height}%`:'auto'} high`);
+  $('ltOpacityValue').textContent=`${lt.backgroundOpacity}%`;
   $('ltTitleScaleValue').textContent=`${lt.titleScale}%`;
   $('voteReadout').textContent=`GAP ${draft.voteScreen.cardGap}px  ·  PANEL ${draft.voteScreen.panelOpacity}%`;
   renderVoteScreen($('votePreview'),null,draft,{preview:true});
@@ -65,7 +70,7 @@ function buildColors(){
   }
 }
 function connectFields(){
-  for(const id of ['channelLabel',...boolKeys,'voteSeconds','skipThreshold','twitchChannel','twitchMode','ltX','ltY','ltWidth','ltScale','ltTitleScale','ltAnchor','ltShowChannel','ltShowNowPlaying','ltShowDuration','ltShowSkip','vsHeading','vsInstruction','vsGap','vsOpacity','vsThumbs','vsCountdown','vsVotes','vsBorders']){
+  for(const id of ['channelLabel',...boolKeys,'voteSeconds','skipThreshold','twitchChannel','twitchMode','ltX','ltY','ltWidth','ltHeight','ltScale','ltTitleScale','ltOpacity','ltAnchor','ltShowChannel','ltShowNowPlaying','ltShowDuration','ltShowSkip','vsHeading','vsInstruction','vsGap','vsOpacity','vsThumbs','vsCountdown','vsVotes','vsBorders']){
     const el=$(id);el.addEventListener('input',dirty);el.addEventListener('change',dirty);
   }
   for(const button of document.querySelectorAll('[data-preset]'))button.addEventListener('click',()=>{
@@ -73,6 +78,7 @@ function connectFields(){
   });
   $('resetColors').addEventListener('click',()=>{readDraft();draft.colors=clone(defaultColors);populate();dirty();});
   $('resetLower').addEventListener('click',()=>{readDraft();draft.lowerThird=clone(ltDefault);populate();dirty();});
+  $('ltAutoHeight').addEventListener('click',()=>{readDraft();draft.lowerThird.height=0;populateLower();dirty();});
   $('resetVote').addEventListener('click',()=>{readDraft();draft.voteScreen=clone(voteDefault);populate();dirty();});
   $('snapBottom').addEventListener('click',()=>{readDraft();draft.lowerThird.anchor='bottom';draft.lowerThird.y=0;populate();dirty();});
   $('snapTop').addEventListener('click',()=>{readDraft();draft.lowerThird.anchor='top';draft.lowerThird.y=0;populate();dirty();});
@@ -83,40 +89,75 @@ function connectFields(){
     catch(e){showNotice('saveState',e.message,'error');}finally{$('save').disabled=false;}
   });
 }
+// Pixel geometry is measured against the 16:9 editor frame. Both OBS and preview
+// use percentage layout coordinates, so dragging/resizing is resolution-independent.
 function setupDrag(){
-  const frame=$('lowerPreview'),card=$('previewCard'),handle=$('resizeHandle');let start=null;
+  const frame=$('lowerPreview'),card=$('previewCard'),handle=$('resizeHandle');
+  let start=null;
+  const round=x=>Math.round(x*10)/10;
+  const bounds=()=>({width:Math.max(1,frame.clientWidth),height:Math.max(1,frame.clientHeight)});
+  const displayedHeight=()=>round(card.getBoundingClientRect().height/bounds().height*100);
+  const clamp=(x,min,max)=>Math.max(min,Math.min(max,x));
+  function changed(message='Unsaved lower-third layout. Save to update OBS.'){
+    populateLower();updatePreview();showNotice('saveState',message,'');
+  }
   card.addEventListener('pointerdown',ev=>{
     if(ev.target===handle||!draft)return;
     ev.preventDefault();card.setPointerCapture(ev.pointerId);readDraft();
-    start={kind:'move',clientX:ev.clientX,clientY:ev.clientY,lt:clone(draft.lowerThird)};
+    start={kind:'move',clientX:ev.clientX,clientY:ev.clientY,lt:clone(draft.lowerThird),height:displayedHeight()};
   });
   handle.addEventListener('pointerdown',ev=>{
-    if(!draft)return;ev.preventDefault();ev.stopPropagation();handle.setPointerCapture(ev.pointerId);readDraft();
-    start={kind:'resize',clientX:ev.clientX,clientY:ev.clientY,lt:clone(draft.lowerThird)};
+    if(!draft)return;
+    ev.preventDefault();ev.stopPropagation();handle.setPointerCapture(ev.pointerId);readDraft();
+    start={kind:'resize',clientX:ev.clientX,clientY:ev.clientY,lt:clone(draft.lowerThird),
+      height:draft.lowerThird.height || clamp(displayedHeight(),4,65)};
   });
-  function move(ev){if(!start)return;const dx=(ev.clientX-start.clientX)/frame.clientWidth*100,dy=(ev.clientY-start.clientY)/frame.clientHeight*100;
+  function move(ev){
+    if(!start)return;
+    const size=bounds();
+    const dx=(ev.clientX-start.clientX)/size.width*100;
+    const dy=(ev.clientY-start.clientY)/size.height*100;
     const lt=clone(start.lt);
-    if(start.kind==='resize'){lt.width=Math.round(Math.max(15,Math.min(90,lt.width+dx,100-lt.x))*10)/10;}
-    else {lt.x=Math.round(Math.max(0,Math.min(100-lt.width,lt.x+dx))*10)/10;lt.y=Math.round(Math.max(0,Math.min(94,lt.y+(lt.anchor==='bottom'?-dy:dy)))*10)/10;}
-    draft.lowerThird=lt;populateLower();updatePreview();showNotice('saveState','Unsaved lower-third layout. Save to update OBS.');
+    if(start.kind==='resize'){
+      lt.width=round(clamp(lt.width+dx,15,Math.min(90,100-lt.x)));
+      // The resize handle is top-right for bottom anchoring, and bottom-right
+      // for top anchoring. The opposite edge stays fixed while resizing.
+      const change=lt.anchor==='bottom'?-dy:dy;
+      lt.height=round(clamp(start.height+change,4,Math.min(65,100-lt.y)));
+    }else{
+      lt.x=round(clamp(lt.x+dx,0,100-lt.width));
+      const maxMargin=Math.max(0,Math.min(94,100-start.height));
+      lt.y=round(clamp(lt.y+(lt.anchor==='bottom'?-dy:dy),0,maxMargin));
+    }
+    draft.lowerThird=lt;changed();
   }
   card.addEventListener('pointermove',ev=>{if(start?.kind==='move')move(ev);});
   handle.addEventListener('pointermove',ev=>{if(start?.kind==='resize')move(ev);});
-  const end=()=>start=null;
-  card.addEventListener('pointerup',end);card.addEventListener('pointercancel',end);handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',end);
+  const end=()=>{start=null;};
+  card.addEventListener('pointerup',end);card.addEventListener('pointercancel',end);
+  handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',end);
   card.addEventListener('keydown',ev=>{
-    if(!draft||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(ev.key))return;ev.preventDefault();readDraft();
+    if(!draft||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(ev.key))return;
+    ev.preventDefault();readDraft();
     const step=ev.shiftKey?5:1,lt=draft.lowerThird;
-    if(ev.key==='ArrowLeft')lt.x=Math.max(0,lt.x-step);
-    if(ev.key==='ArrowRight')lt.x=Math.min(100-lt.width,lt.x+step);
-    if(ev.key==='ArrowUp')lt.y=Math.max(0,Math.min(94,lt.y+(lt.anchor==='bottom'?step:-step)));
-    if(ev.key==='ArrowDown')lt.y=Math.max(0,Math.min(94,lt.y+(lt.anchor==='bottom'?-step:step)));
-    populateLower();updatePreview();showNotice('saveState','Unsaved layout — save to update OBS.');
+    const maxMargin=Math.min(94,100-(lt.height||displayedHeight()));
+    if(ev.key==='ArrowLeft')lt.x=round(clamp(lt.x-step,0,100-lt.width));
+    if(ev.key==='ArrowRight')lt.x=round(clamp(lt.x+step,0,100-lt.width));
+    if(ev.key==='ArrowUp')lt.y=round(clamp(lt.y+(lt.anchor==='bottom'?step:-step),0,Math.max(0,maxMargin)));
+    if(ev.key==='ArrowDown')lt.y=round(clamp(lt.y+(lt.anchor==='bottom'?-step:step),0,Math.max(0,maxMargin)));
+    changed();
   });
   handle.addEventListener('keydown',ev=>{
-    if(!draft||!['ArrowLeft','ArrowRight'].includes(ev.key))return;ev.stopPropagation();ev.preventDefault();readDraft();
-    draft.lowerThird.width=Math.max(15,Math.min(90,100-draft.lowerThird.x,draft.lowerThird.width+(ev.key==='ArrowRight'?1:-1)*(ev.shiftKey?5:1)));
-    populateLower();updatePreview();showNotice('saveState','Unsaved width — save to update OBS.');
+    if(!draft||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(ev.key))return;
+    ev.stopPropagation();ev.preventDefault();readDraft();
+    const lt=draft.lowerThird,step=ev.shiftKey?5:1;
+    if(ev.key==='ArrowLeft'||ev.key==='ArrowRight'){
+      lt.width=round(clamp(lt.width+(ev.key==='ArrowRight'?step:-step),15,Math.min(90,100-lt.x)));
+    }else{
+      const height=lt.height||clamp(displayedHeight(),4,65);
+      lt.height=round(clamp(height+(ev.key==='ArrowUp'?step:-step),4,Math.min(65,100-lt.y)));
+    }
+    changed('Unsaved lower-third dimensions. Save to update OBS.');
   });
 }
 async function updateStatus(){
