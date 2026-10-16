@@ -1,4 +1,4 @@
-# fKey Playback 1.2.0 — Build and verification report
+# fKey Playback 1.2.1 — Build and verification report
 
 ## 1.2.0 validation
 
@@ -28,6 +28,16 @@
 - Isolated headless Chromium rendered title-only and mixed-label overlays, confirming collapsed rows and enlarged title size.
 - Live YouTube iframe playback, OBS audio routing and actual Windows boot behavior still require acceptance testing on the target PC.
 
+## v1.2.1 QA — playlist reset and anchor alignment
+
+- `npm run check`: passed.
+- `npm test`: **68 passed, 0 failed, 1 Windows PowerShell parsing test skipped** on Linux; 69 tests total.
+- New unit regression tests exercise importer reset and preference retention, success-only reset behavior, responsive lower-third structure and asset versioning.
+- Headless Chromium smoke test: extraction preview, failed-import retry state, successful-import cleanup, and immediate extraction of a second playlist; JavaScript errors: none.
+- Headless Chromium responsive check: anchor selector and three buttons align by their bottom edges at **1600, 1200, 760 and 500px** viewports.
+- Release packaging verified from a clean extracted source-only ZIP. Official Windows release includes SHA-256 verified `yt-dlp.exe` through the GitHub release workflow.
+- Actual YouTube and OBS integration still needs an on-device smoke test; no live YouTube network extraction was performed here.
+
 ## Executed checks
 
 - **Windows boot startup:** uses `New-ScheduledTaskTrigger -AtStartup` with a restricted `NT AUTHORITY\LOCAL SERVICE` principal and explicit write access to `data/`, not the program files.
@@ -36,7 +46,7 @@
 - A real task registration, machine reboot and OBS startup must be acceptance-tested on the target Windows streaming PC.
 
 - `npm run check` — validated syntax of backend and all client-side JavaScript modules.
-- `npm test` — **53 passed; 0 failed; 1 Windows-specific PowerShell test skipped on Linux** (54 tests total).
+- `npm test` — current results above; historical earlier tests were 53 passed.
 - HTTP integration tests — control/settings/vote/player routes load; operator endpoints reject unauthenticated writes; session token protects mutation; hostile origin blocked; worker leases enforce ownership; stale updates refused; layout revisions acknowledged; state survives process restart.
 - State-machine tests — queue, seek/pause/previous/replay/skip, fault quarantine, end-of-video vote, same-viewer change, tie break, countdown pause during server downtime, setting validation and migration fallback.
 - Twitch protocol tests — tagged and nickname fallback identity, strict !vote parsing, !skip and moderated !request commands.

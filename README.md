@@ -1,6 +1,14 @@
-# fKey Playback 1.2.0 — made by fKey Labs Inc.
+# fKey Playback 1.2.1 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+
+## v1.2.1 — Playlist importer reset and lower-third toolbar alignment
+
+- After **Import Selected to Queue** succeeds, the importer clears the playlist URL, extracted preview/list, selection, and starting index, returning focus to the playlist URL. The green confirmation remains visible and queue state is unchanged. If the import fails, the preview and selections remain for retry.
+- Import destination, order, duplicate preference, and batch size are retained. To import the next batch of the same playlist after a completed import, paste its URL again and set the starting video index.
+- **Settings → Lower Third** now has a full-width, aligned and responsive Anchor edge / Snap to Bottom / Snap to Top / Reset Lower Third toolbar, with its position readout directly beneath.
+
 
 ## v1.2.0 — Smart Rotation Queues and bundled Windows playlist extractor
 
@@ -21,7 +29,7 @@ The playlist importer now lets you choose **Play Next**, **Current Rotation**, o
 
 ### yt-dlp included in the official Windows ZIP
 
-The **official GitHub v1.2.0 Windows release** prepackages upstream `tools/yt-dlp.exe` version **2026.08.19** for Windows x64. It is downloaded by GitHub Actions from the official upstream release and checked against SHA-256 `66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a` before publishing. No manual yt-dlp installation, separate Python installation, or YouTube Data API key is required. It is **not committed into the source repository**. Linux/macOS still need a locally installed `yt-dlp` or `YT_DLP_PATH`. Source-only builds from a checkout must run `python ops/bundle-yt-dlp.py` first on an Internet-connected machine. Do not download binaries from unofficial mirrors.
+The **official GitHub v1.2.1 Windows release** prepackages upstream `tools/yt-dlp.exe` version **2026.08.19** for Windows x64. It is downloaded by GitHub Actions from the official upstream release and checked against SHA-256 `66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a` before publishing. No manual yt-dlp installation, separate Python installation, or YouTube Data API key is required. It is **not committed into the source repository**. Linux/macOS still need a locally installed `yt-dlp` or `YT_DLP_PATH`. Source-only builds from a checkout must run `python ops/bundle-yt-dlp.py` first on an Internet-connected machine. Do not download binaries from unofficial mirrors.
 
 **Third-party licenses:** The bundled upstream `yt-dlp.exe` is a separately invoked executable whose PyInstaller distribution contains GPLv3+ code. It is not covered by Playback's MIT license. See `tools/README.md` and the upstream third-party license files bundled in the official ZIP. Sources: https://github.com/yt-dlp/yt-dlp/tree/2026.08.19 and https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19.
 
@@ -32,11 +40,11 @@ In the **Control** dashboard, open **YOUTUBE PLAYLIST IMPORTER** below Now Playi
 1. Paste a public YouTube `playlist?list=...` URL or a `watch?v=...&list=...` link.
 2. Choose a start position and batch size (50, 100, 250 or 500 entries). Click **Extract Videos**.
 3. Review the extracted titles and thumbnails, uncheck videos you do not want (or use Select All / Select None). You can also **Copy Selected URLs** or **Export Selected CSV** without changing playback. Choose whether to skip already queued videos and duplicates.
-4. Click **Import Selected to Queue**. Video order is preserved. The current video's playhead, OBS source and settings remain unchanged. For large playlists use **Extract Next Batch**.
+4. Click **Import Selected to Queue**. Video order is preserved. The current video's playhead, OBS source and settings remain unchanged. On success, the preview and URL clear for the next playlist; to import the next batch of a large playlist, paste the URL again and enter its new start position (or use **Extract Next Batch** before importing).
 
-**Extractor setup:** The official v1.2.0 Windows release ZIP already includes `tools/yt-dlp.exe`. On Linux/macOS install `yt-dlp` in PATH or set `YT_DLP_PATH`. If running from source, see the v1.2.0 setup above.
+**Extractor setup:** The official v1.2.1 Windows release ZIP already includes `tools/yt-dlp.exe`. On Linux/macOS install `yt-dlp` in PATH or set `YT_DLP_PATH`. If running from source, see the v1.2.0 setup above.
 
-**Official API alternative:** Set `YOUTUBE_API_KEY` in the server environment to retrieve playlist metadata using YouTube Data API v3 without installing `yt-dlp`. API access is subject to your YouTube quota. A full batch may take some time; only one extraction runs at a time. Previews are temporary (15 minutes), are not saved, and do not alter the queue until imported. Entries marked deleted/private/unavailable are skipped. Playlist entries beyond 500 must be extracted as additional batches. The four rotation lanes and current video together support up to 2,000 entries. Extracted titles can still be corrected with the existing title resolver. `yt-dlp` is prebundled in official Windows v1.2.0 release packages and remains optional for source checkouts / non-Windows platforms. Importing metadata does **not** download videos, bypass embed restrictions, or grant broadcasting permission.
+**Official API alternative:** Set `YOUTUBE_API_KEY` in the server environment to retrieve playlist metadata using YouTube Data API v3 without installing `yt-dlp`. API access is subject to your YouTube quota. A full batch may take some time; only one extraction runs at a time. Previews are temporary (15 minutes), are not saved, and do not alter the queue until imported. Entries marked deleted/private/unavailable are skipped. Playlist entries beyond 500 must be extracted as additional batches. The four rotation lanes and current video together support up to 2,000 entries. Extracted titles can still be corrected with the existing title resolver. `yt-dlp` is prebundled in official Windows v1.2.1 release packages and remains optional for source checkouts / non-Windows platforms. Importing metadata does **not** download videos, bypass embed restrictions, or grant broadcasting permission.
 
 ## v1.0.9 — Customizable OBS lower third
 
@@ -141,7 +149,7 @@ You can create one OBS Browser Source at 1920 × 1080; OBS audio configuration i
 
 ## Updating from Playback v1.0.0 or the previous prototype
 
-**From Playback 1.0.0–1.0.7:** Stop the server, back up your entire `data/` directory, extract 1.2.0 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
+**From Playback 1.0.0–1.0.7:** Stop the server, back up your entire `data/` directory, extract 1.2.1 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
 
 
 **Your earlier v0.14 archive cannot be treated as a verified drop-in upgrade:** its complete source was not accessible when this package was made. To migrate safely:

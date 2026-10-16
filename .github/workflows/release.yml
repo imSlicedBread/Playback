@@ -61,5 +61,5 @@ jobs:
           gh release create "$TAG" "dist/Playback-${TAG}.zip" "dist/Playback-${TAG}.zip.sha256" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$(git rev-parse HEAD)" \
-            --title "fKey Playback ${TAG} — Smart Rotation Queue + bundled yt-dlp" \
+            --title "fKey Playback ${TAG} — Playlist importer reset and lower-third alignment" \
             --notes-file RELEASE_NOTES.md

@@ -240,6 +240,20 @@ function setPlaylistBusy(value){
   $('playlistSelectAll').disabled=value;
   $('playlistSelectNone').disabled=value;
 }
+function clearPlaylistImporter(){
+  // A completed import should leave the screen ready for another playlist.
+  // Keep destination/order/duplicate preferences, and keep the success notice.
+  playlistPreview=null;
+  $('playlistPreview').classList.add('hidden');
+  $('playlistVideos').replaceChildren();
+  $('playlistName').textContent='';
+  $('playlistCount').textContent='';
+  $('playlistSelected').textContent='0 of 0 selected';
+  $('playlistNextButton').classList.add('hidden');
+  $('playlistUrl').value='';
+  $('playlistStart').value='1';
+  $('playlistUrl').focus();
+}
 function renderPlaylistPreview(result){
   playlistPreview=result;
   $('playlistPreview').classList.remove('hidden');
@@ -317,8 +331,10 @@ $('playlistImportButton').addEventListener('click',async()=>{
   setPlaylistBusy(true);
   try{
     const result=await api('playlist/import',{method:'POST',data:{id:playlistPreview.id,indexes,skipDuplicates:$('playlistSkipDuplicates').checked,destination:$('playlistDestination').value,order:$('playlistOrder').value}});
-    $('playlistVideos').querySelectorAll('input[type="checkbox"]:checked').forEach(el=>{el.checked=false;});
-    showNotice('playlistStatus',`Imported ${result.added} videos into ${result.destination}. Skipped ${result.skipped} duplicates. ${result.queued} videos ready in rotation.`,'success');
+    // Do this only after the server confirms a successful import; failures leave
+    // the extracted videos and user selection intact for retry.
+    clearPlaylistImporter();
+    showNotice('playlistStatus',`Imported ${result.added} videos into ${result.destination}. Skipped ${result.skipped} duplicates. ${result.queued} videos ready in rotation. Ready for another playlist.`,'success');
     await refresh();
   }catch(err){showNotice('playlistStatus',err.message,'error');if(err.status===401)$('auth').classList.remove('hidden');}
   finally{setPlaylistBusy(false);previewSelection();}

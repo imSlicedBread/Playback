@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1] — 2026-10-16
+
+- Clear the YouTube playlist preview, selections, playlist URL, and starting index after a confirmed queue import so the importer is ready for another playlist.
+- Preserve the success message and importer preferences. Retain preview and selection if an import fails.
+- Align vertical anchor, snap controls and lower-third reset on a full-width responsive four-column settings toolbar.
+- Bump versioned UI assets to prevent stale cached styling.
+
 ## [1.2.0] — 2026-10-16
 
 - Added durable Play Next, Upcoming, Recycled and Next Rotation lanes with automatic rollover.
