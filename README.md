@@ -1,6 +1,22 @@
-# fKey Playback 1.0.7 — made by fKey Labs Inc.
+# fKey Playback 1.0.8 — made by fKey Labs Inc.
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
+
+## v1.0.8 — Start automatically with Windows
+
+**One-time setup on the streaming PC:**
+
+1. Stop any manually running Playback server. Back up the complete `data/` folder.
+2. Extract Playback into a permanent folder such as `C:\Playback` (not Downloads, Desktop, a user profile or a network drive). Restore your saved `data/` folder there. Install Node.js 22.13+ **for all users**.
+3. Double-click **`INSTALL-AUTO-START.bat`** and approve the Windows administrator prompt. The installer registers a Windows Task Scheduler **At startup** task running as the restricted **LOCAL SERVICE** account, with permission to write only the `data/` folder. It starts the background server immediately and again after future boots, **without requiring sign-in**.
+4. At your next Windows sign-in the browser automatically opens the **dashboard** (`http://127.0.0.1:4177/control`) once the server is healthy. The background task itself never opens a browser or an OBS player.
+5. Reboot and check `http://127.0.0.1:4177/api/health`, or double-click **`CHECK-AUTO-START.bat`**. If the server fails, read `data/boot-service.log` and inspect the tasks in Windows Task Scheduler.
+
+**To disable auto-start**, double-click `UNINSTALL-AUTO-START.bat` and approve the UAC prompt. Your videos, queue, timestamp and settings remain on disk. The installer also retires the prior sign-in-only task (`fKeyLabs Playback`) to prevent duplicate servers. For advanced setups, run `ops/register-autostart.ps1 -Port 4177 -StartNow` as administrator, adding `-NoDashboardAtLogon` to skip automatic dashboard opening. If Node is installed under a private user profile rather than system-wide, reinstall Node for all users.
+
+**Playback limitation:** Windows can start the **Node backend** before sign-in, but **OBS and YouTube playback need an interactive desktop session** and an active OBS Browser Source. Boot startup alone does not start OBS or keep a YouTube video playing while Windows remains at the sign-in screen. Configure OBS to start separately at sign-in and keep the Browser Source active if you need full broadcasting automation. The OS must remain powered on.
+
+**Security:** The service is deliberately NOT run as `SYSTEM`. Only the data directory is granted additional write access. Keep source files out of untrusted shared directories. The HTTP server remains bound to loopback, and the operator token stays local. Re-run `INSTALL-AUTO-START.bat` after relocating or upgrading Playback to update the scheduled task path.
 
 ## v1.0.7 — Transport buttons centered at X
 
@@ -77,7 +93,7 @@ You can create one OBS Browser Source at 1920 × 1080; OBS audio configuration i
 
 ## Updating from Playback v1.0.0 or the previous prototype
 
-**From Playback 1.0.0–1.0.6:** Stop the server, back up your entire `data/` directory, extract 1.0.7 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
+**From Playback 1.0.0–1.0.7:** Stop the server, back up your entire `data/` directory, extract 1.0.8 to a new folder, and copy the saved `data/` directory over before starting. OBS Browser Source JavaScript is cached for up to five minutes; refresh the source (OBS: right-click the source → Refresh) after installing. Titles previously stored as `YouTube · VIDEO_ID` will be resolved automatically when available.
 
 
 **Your earlier v0.14 archive cannot be treated as a verified drop-in upgrade:** its complete source was not accessible when this package was made. To migrate safely:
@@ -111,7 +127,7 @@ The server has **no** built-in YouTube rebroadcast permission management, video 
 
 ## Keep the station running
 
-The **Node process must stay running** and OBS must keep the Browser Source active. On Windows, you can launch `ops/start-player-supervised.bat` to restart Node after an unexpected failure. To opt into launch at sign-in, run `ops/register-autostart.ps1` from PowerShell; to remove it, run `ops/unregister-autostart.ps1`. The task starts only the backend; OBS needs its own autostart setup.
+The **Node process must stay running** and OBS must keep the Browser Source active. On Windows, use `INSTALL-AUTO-START.bat` for boot-level Task Scheduler startup and automatic restart after failures. `CHECK-AUTO-START.bat` shows task status; `UNINSTALL-AUTO-START.bat` disables boot startup. `ops/start-player-supervised.bat` remains available for manual foreground supervision. The boot task starts only the backend; OBS needs its own autostart setup.
 
 For unattended Linux service operation, configure systemd with `Restart=on-failure`, a dedicated user, and a `WorkingDirectory` pointing to the unpacked release; supply Node's full path in `ExecStart`. Configure `After=network-online.target`, persistent `DATA_DIR`, and OBS separately. Monitor `GET /api/health` and confirm `workerActive:true` during broadcast.
 

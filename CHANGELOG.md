@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.8] — 2026-10-16
+
+- Added unattended Windows AtStartup scheduled task running as LOCAL SERVICE, not SYSTEM.
+- Added installer, uninstaller, status helper, and headless boot entrypoint with bounded persistent logs.
+- Added optional dashboard opener at Windows sign-in, health-gated to avoid duplicate /player instances.
+- Retires the previous sign-in-only fKeyLabs Playback task when boot startup is installed.
+- Added startup tests and Windows PowerShell script syntax checks.
+
+
 ## v1.0.7 — transport placement correction
 
 - Centered Previous / Pause / Replay / Next horizontally at the specified X, across the full Now Playing panel.

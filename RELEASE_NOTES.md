@@ -1,5 +1,16 @@
 # fKey Playback v1.0.7 — centered transport controls
 
+## New in v1.0.8 — Windows boot auto-start
+
+- Added one-click `INSTALL-AUTO-START.bat`, `CHECK-AUTO-START.bat` and `UNINSTALL-AUTO-START.bat`.
+- The backend starts automatically on Windows boot via a scheduled task, even before a user logs in.
+- Runs under Windows LOCAL SERVICE (rather than privileged SYSTEM), with writable access limited to its persistent data folder.
+- Background startup is headless. A separate task opens the operator dashboard in the default browser when the installing user signs in.
+- Automatic retry after an unexpected backend failure, capped log rotation at `data/boot-service.log`, and clean removal without deleting the playlist.
+- Upgrades the legacy sign-in-only startup task to avoid multiple servers.
+
+**Important:** OBS requires a logged-in desktop and must be configured to launch separately. Boot startup starts the backend, not the OBS output or active YouTube playback.
+
 ## New in v1.0.7
 
 - Moved Previous / Pause / Replay / Next to the horizontal center of the entire Now Playing panel, matching the marked X.
@@ -62,7 +73,7 @@ fKey Playback is a local OBS / 24-7 YouTube station made by **fKey Labs Inc.** T
 
 ## Download and install
 
-1. Download `Playback-v1.0.7.zip` below and extract into a dedicated folder.
+1. Download `Playback-v1.0.8.zip` below and extract into a dedicated folder.
 2. Install Node.js 22.13 or newer.
 3. On Windows run `start-player.bat`, on Linux/macOS run `./start-player.sh`.
 4. The dashboard opens automatically after the server starts. Sign in with the token in

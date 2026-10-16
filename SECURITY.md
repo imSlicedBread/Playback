@@ -23,3 +23,7 @@ contents in a report.
   application with elevated privileges.
 - If you need a public portal, add proper account authentication, CSRF/abuse
   protection, a hardened HTTPS deployment, and operational monitoring first.
+
+## Windows boot auto-start
+
+The optional boot Task Scheduler job runs fKey Playback as **LOCAL SERVICE**, not SYSTEM or an administrator. It adds LOCAL SERVICE Modify access to the station's `data/` folder only. Keep the installation in a local system-readable directory such as `C:\Playback`, outside private profile directories. The backend still binds to loopback; never publish operator endpoints directly to the Internet. Re-run the installer after updates or moving the installation so its paths are accurate.

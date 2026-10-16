@@ -1,8 +1,13 @@
-# fKey Playback 1.0.7 — Build and verification report
+# fKey Playback 1.0.8 — Build and verification report
 
 **Release target:** Local Windows OBS broadcasting station; portable Node.js 22.13+ distribution.
 
 ## Executed checks
+
+- **Windows boot startup:** uses `New-ScheduledTaskTrigger -AtStartup` with a restricted `NT AUTHORITY\LOCAL SERVICE` principal and explicit write access to `data/`, not the program files.
+- Added an optional dashboard AtLogOn task, boot-service lifecycle logging, automatic restart configuration, idempotent install and removal scripts.
+- New automated checks validate script invariants and a real headless Node startup/HTTP health endpoint; Windows CI additionally parses the PowerShell scripts.
+- A real task registration, machine reboot and OBS startup must be acceptance-tested on the target Windows streaming PC.
 
 - `npm run check` — validated syntax of backend and all client-side JavaScript modules.
 - `npm test` — **37 tests passed; 0 failed**.
