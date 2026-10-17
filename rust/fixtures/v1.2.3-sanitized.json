@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 2,
+  "revision": 13,
+  "layoutRevision": 1,
+  "rotationNumber": 1,
+  "current": {
+    "id": "5224c8ed-a3e1-4f76-b851-40b0b1ad0fc5",
+    "videoId": "aqz-KE-bpKQ",
+    "title": "Current 2025",
+    "position": 1234.5,
+    "duration": 0,
+    "paused": true,
+    "addedAt": "2025-10-16T00:00:00.000Z",
+    "playCount": 0,
+    "lastPlayedAt": null,
+    "lastPlayedRotation": null
+  },
+  "queue": [
+    {
+      "id": "b79d33ad-069c-4b92-8750-d854c49fd24c",
+      "videoId": "M7lc1UVf-VE",
+      "title": "Upcoming 2026",
+      "position": 0,
+      "duration": 0,
+      "paused": false,
+      "addedAt": "2025-10-16T00:00:00.000Z",
+      "playCount": 0,
+      "lastPlayedAt": null,
+      "lastPlayedRotation": null
+    },
+    {
+      "id": "993a06e1-05ba-4fc0-9433-33fb3cdef4f1",
+      "videoId": "jfKfPfyJRdk",
+      "title": "Newly imported 2022",
+      "position": 0,
+      "duration": 0,
+      "paused": false,
+      "addedAt": "2025-10-16T00:00:00.000Z",
+      "playCount": 0,
+      "lastPlayedAt": null,
+      "lastPlayedRotation": null
+    }
+  ],
+  "priorityQueue": [
+    {
+      "id": "6bf2d5da-538f-404c-951b-8c3c27b92b50",
+      "videoId": "LXb3EKWsInQ",
+      "title": "Pinned next",
+      "position": 0,
+      "duration": 0,
+      "paused": false,
+      "addedAt": "2025-10-16T00:00:00.000Z",
+      "playCount": 0,
+      "lastPlayedAt": null,
+      "lastPlayedRotation": null
+    }
+  ],
+  "recycledQueue": [
+    {
+      "id": "d55aaa67-7629-45a7-9837-78996d1485b2",
+      "videoId": "dQw4w9WgXcQ",
+      "title": "Archive 2019",
+      "position": 0,
+      "duration": 0,
+      "paused": false,
+      "addedAt": "2025-10-16T00:00:00.000Z",
+      "playCount": 1,
+      "lastPlayedAt": "2025-10-16T00:00:00.000Z",
+      "lastPlayedRotation": 1
+    },
+    {
+      "id": "39f4c03c-ffcf-44f5-9b55-4719c151d0d4",
+      "videoId": "jNQXAC9IVRw",
+      "title": "Archive 2024",
+      "position": 0,
+      "duration": 0,
+      "paused": false,
+      "addedAt": "2025-10-16T00:00:00.000Z",
+      "playCount": 1,
+      "lastPlayedAt": "2025-10-16T00:00:00.000Z",
+      "lastPlayedRotation": 1
+    }
+  ],
+  "nextRotationQueue": [
+    {
+      "id": "b352e5e9-1632-4793-beb0-1d1093de6758",
+      "videoId": "4WXs3sKu41I",
+      "title": "Deferred",
+      "position": 0,
+      "duration": 0,
+      "paused": false,
+      "addedAt": "2025-10-16T00:00:00.000Z",
+      "playCount": 0,
+      "lastPlayedAt": null,
+      "lastPlayedRotation": null
+    }
+  ],
+  "history": [
+    {
+      "id": "d55aaa67-7629-45a7-9837-78996d1485b2",
+      "videoId": "dQw4w9WgXcQ",
+      "title": "Archive 2019",
+      "position": 0,
+      "duration": 0,
+      "paused": false,
+      "addedAt": "2025-10-16T00:00:00.000Z",
+      "playCount": 1,
+      "lastPlayedAt": "2025-10-16T00:00:00.000Z",
+      "lastPlayedRotation": 1,
+      "reason": "skipped",
+      "playedAt": "2025-10-16T00:00:00.000Z",
+      "rotationNumber": 1
+    },
+    {
+      "id": "39f4c03c-ffcf-44f5-9b55-4719c151d0d4",
+      "videoId": "jNQXAC9IVRw",
+      "title": "Archive 2024",
+      "position": 0,
+      "duration": 0,
+      "paused": false,
+      "addedAt": "2025-10-16T00:00:00.000Z",
+      "playCount": 1,
+      "lastPlayedAt": "2025-10-16T00:00:00.000Z",
+      "lastPlayedRotation": 1,
+      "reason": "skipped",
+      "playedAt": "2025-10-16T00:00:00.000Z",
+      "rotationNumber": 1
+    }
+  ],
+  "vote": null,
+  "skipBallots": {},
+  "suggestions": [],
+  "settings": {
+    "channelLabel": "fKey Playback",
+    "loop": true,
+    "voteOnEnd": true,
+    "voteSeconds": 20,
+    "showLowerThird": true,
+    "scrollTitles": true,
+    "hideCaptions": true,
+    "skipVoting": true,
+    "skipThreshold": 3,
+    "allowSuggestions": true,
+    "twitchMode": "disabled",
+    "twitchChannel": "",
+    "lowerThird": {
+      "x": 3,
+      "y": 0,
+      "width": 34,
+      "height": 20,
+      "backgroundOpacity": 54,
+      "scale": 100,
+      "titleScale": 100,
+      "anchor": "bottom",
+      "showChannelLabel": false,
+      "showNowPlaying": false,
+      "showDuration": false,
+      "showSkip": false
+    },
+    "voteScreen": {
+      "heading": "UP NEXT",
+      "instruction": "!vote 1-4 in Twitch chat",
+      "cardGap": 20,
+      "panelOpacity": 94,
+      "showThumbnails": true,
+      "showCountdown": true,
+      "showVotes": true,
+      "accentBorders": true
+    },
+    "colors": {
+      "background": "#0D1010",
+      "panel": "#111318",
+      "raised": "#171A1F",
+      "accent": "#00AFFF",
+      "text": "#FFFFFF",
+      "healthy": "#22C55E",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "info": "#3B82F6",
+      "community": "#8B5CF6"
+    }
+  },
+  "audio": {
+    "volume": 100,
+    "muted": false
+  },
+  "updatedAt": "2025-10-16T00:00:00.000Z",
+  "generation": 6
+}

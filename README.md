@@ -233,6 +233,20 @@ Dark black `#0D1010`, carbon `#111318`, slate `#171A1F`, white text, restrained 
 
 Release 1.0.3: removes redundant sidebar text and restores a true interactive seek bar. Release 1.0.2: adopts the official logo. Release 1.0.1: fixes missing titles in OBS with YouTube oEmbed discovery and IFrame metadata persistence; keeps title scrolling on layout changes. Release 1.0.0 introduced operator access protection, atomic station state, worker leases and staleness checks, auto advance and vote handling, Twitch IRC vote parser, settings tabs, vote screen editor, lower third top/bottom anchor consistency, and responsive control interface. No npm dependencies.
 
+## Rust and Playback Cloud development
+
+The [`rust/` workspace](rust/README.md) contains the new channel engine,
+transactional SQLite storage, and a native migration/control CLI. It imports a
+copy of v1.2.3 state into a separate store and preserves the four queue lanes,
+saved playhead, settings, and voting state. The Node application documented above
+remains the local player while service and media adapters are built.
+
+See [Playback Cloud architecture](docs/PLAYBACK-CLOUD.md) for the hosted product,
+fKey Account integration, authorized media outputs, recovery, efficiency, and
+launch criteria. A hosted dashboard/OBS URL still needs customer OBS running;
+full broadcasting with the customer's PC off requires the planned cloud media
+worker.
+
 ## License and brand
 
 Playback source is licensed under the [MIT License](LICENSE), copyright 2026 fKey Labs Inc. The fKeyLabs name, marks and logos are not licensed for use as an official brand by third parties; see [TRADEMARKS.md](TRADEMARKS.md). YouTube videos and third-party platform APIs remain subject to their respective rights and terms.

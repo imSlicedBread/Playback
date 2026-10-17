@@ -1,0 +1,134 @@
+{
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "cpu": "AMD EPYC 9V74 80-Core Processor",
+    "rustBinary": "target/release/examples/queue_bench",
+    "rustProfile": "release (debug assertions disabled)",
+    "rustToolchain": "1.90.0"
+  },
+  "scope": {
+    "workload": "One in-memory channel; repeated Skip; looping on; end/skip voting off.",
+    "javascript": "Existing PlaybackEngine.skip() with no-op store.write(); mutates live state.",
+    "rust": "Existing EngineState.transition(Command::Skip); validates and clones full snapshots.",
+    "included": "API transition work, timestamps, allocations, history retention and normal GC/drop work during the loop.",
+    "excluded": "Process startup, fixture/import, warmup, public projection, checksums, persistence/serialization, HTTP, media and final cleanup.",
+    "limitations": "Different implementation contracts; single process/channel per sample; no language-only speed, memory, production throughput or hosting-density conclusion."
+  },
+  "results": [
+    {
+      "entries": 25,
+      "retainedHistoryEntries": 300,
+      "warmupSkips": 1000,
+      "timedSkipsPerSample": 2000,
+      "samples": 5,
+      "projectionMatches": true,
+      "projectionSha256": "ead2738985ff1e6752d1a490fde29b67b5f1e4f179ecb3a4939e467fda11b744",
+      "javascript": {
+        "samplesMs": [
+          8.664086,
+          7.908803,
+          8.545792,
+          7.749207,
+          7.793353
+        ],
+        "medianMs": 7.908803,
+        "minimumMs": 7.749207,
+        "maximumMs": 8.664086,
+        "medianMicrosecondsPerSkip": 3.9544015,
+        "medianSkipsPerSecond": 252882.76873251234
+      },
+      "rust": {
+        "samplesMs": [
+          225.478883,
+          202.234224,
+          203.966587,
+          200.88765,
+          206.193017
+        ],
+        "medianMs": 203.966587,
+        "minimumMs": 200.88765,
+        "maximumMs": 225.478883,
+        "medianMicrosecondsPerSkip": 101.9832935,
+        "medianSkipsPerSecond": 9805.527608303804
+      }
+    },
+    {
+      "entries": 250,
+      "retainedHistoryEntries": 300,
+      "warmupSkips": 1000,
+      "timedSkipsPerSample": 2000,
+      "samples": 5,
+      "projectionMatches": true,
+      "projectionSha256": "acf77d024857b5df76084cf72c16975c77e10cfe256f3efe50df86572bba5cdf",
+      "javascript": {
+        "samplesMs": [
+          17.4557,
+          12.84094,
+          11.149748,
+          10.434044,
+          11.734024
+        ],
+        "medianMs": 11.734024,
+        "minimumMs": 10.434044,
+        "maximumMs": 17.4557,
+        "medianMicrosecondsPerSkip": 5.867012,
+        "medianSkipsPerSecond": 170444.5124707432
+      },
+      "rust": {
+        "samplesMs": [
+          401.685798,
+          422.364296,
+          426.430799,
+          424.661293,
+          402.259805
+        ],
+        "medianMs": 422.364296,
+        "minimumMs": 401.685798,
+        "maximumMs": 426.430799,
+        "medianMicrosecondsPerSkip": 211.18214799999998,
+        "medianSkipsPerSecond": 4735.248738922762
+      }
+    },
+    {
+      "entries": 2000,
+      "retainedHistoryEntries": 300,
+      "warmupSkips": 2000,
+      "timedSkipsPerSample": 2000,
+      "samples": 5,
+      "projectionMatches": true,
+      "projectionSha256": "ec77da21589cc01804e8e230e36889c87b677bd4de6e2775b70cd1b1c1b783e1",
+      "javascript": {
+        "samplesMs": [
+          35.453717,
+          39.64246,
+          33.245474,
+          41.381551,
+          37.42924
+        ],
+        "medianMs": 37.42924,
+        "minimumMs": 33.245474,
+        "maximumMs": 41.381551,
+        "medianMicrosecondsPerSkip": 18.71462,
+        "medianSkipsPerSecond": 53434.16003103455
+      },
+      "rust": {
+        "samplesMs": [
+          2131.943954,
+          2155.693507,
+          2170.323654,
+          2133.80343,
+          2219.425494
+        ],
+        "medianMs": 2155.693507,
+        "minimumMs": 2131.943954,
+        "maximumMs": 2219.425494,
+        "medianMicrosecondsPerSkip": 1077.8467535000002,
+        "medianSkipsPerSecond": 927.7756756726177
+      }
+    }
+  ],
+  "implementation": "Initial Rust migration API: full snapshot cloning and full validation on each transition",
+  "measuredAtUtc": "2026-10-17"
+}

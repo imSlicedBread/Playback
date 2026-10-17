@@ -1,0 +1,25 @@
+[workspace]
+members = ["crates/playback-core", "crates/playback-store", "crates/playback-cli"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+rusqlite = { version = "0.37", features = ["bundled"] }
+clap = { version = "4", features = ["derive"] }
+tempfile = "3"
+playback-core = { path = "crates/playback-core" }
+playback-store = { path = "crates/playback-store" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
