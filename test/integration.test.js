@@ -6,17 +6,19 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {createApp} from '../lib/http.js';
 
+const runningApps=new Map();
 const videoIds=['dQw4w9WgXcQ','jNQXAC9IVRw','aqz-KE-bpKQ','LXb3EKWsInQ'];
 function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 async function startApp(t,dir,titleResolver=async()=>null){
   const app=createApp({dataDir:dir,port:0,host:'127.0.0.1',twitchEnabled:false,titleResolver,env:{ADMIN_TOKEN:'testing-token'}});
+  if(!runningApps.has(dir))runningApps.set(dir,new Set());runningApps.get(dir).add(app);
   const address=await app.listen();return {app,base:`http://127.0.0.1:${address.port}`};
 }
 async function post(base,route,data,cookie='',origin=''){
   const resp=await fetch(`${base}/api/${route}`,{method:'POST',headers:{'Content-Type':'application/json',...(cookie?{'Cookie':cookie}:{}),...(origin?{'Origin':origin}:{})},body:JSON.stringify(data)});
   return {status:resp.status,body:await resp.json(),cookie:resp.headers.get('set-cookie')};
 }
-async function setup(t,titleResolver){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'playback-http-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const {app,base}=await startApp(t,dir,titleResolver);t.after(async()=>{if(app.server.listening)await app.close();});return {app,base,dir};}
+async function setup(t,titleResolver){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'playback-http-'));t.after(async()=>{for(const active of runningApps.get(dir)||[])if(active.server.listening)await active.close();runningApps.delete(dir);fs.rmSync(dir,{recursive:true,force:true});});const {app,base}=await startApp(t,dir,titleResolver);t.after(async()=>{if(app.server.listening)await app.close();});return {app,base,dir};}
 
 test('Assets and operator endpoints are separated and locked',async t=>{
   const {base}=await setup(t);

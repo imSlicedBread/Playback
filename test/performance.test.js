@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {PlaybackEngine,MAX_QUEUE} from '../lib/engine.js';
+import {PlaybackEngine} from '../lib/engine.js';
 import {createApp} from '../lib/http.js';
 import {queuePage,QUEUE_PAGE_SIZE} from '../public/assets/queue-page.js';
 import {singleFlight} from '../public/assets/single-flight.js';
@@ -14,7 +14,7 @@ function seed(engine,count=350){
   engine.state.current=videos[0];engine.state.queue=videos.slice(1);engine.save();
   return engine;
 }
-for(const count of [350,1000,MAX_QUEUE])test(`Compact heartbeat payload stays bounded with ${count} videos`,()=>{
+for(const count of [350,1000,2000,10000])test(`Compact heartbeat payload stays bounded with ${count} videos`,()=>{
   const e=seed(new PlaybackEngine(null),count),first=e.dashboardState();
   assert.equal(first.catalog.upcomingQueue.length,count-1);
   assert.equal(first.playableCount,count-1);

@@ -1,0 +1,91 @@
+{
+  "node": "v22.16.0",
+  "platform": "linux",
+  "method": "Synthetic metadata, local filesystem, 5 warmups + 50 committed checkpoints, synchronous FULL for SQLite; not client hardware or OBS throughput",
+  "rows": [
+    {
+      "storage": "legacy-json",
+      "videos": 2000,
+      "checkpointSamples": 50,
+      "medianCheckpointMs": 1.945916000000004,
+      "p95CheckpointMs": 2.5090080000000086,
+      "steadySerializedBytes": null,
+      "steadyCatalogRowsChanged": null,
+      "compactPollBytes": 1348,
+      "skipMs": 2.1582760000000007,
+      "rowsChangedOnSkip": null,
+      "reloadMs": 1.8554809999999975,
+      "recoveredVideos": 2000
+    },
+    {
+      "storage": "sqlite",
+      "videos": 2000,
+      "checkpointSamples": 50,
+      "medianCheckpointMs": 0.3060909999999808,
+      "p95CheckpointMs": 0.4754949999999951,
+      "steadySerializedBytes": 1197,
+      "steadyCatalogRowsChanged": 0,
+      "compactPollBytes": 1348,
+      "skipMs": 5.296265000000005,
+      "rowsChangedOnSkip": 3,
+      "reloadMs": 9.942821999999978,
+      "recoveredVideos": 2000
+    },
+    {
+      "storage": "legacy-json",
+      "videos": 5000,
+      "checkpointSamples": 50,
+      "medianCheckpointMs": 2.931038000000001,
+      "p95CheckpointMs": 3.854295000000036,
+      "steadySerializedBytes": null,
+      "steadyCatalogRowsChanged": null,
+      "compactPollBytes": 1348,
+      "skipMs": 4.182690000000036,
+      "rowsChangedOnSkip": null,
+      "reloadMs": 3.0013930000000073,
+      "recoveredVideos": 5000
+    },
+    {
+      "storage": "sqlite",
+      "videos": 5000,
+      "checkpointSamples": 50,
+      "medianCheckpointMs": 0.30171400000000403,
+      "p95CheckpointMs": 0.38755300000002535,
+      "steadySerializedBytes": 1197,
+      "steadyCatalogRowsChanged": 0,
+      "compactPollBytes": 1348,
+      "skipMs": 8.168734000000029,
+      "rowsChangedOnSkip": 3,
+      "reloadMs": 22.026954999999987,
+      "recoveredVideos": 5000
+    },
+    {
+      "storage": "legacy-json",
+      "videos": 10000,
+      "checkpointSamples": 50,
+      "medianCheckpointMs": 4.817895000000021,
+      "p95CheckpointMs": 9.65560000000005,
+      "steadySerializedBytes": null,
+      "steadyCatalogRowsChanged": null,
+      "compactPollBytes": 1348,
+      "skipMs": 10.608507999999915,
+      "rowsChangedOnSkip": null,
+      "reloadMs": 5.976398000000017,
+      "recoveredVideos": 10000
+    },
+    {
+      "storage": "sqlite",
+      "videos": 10000,
+      "checkpointSamples": 50,
+      "medianCheckpointMs": 0.38993600000003426,
+      "p95CheckpointMs": 2.416272999999933,
+      "steadySerializedBytes": 1197,
+      "steadyCatalogRowsChanged": 0,
+      "compactPollBytes": 1348,
+      "skipMs": 17.700227999999925,
+      "rowsChangedOnSkip": 3,
+      "reloadMs": 52.50759199999993,
+      "recoveredVideos": 10000
+    }
+  ]
+}

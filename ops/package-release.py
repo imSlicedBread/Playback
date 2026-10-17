@@ -30,7 +30,7 @@ archive = out / f'Playback-v{version}.zip'
 files = []
 for name in ('README.md', 'LICENSE', 'SECURITY.md', 'TRADEMARKS.md',
              'CHANGELOG.md', 'RELEASE_NOTES.md', 'BUILD-REPORT.md',
-             'PERFORMANCE.md', 'package.json', 'server.js', 'start-player.bat', 'start-player.sh',
+             'PERFORMANCE.md', 'STORAGE.md', 'package.json', 'server.js', 'start-player.bat', 'start-player.sh',
              'INSTALL-AUTO-START.bat', 'UNINSTALL-AUTO-START.bat', 'CHECK-AUTO-START.bat'):
     files.append(root / name)
 for folder in ('lib', 'public', 'ops', 'test', 'tools', '.github'):

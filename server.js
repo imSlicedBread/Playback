@@ -11,7 +11,7 @@ const app=createApp({host:HOST,port:PORT,dataDir:DATA_DIR});
 try {
   const address=await app.listen();
   const p=address.port;
-  console.log(`fKey Playback made by fKey Labs Inc. 1.2.4 ready\n  Dashboard: http://127.0.0.1:${p}/control\n  Settings:  http://127.0.0.1:${p}/settings\n  OBS:       http://127.0.0.1:${p}/player\n  Viewer:    http://127.0.0.1:${p}/vote\n  Token:     ${path.join(DATA_DIR,'admin-token.txt')}\n  State:     ${path.join(DATA_DIR,'state.json')}`);
+  console.log(`fKey Playback made by fKey Labs Inc. 1.3.0 ready\n  Dashboard: http://127.0.0.1:${p}/control\n  Settings:  http://127.0.0.1:${p}/settings\n  OBS:       http://127.0.0.1:${p}/player\n  Viewer:    http://127.0.0.1:${p}/vote\n  Token:     ${path.join(DATA_DIR,'admin-token.txt')}\n  State:     ${path.join(DATA_DIR,'playback.sqlite3')}`);
   openDashboard({port:p});
   let closing=false;const shutdown=()=>{if(closing)return;closing=true;app.close().then(()=>process.exit(0));setTimeout(()=>process.exit(1),4000).unref();};
   process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);

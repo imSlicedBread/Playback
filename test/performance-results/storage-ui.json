@@ -1,0 +1,15 @@
+{
+  "videos": 10000,
+  "mountedRows": 50,
+  "passed": [
+    "offline Chromium with Python HTTP transport to real SQLite backend",
+    "authenticated login",
+    "paging",
+    "search beyond 2000",
+    "dropdown stable during polling",
+    "move to next rotation",
+    "pause",
+    "seek to 840 seconds"
+  ],
+  "pageErrors": []
+}

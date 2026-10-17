@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.0] — SQLite storage and queue capacity
+
+- Removed the fixed queue capacity and the startup slice that silently truncated queues above 2,000 entries.
+- Added transactional, indexed SQLite persistence; frequent runtime checkpoints do not rewrite the catalog.
+- Preserved ordering positions across normal completion/removal so unchanged queue rows need not be rewritten.
+- Added automatic one-time JSON migration with an exact pre-migration backup, safe failure behavior and no change to saved playback schema version 2.
+- Added consistent database backups and a repeatable storage benchmark.
+- Added tests for 10,000-entry imports/reloads, all-lane migration, injected rollback, abrupt process termination, live backups and large-library HTTP controls.
+- Retained 50-row paging and separate per-request/moderation limits.
+
 ## [1.2.4] — 2026-10-16
 
 - Bounded 50-row queue pages, whole-lane search and cross-page selection.

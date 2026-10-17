@@ -11,17 +11,21 @@ permissions:
 
 jobs:
   test:
-    name: Tests (${{ matrix.os }})
+    name: Tests (${{ matrix.os }}, Node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        node: ['22']
+        include:
+          - os: ubuntu-latest
+            node: '22.13.0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node }}
       - name: Validate JavaScript
         run: npm run check
       - name: Run tests
@@ -61,5 +65,5 @@ jobs:
           gh release create "$TAG" "dist/Playback-${TAG}.zip" "dist/Playback-${TAG}.zip.sha256" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$(git rev-parse HEAD)" \
-            --title "fKey Playback ${TAG} — Large-queue control panel performance" \
+            --title "fKey Playback ${TAG} — SQLite storage and uncapped rotation queues" \
             --notes-file RELEASE_NOTES.md

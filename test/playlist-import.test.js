@@ -147,7 +147,7 @@ test('Imports deduplicate within selected results and a malformed provider never
 });
 
 
-test('Full queues and invalid video IDs are rejected atomically',()=>{
+test('Invalid IDs are rejected atomically, but 2,000 entries is not a full queue',()=>{
   let writes=0;
   const engine=new PlaybackEngine({load:()=>null,write:()=>{writes++;}});
   engine.add(ids[0],'Current');
@@ -156,14 +156,14 @@ test('Full queues and invalid video IDs are rejected atomically',()=>{
   assert.equal(engine.state.queue.length,0);
   assert.equal(writes,beforeWrites);
   engine.state.queue=Array.from({length:2000},(_,i)=>({id:`item-${i}`,videoId:ids[i%4],title:`Title ${i}`}));
-  assert.throws(()=>engine.importPlaylist([video(ids[0],'Repeat')],{skipDuplicates:false}),/Not enough queue space/);
-  assert.equal(engine.state.queue.length,2000);
-  assert.equal(writes,beforeWrites);
+  assert.equal(engine.importPlaylist([video(ids[0],'Repeat')],{skipDuplicates:false}).added,1);
+  assert.equal(engine.state.queue.length,2001);
+  assert.equal(writes,beforeWrites+1);
 });
 
 test('Extractor previews expire and cannot import after timeout',async t=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'pb-playlist-expiry-'));
-  t.after(()=>fs.rmSync(dir,{force:true,recursive:true}));
+  t.after(async()=>{if(app?.server.listening)await app.close();fs.rmSync(dir,{force:true,recursive:true});});
   let now=10000;
   const fixture=fixtureExtractor();
   const app=createApp({dataDir:dir,port:0,twitchEnabled:false,titleResolver:async()=>null,playlistExtractor:fixture.fn,

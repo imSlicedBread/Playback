@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {PlaybackEngine,migrateState,MAX_QUEUE} from '../lib/engine.js';
+import {PlaybackEngine,migrateState} from '../lib/engine.js';
 import {DurableStore} from '../lib/store.js';
 import {createApp} from '../lib/http.js';
 
@@ -106,7 +106,7 @@ test('Unavailable items never enter recycled pool or repeat endlessly',t=>{
   assert.equal(engine.state.rotationNumber,1);
 });
 
-test('Playlist import respects selected destination, date order, duplicates across lanes and capacity',t=>{
+test('Playlist import respects destinations and duplicates without a total queue cap',t=>{
   const {engine}=engineFixture(t);
   engine.add(ids[0]);engine.add(ids[1]);engine.skip();
   const videos=[
@@ -122,13 +122,14 @@ test('Playlist import respects selected destination, date order, duplicates acro
   assert.throws(()=>engine.importPlaylist(videos,{order:'descending'}),/ordering/);
   assert.throws(()=>engine.importPlaylist(videos,{skipDuplicates:'no'}),/duplicate option/);
   assert.equal(engine.state.nextRotationQueue.length,2);
-  // Ensure capacity spans all lanes, including Recycled.
-  engine.state.recycledQueue=Array.from({length:MAX_QUEUE},(_,i)=>({id:`extra${i}`,videoId:ids[4],title:'Extra'}));
-  assert.throws(()=>engine.importPlaylist([{videoId:ids[5]}],{skipDuplicates:false}),/Not enough queue space/);
+  // More than 2,000 recycled entries must not stop a new import.
+  engine.state.recycledQueue=Array.from({length:2500},(_,i)=>({id:`extra${i}`,videoId:ids[4],title:'Extra'}));
+  assert.equal(engine.importPlaylist([{videoId:ids[5],title:'New'}],{skipDuplicates:false}).added,1);
+  assert.ok(engine.storedCount()>2500);
 });
 
 test('HTTP queue lane actions are authenticated and survive a real server restart',async t=>{
-  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'playback-rotation-http-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'playback-rotation-http-'));t.after(async()=>{if(app?.server.listening)await app.close();fs.rmSync(dir,{recursive:true,force:true});});
   let app,base;
   const start=async()=>{app=createApp({dataDir:dir,port:0,env:{ADMIN_TOKEN:'test-password'},twitchEnabled:false,titleResolver:async()=>null});const a=await app.listen();base=`http://127.0.0.1:${a.port}`;};
   const api=async(route,data,cookie='')=>{const res=await fetch(`${base}/api/${route}`,{method:'POST',headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(data)});return {code:res.status,json:await res.json()};};

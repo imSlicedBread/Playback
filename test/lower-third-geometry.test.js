@@ -106,7 +106,7 @@ test('Lower Third editor exposes opacity, manual height, auto height, diagonal r
 });
 test('Updated lower third height and background opacity reach the public OBS state',async t=>{
   const folder=fs.mkdtempSync(path.join(os.tmpdir(),'playback-lt-http-'));
-  t.after(()=>fs.rmSync(folder,{recursive:true,force:true}));
+  t.after(async()=>{if(app?.server.listening)await app.close();fs.rmSync(folder,{recursive:true,force:true});});
   const app=createApp({dataDir:folder,port:0,host:'127.0.0.1',twitchEnabled:false,titleResolver:async()=>null,env:{ADMIN_TOKEN:'test-password'}});
   const info=await app.listen();t.after(()=>app.close());
   const base=`http://127.0.0.1:${info.port}`;

@@ -1,44 +1,35 @@
-# fKey Playback 1.2.4 — Build and verification report
+# Playback v1.3.0 — Storage verification
 
+## Scope
 
-## Environment
+Production persistence moves from full-file JSON snapshots to SQLite row storage. The total queue cap and startup truncation are removed. The existing state schema, controls, stable queue identities and dashboard paging remain compatible. This release does not store video media or provide a hosted multi-tenant service.
 
-Linux build container, Node.js 22.16.0, headless system Chromium, 1440 × 1000 viewport, **4x CPU throttling**. Queue fixtures contain one current video and the remaining entries in Upcoming, with a realistic long title. The client capacity remains 2,000 entries across active + queue lanes.
+## Executed locally
 
-The offline browser test injects the shipped HTML/CSS/JavaScript without changing rendering functions. Imports are concatenated for testing only. External thumbnails are replaced by a uniform local SVG; YouTube, Twitch, OBS and real network decoding/encoding are not part of the timings. A native browser network policy prevented normal HTTP navigation in this environment, so DOM tests use an offline page. Separate interaction tests bridge that page to the real localhost HTTP server for authenticated actions.
+- `npm run check`: JavaScript syntax checks passed.
+- `npm test`: 101 tests passed, zero failed, one Windows PowerShell-only test skipped on Linux (102 total).
+- SQLite tests: imports and exact reloads at 2,501 and 10,000 videos; all-lane migration of 7,981 entries; current time, audio, voting and lower-third preservation; indexed queue ordering; no catalog enumeration during runtime checkpoints; small row deltas on skip; transactional rollback; interrupted migration retry; newer/corrupt input rejection; exact ordering after bulk moves/reorders/shuffle; live backup integrity; forced-process-termination recovery.
+- Real HTTP test: 3,000 videos imported in ten batches, a further addition beyond the former cap, authenticated controls, full-lane search and paging, bounded compact responses, and restart recovery.
+- Offline Chromium using a Python transport bridge to the real SQLite backend: 10,000 videos, 50 mounted queue rows, authenticated login, next-page navigation, finding Archive 9999, destination selection surviving live polls, moving to Next Rotation, pause and a seek to 840 seconds. No page errors. Browser loopback navigation itself was blocked by the build environment; no browser policy was altered.
 
-## Before / after (same benchmark harness)
+## Local-disk benchmark
 
-| Videos in station | v1.2.3 mounted queue rows | v1.2.4 mounted queue rows | v1.2.3 DOM elements | v1.2.4 DOM elements | v1.2.3 median refresh | v1.2.4 median refresh |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 350 | 349 | 50 | 6,520 | 1,148 | 43.7 ms | 5.0 ms |
-| 1,000 | 999 | 50 | 18,220 | 1,148 | 113.1 ms | 4.2 ms |
-| 2,000 | Not completed | 50 | Not recorded | 1,148 | Not recorded | 4.7 ms |
+Node v22.16.0 on Linux. Synthetic metadata, same engine and filesystem for both storage adapters; five warm-up checkpoints followed by 50 measured committed checkpoints. SQLite uses WAL and synchronous FULL. The comparison uses the old JSON adapter under the uncapped engine, not an unmodified old application capable of loading 10,000 entries.
 
-Each refresh figure is the median of five manual refreshes, including parsing the actual engine-generated JSON snapshot (delivered by the in-page test stub) and forcing pending layout. There are also eight unchanged-queue render samples. This is **not end-to-end input latency or a real-network latency benchmark**. The 2,000-entry baseline run did not complete within the command window and is not reported as a measured crash/failure. No before/after speedup is claimed for that case. Initial load measurements include test setup and should not be interpreted as production navigation time.
+| Entries | JSON median checkpoint | SQLite median checkpoint | SQLite catalog rows per checkpoint |
+| --- | --- | --- | --- |
+| 2,000 | 1.946 ms | 0.306 ms | 0 |
+| 5,000 | 2.931 ms | 0.302 ms | 0 |
+| 10,000 | 4.818 ms | 0.390 ms | 0 |
 
-| Videos | v1.2.3 recurring operator JSON | v1.2.4 unchanged-catalog JSON |
-| --- | ---: | ---: |
-| 350 | 186,056 bytes | 1,495 bytes |
-| 1,000 | 530,556 bytes | 1,495 bytes |
-| 2,000 | Not recorded in the baseline run | 1,497 bytes |
+In this fixture, a SQLite runtime checkpoint serialized 1,197 bytes at every library size. The compact dashboard poll was 1,348 bytes. A normal skip changed three catalog rows, rather than rewriting all remaining queue positions.
 
-The optimized first response still includes the full catalog once. The compact snapshot stays independent of queue size during playback-only updates. Queue mutations, discovered titles, history/suggestion changes and a server restart invalidate the catalog and send fresh data. No queue items are deleted to reduce payload size. Small byte-count variations depend on video titles, settings, active vote counts and output clients.
+SQLite was not faster for every operation: at 10,000 entries the measured skip was 17.7 ms versus 10.6 ms for JSON, and open/reload was 52.5 ms versus 6.0 ms. The key improvement is bounded recurring checkpoint work and transactional row persistence, not a claim that all operations are faster. Full catalog mutations and startup still scale with library size. Filesystem caches, storage hardware and concurrent OBS/encoding load affect actual timings.
 
-## Verified behavior
+Reproduce with `npm run benchmark:storage`. Raw results: `test/performance-results/storage.json`. Browser checks: `test/performance-results/storage-ui.json`.
 
-- 89 Node tests: **88 passed, 0 failed, 1 Windows-only skip on Linux**.
-- With 2,000 videos, only 50 queue rows are mounted.
-- Selections survive page changes; the previous page remains checked.
-- Searching finds an entry outside the visible page; reordering uses its absolute lane index.
-- Selected dropdown destination and its DOM node survive ordinary polling.
-- Move, Pause, Seek, Volume and Mute update the real backend through authenticated HTTP.
-- A burst of twelve dashboard refresh calls never overlaps operator requests.
-- No JavaScript errors in the Chromium interaction check.
-- Restart invalidation, failed-write rollback, catalog metadata recovery, legacy full endpoints and data-schema compatibility have regression coverage.
+## Not verified locally
 
-Raw result files are included under `test/performance-results/`. The optional offline browser profiling harness is `ops/profile-control-panel.py`; it needs Python Playwright and a local Chromium executable, not additional application runtime dependencies.
+A real Windows desktop boot/migration, live YouTube extraction, OBS rendering/audio and Twitch connectivity were not exercised in this Linux container. The GitHub workflow runs the suite on Windows Node 22 and Ubuntu Node 22, with a separate Ubuntu Node 22.13.0 minimum-runtime job, and verifies the Windows yt-dlp binary before release. Consult the workflow run for its actual status; this report does not predeclare CI success.
 
-## Still to validate / next bottlenecks
-
-The client's precise machine, browser trace and storage characteristics were not available, so the exact customer failure has not been reproduced. These changes address measured scaling costs in the existing implementation. On-device acceptance should include actual OBS playback, the client's playlist, background CPU/memory, a sustained session, media changes and restart recovery. The snapshot writer is still synchronous and fsyncs every committed change; the update does not trade away persistence for speed. A future pass can separate playhead checkpoints from catalog persistence or use a database after crash-recovery testing. Catalog updates still send all metadata after structural changes, and the 2,000-entry limit has not been raised.
+10,000 is a tested queue size, not a new maximum or an assurance about arbitrary hardware. Back up the entire data directory before migration. Keep the database/WAL/SHM set together when moving an uncleanly stopped station; use the live backup command rather than copying a running main database alone.

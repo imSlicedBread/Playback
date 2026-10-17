@@ -1,3 +1,5 @@
+> Historical v1.2.4 control-panel measurements. The old queue cap and JSON storage described below were replaced in v1.3.0; see [STORAGE.md](STORAGE.md) and [BUILD-REPORT.md](BUILD-REPORT.md).
+
 # Playback v1.2.4 — Performance verification
 
 ## Environment

@@ -106,7 +106,7 @@ test('Lower Third editor exposes all toggles with same field IDs as OBS and refr
 
 test('Saved lower-third visibility reaches OBS public API and survives server restart',async t=>{
   const folder=fs.mkdtempSync(path.join(os.tmpdir(),'playback-lt-http-'));
-  t.after(()=>fs.rmSync(folder,{force:true,recursive:true}));
+  t.after(async()=>{if(active?.app?.server.listening)await active.app.close();fs.rmSync(folder,{force:true,recursive:true});});
   const make=async()=>{const app=createApp({dataDir:folder,port:0,host:'127.0.0.1',twitchEnabled:false,titleResolver:async()=>null,env:{ADMIN_TOKEN:'test-password'}});const a=await app.listen();return {app,base:`http://127.0.0.1:${a.port}`};};
   const first=await make();
   let active=first;
