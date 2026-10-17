@@ -101,8 +101,10 @@ test('Real HTTP server moves 1,702 videos in multiple committed batches and reco
   assert.equal(app.engine.state.current.id,'now-playing');
   assert.equal(app.engine.store.db.prepare('SELECT COUNT(*) AS n FROM queue_entries WHERE lane=?').get('recycledQueue').n,1702);
   await app.close();
-  const db=new SQLiteStore(dir);t.after(()=>db.close());
-  const restored=new PlaybackEngine(db);
-  assert.deepEqual(restored.state.recycledQueue.map(v=>v.id),ids(1702));
-  assert.equal(restored.state.queue.length,0);
+  const db=new SQLiteStore(dir);
+  try {
+    const restored=new PlaybackEngine(db);
+    assert.deepEqual(restored.state.recycledQueue.map(v=>v.id),ids(1702));
+    assert.equal(restored.state.queue.length,0);
+  } finally { db.close(); } // Windows cannot remove an open SQLite database.
 });
