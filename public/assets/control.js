@@ -1,6 +1,7 @@
-import {queuePage,QUEUE_PAGE_SIZE} from './queue-page.js?v=1.2.4';
-import {singleFlight} from './single-flight.js?v=1.2.4';
-import {$,e,api,thumbnail,formatTime,showNotice,applyTheme,initAuth} from './common.js?v=1.2.4';
+import {queuePage,QUEUE_PAGE_SIZE} from './queue-page.js?v=1.3.1';
+import {singleFlight} from './single-flight.js?v=1.3.1';
+import {moveInBatches, BULK_MOVE_BATCH_SIZE} from './bulk-move.js?v=1.3.1';
+import {$,e,api,thumbnail,formatTime,showNotice,applyTheme,initAuth} from './common.js?v=1.3.1';
 let state=null,busy=false,scrubbing=false,scrubVideoId=null;
 let audioDesired=null,audioPreview=null,audioSending=false,audioTimer=null,audioEditing=false,lastAudibleVolume=50,lastAudioSend=0;
 async function action(action,props={}){
@@ -90,11 +91,15 @@ let activeQueueLane='current',queuePageIndex=0,queueQuery='',searchTimer=null;
 let pageView={items:[],page:0,pages:1,total:0,start:0},lastQueueKey=null;
 let selectionVersion=0,catalog=null,catalogRevision=null;
 const queueSelection=new Set();
+let bulkMoveRunning=false,bulkMoveCancelRequested=false;
 function currentLaneVideos(s=state){return s?.[queueLanes[activeQueueLane]]||[];}
 function updateBulkMove(){
   const selected=queueSelection.size;
-  $('queueMoveSelected').disabled=!selected||selected>500;
-  $('queueSelectedCount').textContent=`${selected} selected${selected>500?' — maximum 500 per move':''}`;
+  $('queueMoveSelected').disabled=!selected||bulkMoveRunning||busy;
+  $('queueSelectedCount').textContent=`${selected.toLocaleString()} selected${selected>500?' · automatically batched':''}`;
+  $('queueSelectMatching').textContent=queueQuery?`Select all ${pageView.total.toLocaleString()} matches`:`Select all ${currentLaneVideos().length.toLocaleString()} in lane`;
+  $('queueSelectMatching').disabled=!pageView.total||bulkMoveRunning;
+  $('queueClearSelection').disabled=!selected||bulkMoveRunning;
   const rows=pageView.items;
   $('queueSelectAll').checked=rows.length>0&&rows.every(({video})=>queueSelection.has(video.id));
   $('queueSelectAll').indeterminate=rows.some(({video})=>queueSelection.has(video.id))&&!$('queueSelectAll').checked;
@@ -205,13 +210,94 @@ for(const tab of document.querySelectorAll('[data-queue-lane]'))tab.addEventList
   activeQueueLane=tab.dataset.queueLane;queueSelection.clear();selectionVersion++;queuePageIndex=0;drawQueue(state);$('queue').scrollTop=0;
 });
 $('queueSelectAll').addEventListener('change',()=>{
+  if(bulkMoveRunning)return;
   for(const {video:v} of pageView.items)if($('queueSelectAll').checked)queueSelection.add(v.id);else queueSelection.delete(v.id);
   selectionVersion++;drawQueue(state);
 });
+$('queueSelectMatching').addEventListener('click',()=>{
+  if(bulkMoveRunning)return;
+  // Use the same lane and search filter as pagination, but select the entire
+  // result set. No need to visit every page when there are 1,702+ videos.
+  const needle=queueQuery.trim().toLowerCase();
+  for(const v of currentLaneVideos())if(!needle||`${v.title} ${v.videoId}`.toLowerCase().includes(needle))queueSelection.add(v.id);
+  selectionVersion++;drawQueue(state);
+});
+function setBulkMoveLocked(locked){
+  document.querySelector('.rotation-panel').classList.toggle('bulk-moving',locked);
+  // Preserve the original disabled state; a completed operation must not
+  // accidentally reenable unrelated controls that were already disabled.
+  for(const control of document.querySelectorAll('.rotation-panel button:not(#queueBulkCancel), .rotation-panel input, .rotation-panel select')){
+    if(locked){control.dataset.bulkPrevDisabled=control.disabled?'1':'0';control.disabled=true;}
+    else if(control.dataset.bulkPrevDisabled!==undefined){control.disabled=control.dataset.bulkPrevDisabled==='1';delete control.dataset.bulkPrevDisabled;}
+  }
+}
+function paintBulkMoveProgress({status,total,moved,percent,batch,batchCount,error=''}){
+  const panel=$('queueBulkProgress');panel.classList.remove('hidden');
+  panel.classList.toggle('success',status==='complete');
+  panel.classList.toggle('error',status==='failed');
+  const bar=$('queueBulkBar');bar.max=total;bar.value=moved;
+  bar.setAttribute('aria-valuetext',`${moved.toLocaleString()} of ${total.toLocaleString()} videos confirmed moved`);
+  $('queueBulkPercent').textContent=`${percent}%`;
+  const counts=`${moved.toLocaleString()} of ${total.toLocaleString()} videos`;
+  const text={
+    starting:`Preparing ${total.toLocaleString()} videos`,
+    sending:`Moving batch ${batch} of ${batchCount}…`,
+    confirmed:`Moved ${counts}`,
+    complete:`Completed — moved ${counts}`,
+    cancelled:`Stopped — moved ${counts}`,
+    failed:`Move interrupted — ${counts} confirmed`
+  };
+  $('queueBulkStatus').textContent=text[status]||`Moving ${counts}`;
+  $('queueBulkDetails').textContent=status==='failed'
+    ?`Batch ${batch}/${batchCount} failed: ${error}. Remaining videos stay selected for retry.`
+    :status==='cancelled'
+      ?`${(total-moved).toLocaleString()} not yet moved. The remaining videos stay selected.`
+      :status==='complete'
+        ?`All ${batchCount} batches committed successfully.`
+        :`Batch ${batch||0} of ${batchCount} · ${BULK_MOVE_BATCH_SIZE} videos maximum per request`;
+  $('queueBulkCancel').classList.toggle('hidden',status==='complete'||status==='cancelled'||status==='failed');
+  $('queueBulkCancel').disabled=bulkMoveCancelRequested;
+  panel.setAttribute('aria-busy',String(status==='sending'));
+}
+$('queueBulkCancel').addEventListener('click',()=>{
+  if(!bulkMoveRunning)return;
+  bulkMoveCancelRequested=true;
+  $('queueBulkCancel').disabled=true;
+  $('queueBulkDetails').textContent='Stopping after the current server batch completes…';
+});
 $('queueMoveSelected').addEventListener('click',async()=>{
+  if(bulkMoveRunning||busy||!state)return;
   const ids=currentLaneVideos().filter(v=>queueSelection.has(v.id)).map(v=>v.id);
   if(!ids.length)return;
-  if(await action('moveMany',{ids,destination:$('queueMoveTarget').value})){queueSelection.clear();selectionVersion++;drawQueue(state);}
+  const sourceLane=activeQueueLane,destination=$('queueMoveTarget').value;
+  if(sourceLane===destination){
+    showNotice('controlMessage','These videos are already in that rotation lane. Choose a different destination.','error');
+    return;
+  }
+  bulkMoveRunning=true;bulkMoveCancelRequested=false;busy=true;
+  setBulkMoveLocked(true);
+  try{
+    const result=await moveInBatches(ids,destination,{
+      // Keep each SQLite transaction bounded even when the selection contains
+      // thousands of videos. A response means the server committed this batch.
+      submit:(chunk,to)=>api('control',{method:'POST',data:{action:'moveMany',ids:chunk,destination:to},signal:AbortSignal.timeout(60000)}),
+      onProgress:paintBulkMoveProgress,
+      onBatchComplete:chunk=>{for(const id of chunk)queueSelection.delete(id);},
+      shouldStop:()=>bulkMoveCancelRequested
+    });
+    showNotice('controlMessage',result.status==='complete'
+      ?`Moved ${result.moved.toLocaleString()} videos to ${destination}.`
+      :`Stopped after ${result.moved.toLocaleString()} videos. ${(ids.length-result.moved).toLocaleString()} still selected.`,
+      result.status==='complete'?'success':'');
+  }catch(err){
+    showNotice('controlMessage',`Only ${Number(err.moved||0).toLocaleString()} of ${ids.length.toLocaleString()} moves confirmed: ${err.message}. Unmoved entries remain selected.`, 'error');
+    if(err.cause?.status===401)$('auth').classList.remove('hidden');
+  }finally{
+    bulkMoveRunning=false;busy=false;
+    setBulkMoveLocked(false);selectionVersion++;lastQueueKey=null;
+    await refresh();
+    updateBulkMove();
+  }
 });
 $('queuePreviousPage').addEventListener('click',()=>{queuePageIndex--;drawQueue(state);$('queue').scrollTop=0;});
 $('queueNextPage').addEventListener('click',()=>{queuePageIndex++;drawQueue(state);$('queue').scrollTop=0;});
@@ -246,6 +332,7 @@ function drawSuggestions(s){
   if(!s.suggestions.length)container.append(e('div',{class:'small-note',text:'No pending suggestions.'}));
 }
 async function refreshOnce(){
+  if(bulkMoveRunning)return; // Preserve the selection and progress during long moves.
   try{
     const snapshot=await api(`operator?compact=1${catalogRevision?'&catalog='+encodeURIComponent(catalogRevision):''}`,{signal:AbortSignal.timeout(10000)});
     if(snapshot.catalog){catalog=snapshot.catalog;catalogRevision=snapshot.catalogRevision;}

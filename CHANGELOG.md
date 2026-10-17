@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.3.1 — Large queue moves with progress
+
+- Move selections exceeding 500 videos via automatically acknowledged 250-item batches; server preserves the 500-item per-transaction safety limit.
+- Added Select all matching in lane (including all matching videos across queue pages), with count and batch progress, cancellation after the current batch, and partial-failure feedback.
+- Moved entries are deselected only after their batches are committed; unmoved entries remain selected for retry.
+- Optimized per-batch queue moves from repeated per-ID scanning to a single lookup and source-lane filter, improving performance on 10,000+ queues.
+- Preserved SQLite migration, saved playback progress and OBS output behavior.
+
+
 ## [1.3.0] — SQLite storage and queue capacity
 
 - Removed the fixed queue capacity and the startup slice that silently truncated queues above 2,000 entries.

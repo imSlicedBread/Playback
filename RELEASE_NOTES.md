@@ -1,3 +1,22 @@
+# fKey Playback v1.3.1 — Bulk queue move progress
+
+The Smart Rotation Queue can now move selections larger than 500 videos automatically. The control dashboard splits a selected move into batches of 250, waits for each confirmed server commit, and reports moved/total counts, a percentage bar, batch count, errors and safe cancellation.
+
+- **Select all matching** selects all videos in the active lane matching the current search, across every page. It does not select just the 50 visible rows.
+- A move of 1,702 videos is seven batches (six batches of 250 plus the remaining 202), each committed before progress advances.
+- If a batch fails or you stop, previously committed batches remain moved. Unconfirmed videos stay selected; choose **Move Selected** to retry after resolving any error.
+- Queue rows and selected destination stay usable during regular polling. Playback and OBS are not paused by the move UI.
+- The server retains its safety limit of 500 IDs per request, separate from the total library capacity, and the move engine now avoids quadratic per-entry searches.
+- The SQLite storage upgrade from v1.3.0, uncapped rotation library, paginated dashboard, and bundled Windows yt-dlp are retained.
+
+## Upgrade
+
+Stop Playback, including the Windows startup task if configured, and back up the entire `data/` directory. Extract this release while keeping `data/` and `tools/`, then restart. Refresh the dashboard with **Ctrl+F5** once to bypass stale JavaScript. The existing `playback.sqlite3` remains compatible: no database migration or playlist reset is needed.
+
+The official GitHub Windows package includes SHA-256-verified `yt-dlp.exe`. Live OBS/YouTube operation and the client's original workload still require an on-device acceptance test.
+
+---
+
 # fKey Playback v1.3.0 — SQLite storage and uncapped rotation queues
 
 ## Changes

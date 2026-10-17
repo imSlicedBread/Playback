@@ -4,7 +4,7 @@
 
 There is no fixed total video limit across Play Next, Upcoming, Recycled and Next Rotation. The previous server cap was 2,000 entries (not 200); it has been removed, as has queue truncation during startup. Automated tests import and reload 10,000 entries. This is the tested size, not a new ceiling or a promise of unlimited hardware capacity.
 
-The separate safety limits remain: 300 pasted videos per request, 500 playlist entries per extraction/import, 500 selected entries per bulk move, 200 pending viewer suggestions, and 300 recent history events. Repeat import batches to grow the library. These limits do not limit the number of videos stored in the rotation queues. The dashboard still mounts 50 rows per page and searches the complete selected lane.
+The separate safety limits remain: 300 pasted videos per request, 500 playlist entries per extraction/import, 500 queue entries per server bulk-move request (automatically batched in the dashboard), 200 pending viewer suggestions, and 300 recent history events. Repeat import batches to grow the library. These limits do not limit the number of videos stored in the rotation queues. The dashboard still mounts 50 rows per page and searches the complete selected lane.
 
 ## Database
 

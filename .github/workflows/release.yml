@@ -65,5 +65,5 @@ jobs:
           gh release create "$TAG" "dist/Playback-${TAG}.zip" "dist/Playback-${TAG}.zip.sha256" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$(git rev-parse HEAD)" \
-            --title "fKey Playback ${TAG} — SQLite storage and uncapped rotation queues" \
+            --title "fKey Playback ${TAG} — Bulk queue moves and progress feedback" \
             --notes-file RELEASE_NOTES.md

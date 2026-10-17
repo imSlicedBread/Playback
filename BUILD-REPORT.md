@@ -1,4 +1,4 @@
-# Playback v1.3.0 — Storage verification
+# Playback v1.3.1 — Storage verification and bulk-move UI
 
 ## Scope
 
@@ -7,7 +7,7 @@ Production persistence moves from full-file JSON snapshots to SQLite row storage
 ## Executed locally
 
 - `npm run check`: JavaScript syntax checks passed.
-- `npm test`: 101 tests passed, zero failed, one Windows PowerShell-only test skipped on Linux (102 total).
+- `npm test`: v1.3.0 baseline was 101 tests passed, zero failed, one Windows-only skipped. v1.3.1 adds bulk-move progress and HTTP/SQLite regression coverage.
 - SQLite tests: imports and exact reloads at 2,501 and 10,000 videos; all-lane migration of 7,981 entries; current time, audio, voting and lower-third preservation; indexed queue ordering; no catalog enumeration during runtime checkpoints; small row deltas on skip; transactional rollback; interrupted migration retry; newer/corrupt input rejection; exact ordering after bulk moves/reorders/shuffle; live backup integrity; forced-process-termination recovery.
 - Real HTTP test: 3,000 videos imported in ten batches, a further addition beyond the former cap, authenticated controls, full-lane search and paging, bounded compact responses, and restart recovery.
 - Offline Chromium using a Python transport bridge to the real SQLite backend: 10,000 videos, 50 mounted queue rows, authenticated login, next-page navigation, finding Archive 9999, destination selection surviving live polls, moving to Next Rotation, pause and a seek to 840 seconds. No page errors. Browser loopback navigation itself was blocked by the build environment; no browser policy was altered.
@@ -33,3 +33,11 @@ Reproduce with `npm run benchmark:storage`. Raw results: `test/performance-resul
 A real Windows desktop boot/migration, live YouTube extraction, OBS rendering/audio and Twitch connectivity were not exercised in this Linux container. The GitHub workflow runs the suite on Windows Node 22 and Ubuntu Node 22, with a separate Ubuntu Node 22.13.0 minimum-runtime job, and verifies the Windows yt-dlp binary before release. Consult the workflow run for its actual status; this report does not predeclare CI success.
 
 10,000 is a tested queue size, not a new maximum or an assurance about arbitrary hardware. Back up the entire data directory before migration. Keep the database/WAL/SHM set together when moving an uncleanly stopped station; use the live backup command rather than copying a running main database alone.
+
+## v1.3.1 additional regression coverage
+
+- Unit tests cover 1,702-video chunking and increasing acknowledged progress; error and cancel behavior preserve untouched selections.
+- Real HTTP + SQLite integration verifies a >500-ID request still fails safely, then 1,702 videos move in seven 250-ID batches and retain exact lane order after a database restart.
+- Dashboard exposes Select all matching, a live `progress` element, status messages and Stop after current batch; no new queue schema changes.
+
+- Offline Chromium simulation with synthetic responses verified that selecting 1,702 items, moving in seven batches, progress at each acknowledgement and reaching 100% work with the existing page controls. Direct browser access to loopback was blocked by the test environment.

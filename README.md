@@ -1,8 +1,12 @@
-# fKey Playback 1.3.0
+# fKey Playback 1.3.1
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
 [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT license](LICENSE) · [Storage and migration](STORAGE.md) · [Security](SECURITY.md)
+
+## Large bulk queue moves — v1.3.1
+
+The queue panel now includes **Select all in lane / Select all matching**, so operators can choose all 1,702+ videos with one click even though only 50 queue rows are rendered per page. Click **Move Selected** to move the entire selection, automatically processed in **250-entry durable batches**. A live progress bar reports confirmed moved/total, percentage and batch number. **Stop after current batch** cancels safely between server requests; batches already committed remain moved. Failed batches leave unconfirmed videos selected for retry. The server deliberately retains its 500-ID maximum per request, which is not a limit on how many videos can be moved in one dashboard operation. Avoid closing the browser while a bulk move is active. See `STORAGE.md` for persistence and backup details.
 
 ## New: SQLite storage and no fixed queue cap
 
@@ -39,7 +43,7 @@ The server does not render/encode video by itself. OBS or an active player brows
 
 Owner actions include Play Now (parking interrupted playback), Play Next, moves between lanes, bulk move, reorder, sorting and shuffle. The UI shows 50 videos per page, not a 50-video library limit. Search covers the entire selected lane; selection can span pages.
 
-There is no fixed total queue capacity. Per-action safety limits remain: 300 pasted videos, 500 playlist entries per extraction/import and 500 entries per bulk move. The pending-suggestion inbox is limited to 200 to prevent abuse, and recent history retains 300 events. These are not rotation-library caps.
+There is no fixed total queue capacity. Per-action safety limits remain: 300 pasted videos, 500 playlist entries per extraction/import and 500 entries per server bulk-move request (the dashboard automatically batches larger selections). The pending-suggestion inbox is limited to 200 to prevent abuse, and recent history retains 300 events. These are not rotation-library caps.
 
 ## OBS appearance and controls
 

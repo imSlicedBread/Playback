@@ -1,4 +1,4 @@
-import {$,api,applyTheme,formatTime,applyLowerThird,setTicker} from './common.js?v=1.2.4';
+import {$,api,applyTheme,formatTime,applyLowerThird,setTicker} from './common.js?v=1.3.1';
 import {renderVoteScreen} from './vote-screen.js';
 import {applyYouTubeAudio} from './youtube-audio.js';
 const clean=new URL(location.href).searchParams.get('clean')==='1';
