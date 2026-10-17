@@ -1,6 +1,6 @@
 {
   "name": "fkeylabs-playback",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "private": true,
   "type": "module",
   "description": "fKey Playback made by fKey Labs Inc.: persistent local OBS / YouTube broadcast station",
@@ -10,6 +10,6 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "check": "node --check server.js && node --check lib/engine.js && node --check lib/http.js && node --check lib/twitch.js && node --check public/assets/control.js && node --check public/assets/settings.js && node --check public/assets/player.js && node --check public/assets/vote.js && node --check public/assets/common.js && node --check public/assets/vote-screen.js && node --check public/assets/youtube-audio.js && node --check lib/title-metadata.js && node --check lib/open-dashboard.js && node --check lib/playlist-import.js && node --check ops/boot-service.mjs"
+    "check": "node --check server.js && node --check lib/engine.js && node --check lib/http.js && node --check lib/twitch.js && node --check public/assets/control.js && node --check public/assets/settings.js && node --check public/assets/player.js && node --check public/assets/vote.js && node --check public/assets/common.js && node --check public/assets/vote-screen.js && node --check public/assets/youtube-audio.js && node --check lib/title-metadata.js && node --check lib/open-dashboard.js && node --check lib/playlist-import.js && node --check ops/boot-service.mjs && node --check public/assets/queue-page.js && node --check public/assets/single-flight.js"
   }
 }

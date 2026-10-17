@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "2000-video catalog renders only 50 queue rows",
+    "Selections persist across pages",
+    "Previously selected page remains checked",
+    "Dropdown DOM and chosen destination survive live polls",
+    "Move button updates the actual persistent queue",
+    "Search covers the full lane, not only the page",
+    "Reorder from search uses absolute lane index",
+    "Pause remains responsive with 2000 videos",
+    "Seek commits to actual authoritative state",
+    "Volume and mute stay responsive",
+    "Dashboard refresh requests never overlap",
+    "No browser JavaScript errors"
+  ],
+  "errors": [],
+  "queue_size": 2000,
+  "max_simultaneous_operator_requests": 1,
+  "notes": "Offline Chromium DOM + real local HTTP/backend via test bridge; thumbnails stubbed; no real YouTube/OBS media."
+}

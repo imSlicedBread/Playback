@@ -1,4 +1,11 @@
-# fKey Playback 1.2.3 — made by fKey Labs Inc.
+# fKey Playback 1.2.4 — made by fKey Labs Inc.
+
+## v1.2.4 — Large-queue performance
+
+The control panel now displays 50 videos per page with lane-wide search, cross-page selection and stable dropdowns. It receives compact live updates instead of repeatedly transferring and rendering all videos. Now Playing and idle panels update only when relevant data changes. Automatic polling pauses when the dashboard is hidden; OBS playback does not.
+
+See [PERFORMANCE.md](PERFORMANCE.md) for measured before/after results and test limits. Existing playlists, rotations, settings, seek, volume and Windows startup behavior remain available; the data schema and 2,000-video capacity are unchanged. **Select this page** checks the displayed videos, and **Clear selection** clears cross-page selections. Reordering a searched result changes its original position in the lane.
+
 
 [Source code](https://github.com/imSlicedBread/Playback) · [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT License](LICENSE) · [Security](SECURITY.md)
 

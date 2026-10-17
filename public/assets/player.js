@@ -1,4 +1,4 @@
-import {$,api,applyTheme,formatTime,applyLowerThird,setTicker} from './common.js?v=1.2.3';
+import {$,api,applyTheme,formatTime,applyLowerThird,setTicker} from './common.js?v=1.2.4';
 import {renderVoteScreen} from './vote-screen.js';
 import {applyYouTubeAudio} from './youtube-audio.js';
 const clean=new URL(location.href).searchParams.get('clean')==='1';
@@ -75,7 +75,7 @@ function applyPlayback(s){
 }
 async function poll(){
   try{
-    const s=await api('public');data=s;applyTheme(s.settings.colors);
+    const s=await api('public?compact=1');data=s;applyTheme(s.settings.colors);
     updateHud(s);updateVote(s);
     hide($('waiting'),!!s.current||!!s.vote);
     if(ytReady)applyPlayback(s);

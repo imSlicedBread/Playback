@@ -13,8 +13,8 @@ export const e=(tag,attrs={},...children)=>{
   for(const c of children.flat())if(c!=null)out.append(c instanceof Node?c:document.createTextNode(String(c)));
   return out;
 };
-export async function api(path,{method='GET',data}={}){
-  const options={method,credentials:'same-origin',headers:{}};
+export async function api(path,{method='GET',data,signal}={}){
+  const options={method,credentials:'same-origin',headers:{},signal};
   if(data!==undefined){options.headers['Content-Type']='application/json';options.body=JSON.stringify(data);}
   const res=await fetch(`/api/${path}`,options);
   const payload=await res.json().catch(()=>({error:'Unexpected server response'}));
@@ -30,7 +30,7 @@ export function thumbnail(videoId){return `https://i.ytimg.com/vi/${encodeURICom
 export function showNotice(id,message,type=''){const el=$(id);if(!el)return;el.className=`notice ${type}`;el.textContent=message;}
 export function applyTheme(colors={}){
   const styles={background:'--bg',panel:'--panel',raised:'--raised',accent:'--accent',text:'--text',healthy:'--healthy',warning:'--warning',error:'--error',info:'--info',community:'--community'};
-  for(const [key,prop] of Object.entries(styles))if(/^#[a-fA-F0-9]{6}$/.test(colors[key]||''))document.documentElement.style.setProperty(prop,colors[key]);
+  for(const [key,prop] of Object.entries(styles))if(/^#[a-fA-F0-9]{6}$/.test(colors[key]||'')){const style=document.documentElement.style;if(style.getPropertyValue(prop)!==colors[key])style.setProperty(prop,colors[key]);}
 }
 export async function initAuth(onAuthenticated){
   const form=$('loginForm'),overlay=$('auth');

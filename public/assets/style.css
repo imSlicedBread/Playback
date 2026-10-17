@@ -147,3 +147,11 @@ html.obs,body.obs{width:100%;height:100%;overflow:hidden;background:#000}.obs-st
 @media(max-width:1350px){.lowerthird-editor-workspace{grid-template-columns:1fr}.lowerthird-preview-column{position:static}.lowerthird-preview-column{max-width:1150px;margin-inline:auto}.lowerthird-dimensions{grid-template-columns:repeat(3,minmax(0,1fr))}.lowerthird-inspector .lowerthird-anchor-toolbar{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:860px){.lowerthird-dimensions{grid-template-columns:repeat(2,minmax(0,1fr))}.lowerthird-inspector .lowerthird-anchor-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:540px){.lowerthird-editor-workspace{gap:14px}.lowerthird-inspector{padding:11px}.lowerthird-dimensions{grid-template-columns:repeat(2,minmax(0,1fr))}.lowerthird-inspector .lowerthird-anchor-toolbar{grid-template-columns:1fr}.lowerthird-workspace-heading{flex-wrap:wrap}}
+
+/* Bound queue DOM size and keep page navigation outside the scrolling list. */
+.queue-pagination{display:flex;align-items:flex-end;gap:12px;justify-content:space-between;margin:12px 0 8px;flex-wrap:wrap}
+.queue-search-label{flex:1;min-width:180px}.queue-page-buttons{display:flex;gap:6px;flex-wrap:wrap}
+.queue-page-buttons button{font-size:11px;padding:8px 10px}
+.queue-page-info{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:10px}
+#queuePageStatus{margin-right:auto}#queue{contain:layout style}
+@media(max-width:540px){.queue-pagination{display:grid;grid-template-columns:1fr}.queue-page-buttons{justify-content:space-between}}

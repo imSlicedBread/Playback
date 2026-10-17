@@ -1,68 +1,25 @@
-# fKey Playback v1.2.3 — Stable Queue Move Dropdowns
+# fKey Playback v1.2.4 — Large-queue control panel performance
 
-## Fixed
+## Changes
 
-- The **Move to rotation lane** dropdown stays open during live dashboard updates rather than closing after approximately 1.3 seconds.
-- Selecting Current, Next rotation or Recycle stays selected until you click **Move**, and the move action uses your selected destination.
-- Queue rows refresh in place without replacing the active select. Button commands use current positions even if rows have been reordered.
-- No changes to playback state, rotation behavior, saved queues, OBS overlay or playlist importer.
+- The Smart Rotation Queue now renders **50 videos per page**, rather than mounting every row and thumbnail. Search covers the entire selected lane. Previous/next page controls show the position and total count.
+- Selection survives page navigation. **Select this page** selects only displayed entries; **Clear selection** resets it. Bulk moves retain the existing 500-entry limit. Queue row IDs, dropdown selections during polling, and absolute reorder positions are preserved.
+- The dashboard uses a compact live snapshot. The catalog (four rotation lanes, history and suggestions) transfers once on load and again only after it changes. A fresh server epoch invalidates cached catalog data after restart. Normal playhead, volume and settings updates do not resend the queue.
+- OBS, viewer and Settings pages no longer download full queue lists on every poll.
+- Refreshes are serialized and coalesced, with a timeout and no automatic polling while the dashboard is hidden. Switching back requests fresh state. OBS playback remains independent of dashboard visibility.
+- Now Playing, idle vote cards, suggestions and theme colors no longer rebuild on every unchanged poll. Thumbnail loading is lazy and decoding asynchronous.
+- Metadata scheduling scans the catalog once instead of once per video ID. Durable JSON snapshots are compactly encoded, retaining fsync, atomic replacement and previous-snapshot recovery.
 
-## Upgrade from v1.2.2
+## Verification and limitations
 
-Stop Playback and back up your complete `data/` directory. Extract `Playback-v1.2.3.zip` to a permanent folder, restore your saved `data/` directory, then restart Playback. Refresh the dashboard with **Ctrl+F5** to load the updated JavaScript. If you configured Windows autostart, reinstall the tasks only if the install path changes.
+The local Node suite passed **88 tests**, with **one Windows-only test skipped on Linux** (89 total). An additional offline Chromium test connected to the real local backend through a test bridge verified paging, selection, search, absolute reordering, move, pause, seek, volume, mute, dropdown stability and single-flight requests with **2,000 videos**.
 
-**Windows distribution:** The official GitHub release bundles the checksum-verified upstream `yt-dlp.exe` and third-party licensing files. Linux/macOS users should install `yt-dlp` separately or set `YT_DLP_PATH`.
+In an offline Chromium benchmark with 4x CPU throttling and synthetic metadata, median dashboard refresh work went from **43.7 ms to 5.0 ms at 350 videos**, and **113.1 ms to 4.2 ms at 1,000 videos**. Steady poll payload at 350 videos fell from **186,056 bytes to 1,495 bytes**. See `PERFORMANCE.md` for methodology and qualifications. These are test results, not a guarantee of client hardware performance.
 
-**Operational scope:** The backend and UI regression suite can be verified automatically. Live YouTube/OBS playback and real Twitch connectivity require on-device acceptance tests.
-
----
-
-# fKey Playback v1.2.2 — Lower Third opacity, height and editor improvements
-
-### New in v1.2.2
-
-- **Card background opacity**: 0% (transparent) to 100% (solid), leaving the video title fully opaque. Defaults to the previous 89% appearance.
-- **Lower Third height**: Set an explicit height (4–65% of OBS frame) or leave 0 for Auto Height.
-- **Drag-to-resize width and height**: Cyan corner now resizes in both directions, keeping the selected anchor edge fixed. Focus the handle and use arrow keys for fine control.
-- **Better editor workspace**: Responsive large 16:9 preview alongside the geometry/opacity inspector on desktop, with safe-area and alignment guides; stacks vertically on narrow screens.
-- **Persistent OBS synchronization**: New fields are validated and saved, and the OBS Browser Source uses the same renderer as the preview. Existing saved layouts migrate without changing their previous appearance.
-
-### Upgrading from v1.2.1
-
-Stop Playback and back up the complete `data/` directory. Extract the official `Playback-v1.2.2.zip` to a permanent folder, restore the saved data, and restart Playback. Windows autostart users should reinstall the scheduled tasks only when the installation path changes. Refresh the OBS Browser Source once after upgrading; then open **Settings → Lower Third**, edit, and click **Save Settings**. Existing playlist rotations, progress, imported videos, visibility toggles, custom colors and voting settings are retained.
-
-**Windows executable:** The official GitHub Windows ZIP contains the pinned upstream `yt-dlp.exe` and third-party notices, checksum-verified before release. Linux/macOS builds need an independently installed `yt-dlp` or `YT_DLP_PATH`.
-
-**Limitations:** Playback is designed for a trusted local workstation. The Node backend may start at Windows boot, but OBS and its YouTube browser source still require an interactive desktop. Actual OBS rendering and live Twitch/YouTube connectivity must be checked on your computer before relying on unattended broadcasts. A manual height too small for selected text scales can clip content; use Auto Height to prevent this.
-
----
-
-# fKey Playback v1.2.1 — Playlist importer reset and lower-third alignment
-
-fKey Playback is a local OBS/YouTube station made by **fKey Labs Inc.**
-
-## Changes in v1.2.1
-
-- **Ready for the next playlist:** A successful **Import Selected to Queue** hides and clears the extracted video preview, selection, playlist URL, and starting index. The success confirmation remains visible and the URL field is focused for another playlist.
-- **Retry without losing your work:** A failed import does not clear the preview, checked videos, or URL.
-- **Settings preserved:** Import destination, playlist order, duplicate handling, and extraction batch size keep their selected values.
-- **Aligned Lower Third editor:** The Vertical Anchor selector, Snap to Bottom, Snap to Top and Reset Lower Third controls now share a full-width responsive layout, with a position readout underneath.
-- **Cache refresh:** Versioned UI assets avoid stale styling after upgrading.
-
-## Existing capabilities retained
-
-- Smart Rotation Queue: Play Next, Upcoming, Recycled and Next Rotation.
-- YouTube playlist extraction and selective import, duplicate protection, and bulk sorting.
-- OBS playback overlays and customizable lower-third labels and title text size.
-- Persistent playback position, queue, settings and rotation state after restart.
-- Windows startup task and operator dashboard.
-- Official Windows x64 release includes checksum-verified **yt-dlp.exe** and its third-party licensing notices.
+This is an initial optimization pass, not a streaming/encoding benchmark. The full catalog is still transferred after queue mutations. The existing 2,000-entry capacity and synchronous durable state saves remain; particularly slow storage and heavy concurrent media workloads need on-device testing.
 
 ## Upgrade
 
-1. Stop the existing Playback server and **back up the complete `data/` directory**.
-2. Extract `Playback-v1.2.1.zip` into a permanent directory such as `C:\Playback`.
-3. Restore `data/`, then start Playback, or reinstall the Windows boot task if you changed the installation location.
-4. Refresh Control and Settings with **Ctrl+F5** to load the new styling.
+Stop Playback (including its Windows startup task if running) and back up the complete `data/` directory. Extract the new release, restore the saved data and restart. Refresh the dashboard and OBS Browser Source once to load the compact-poll clients. No data-schema migration or playlist reset is required. Reinstall Windows startup tasks only if the install path changes.
 
-**Compatibility:** The installer preserves rotation queues and your active video timestamp. An imported playlist does not interrupt the current video. Live OBS/YouTube behavior should still be tested on the streaming PC. Windows release package ships the upstream third-party yt-dlp executable only after checksum verification.
+The official Windows release workflow continues to bundle checksum-verified `yt-dlp.exe` and third-party notices. A separately labeled source/update ZIP does not bundle this binary: retain your existing `tools/` directory when using it. Playback still needs Node.js and an active OBS/browser player for video output.

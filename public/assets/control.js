@@ -1,10 +1,12 @@
-import {$,e,api,thumbnail,formatTime,showNotice,applyTheme,initAuth} from './common.js';
+import {queuePage,QUEUE_PAGE_SIZE} from './queue-page.js?v=1.2.4';
+import {singleFlight} from './single-flight.js?v=1.2.4';
+import {$,e,api,thumbnail,formatTime,showNotice,applyTheme,initAuth} from './common.js?v=1.2.4';
 let state=null,busy=false,scrubbing=false,scrubVideoId=null;
 let audioDesired=null,audioPreview=null,audioSending=false,audioTimer=null,audioEditing=false,lastAudibleVolume=50,lastAudioSend=0;
 async function action(action,props={}){
-  if(busy)return;busy=true;
-  try{await api('control',{method:'POST',data:{action,...props}});showNotice('controlMessage','Saved','success');await refresh();}
-  catch(err){showNotice('controlMessage',err.message,'error');if(err.status===401)$('auth').classList.remove('hidden');}
+  if(busy)return false;busy=true;
+  try{await api('control',{method:'POST',data:{action,...props}});showNotice('controlMessage','Saved','success');await refresh();return true;}
+  catch(err){showNotice('controlMessage',err.message,'error');if(err.status===401)$('auth').classList.remove('hidden');return false;}
   finally{busy=false;}
 }
 function paintSeek(position,duration){
@@ -61,12 +63,13 @@ function queueAudio(audio,{immediate=false}={}){
   paintAudio(audio);
   scheduleAudio({immediate});
 }
+let nowKey=null;
 function drawNow(s){
   const c=s.current,el=$('now');
   if(scrubVideoId!==null && (c?.id||null)!==scrubVideoId){
     scrubbing=false;scrubVideoId=null;
   }
-  el.replaceChildren();$('nowId').textContent=c?.videoId||'NO VIDEO';
+  $('nowId').textContent=c?.videoId||'NO VIDEO';
   $('pause').textContent=c?.paused?'▶ Resume':'Ⅱ Pause';$('pause').disabled=!c||Boolean(s.vote);
   $('skip').disabled=!c;$('replay').disabled=!c;$('back').disabled=!s.history.length;
   $('seek').disabled=!c||Boolean(s.vote);
@@ -74,19 +77,27 @@ function drawNow(s){
   $('seekSlider').disabled=!c||Boolean(s.vote)||!knownDuration;
   $('seekHint').textContent=!c?'Start a video to enable seeking.':s.vote?'Seeking is unavailable during voting.':!knownDuration?'Waiting for video duration. Use the seconds field for precise seeks.':'Drag to seek, click a position, or use arrow keys.';
   if(!scrubbing)paintSeek(c?.position||0,c?.duration||0);
+  const key=JSON.stringify([c?.id,c?.videoId,c?.title,c?.paused,Boolean(s.vote)]);
+  if(key===nowKey)return;
+  nowKey=key;el.replaceChildren();
   if(!c){el.append(e('div',{class:'empty',text:'No active video. Add videos to begin.'}));return;}
-  const img=e('img',{class:'thumb'});img.src=thumbnail(c.videoId);img.alt='Video thumbnail';
+  const img=e('img',{class:'thumb',decoding:'async'});img.src=thumbnail(c.videoId);img.alt='Video thumbnail';
   const copy=e('div',{class:'now-copy'},e('div',{class:'eyebrow',text:s.vote?'END SCREEN VOTE':(c.paused?'PAUSED':'PLAYING')}),e('h2',{text:c.title}));
   el.append(img,copy);
 }
 const queueLanes={playNext:'priorityQueue',current:'upcomingQueue',recycled:'recycledQueue',nextRotation:'nextRotationQueue'};
-let activeQueueLane='current';
+let activeQueueLane='current',queuePageIndex=0,queueQuery='',searchTimer=null;
+let pageView={items:[],page:0,pages:1,total:0,start:0},lastQueueKey=null;
+let selectionVersion=0,catalog=null,catalogRevision=null;
 const queueSelection=new Set();
 function currentLaneVideos(s=state){return s?.[queueLanes[activeQueueLane]]||[];}
 function updateBulkMove(){
-  const all=currentLaneVideos(),visible=new Set(all.map(v=>v.id));
-  $('queueMoveSelected').disabled=![...queueSelection].some(id=>visible.has(id));
-  $('queueSelectAll').checked=all.length>0&&all.every(v=>queueSelection.has(v.id));
+  const selected=queueSelection.size;
+  $('queueMoveSelected').disabled=!selected||selected>500;
+  $('queueSelectedCount').textContent=`${selected} selected${selected>500?' — maximum 500 per move':''}`;
+  const rows=pageView.items;
+  $('queueSelectAll').checked=rows.length>0&&rows.every(({video})=>queueSelection.has(video.id));
+  $('queueSelectAll').indeterminate=rows.some(({video})=>queueSelection.has(video.id))&&!$('queueSelectAll').checked;
 }
 // Polling updates metadata every 1.3s. Queue rows must retain their actual DOM
 // nodes: replacing an open native <select> closes its popup before a user can
@@ -97,12 +108,12 @@ function makeQueueRow(v,i,lane,list){
   // the moment the row was first built. This also preserves correct reordering
   // when another video moves while the user is looking at this row.
   const view={video:v,index:i,lane,total:list.length};
-  const img=e('img');img.alt='';img.src=thumbnail(v.videoId);
+  const img=e('img',{loading:'lazy',decoding:'async',width:90,height:51});img.alt='';img.src=thumbnail(v.videoId);
   const selected=e('input',{type:'checkbox',class:'queue-select',title:'Select video for bulk move'});
   selected.addEventListener('change',()=>{
     if(selected.checked)queueSelection.add(view.video.id);
     else queueSelection.delete(view.video.id);
-    updateBulkMove();
+    selectionVersion++;updateBulkMove();
   });
   const title=e('strong');
   const videoId=e('span');
@@ -142,6 +153,10 @@ function makeQueueRow(v,i,lane,list){
   return {element,update};
 }
 function drawQueue(s){
+  if(!s)return;
+  const renderKey=JSON.stringify([catalogRevision||s.catalogRevision||s.revision,activeQueueLane,queuePageIndex,queueQuery,selectionVersion]);
+  if(lastQueueKey===renderKey)return;
+  lastQueueKey=renderKey;
   const counts=s.rotationCounts||{playNext:0,upcoming:s.queue?.length||0,recycled:0,nextRotation:0};
   const playable=(counts.playNext||0)+(counts.upcoming||0);
   $('queueCount').textContent=`${playable} AVAILABLE`;
@@ -155,25 +170,31 @@ function drawQueue(s){
     tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active));
   }
   const list=currentLaneVideos(s),container=$('queue');
-  const visible=new Set(list.map(v=>v.id));
+  const laneIds=new Set(list.map(v=>v.id));
+  for(const id of queueSelection)if(!laneIds.has(id))queueSelection.delete(id);
+  pageView=queuePage(list,queuePageIndex,queueQuery);queuePageIndex=pageView.page;
+  const visible=new Set(pageView.items.map(({video})=>video.id));
+  $('queuePageStatus').textContent=pageView.total?`${pageView.start+1}–${pageView.start+pageView.items.length} of ${pageView.total}${queueQuery?' matching':''} · Page ${pageView.page+1}/${pageView.pages}`:'No matching videos';
+  $('queuePreviousPage').disabled=pageView.page===0;
+  $('queueNextPage').disabled=pageView.page+1>=pageView.pages;
   for(const [id,row] of queueRows){
     if(!visible.has(id)){row.element.remove();queueRows.delete(id);}
   }
-  if(!list.length){
-    const msg=activeQueueLane==='recycled'?'No completed videos in this rotation.':activeQueueLane==='nextRotation'?'Nothing deferred to the next rotation.':'No videos in this lane.';
+  if(!pageView.items.length){
+    const msg=queueQuery?'No videos match this search.':activeQueueLane==='recycled'?'No completed videos in this rotation.':activeQueueLane==='nextRotation'?'Nothing deferred to the next rotation.':'No videos in this lane.';
     if(!container.firstElementChild?.classList.contains('empty')||container.childElementCount!==1){
       container.replaceChildren(e('div',{class:'empty',text:msg}));
     }else if(container.firstElementChild.textContent!==msg){container.firstElementChild.textContent=msg;}
   }else{
     container.querySelector(':scope > .empty')?.remove();
-    for(const [index,video] of list.entries()){
+    for(const [slot,{video,index}] of pageView.items.entries()){
       let row=queueRows.get(video.id);
       if(!row){row=makeQueueRow(video,index,activeQueueLane,list);queueRows.set(video.id,row);}
       else row.update(video,index,activeQueueLane,list.length);
       // Moving an already-positioned node would also collapse a native select
       // popup. Only insert when the list's actual order has changed.
-      if(container.children[index]!==row.element){
-        container.insertBefore(row.element,container.children[index]||null);
+      if(container.children[slot]!==row.element){
+        container.insertBefore(row.element,container.children[slot]||null);
       }
     }
   }
@@ -181,22 +202,31 @@ function drawQueue(s){
   updateBulkMove();
 }
 for(const tab of document.querySelectorAll('[data-queue-lane]'))tab.addEventListener('click',()=>{
-  activeQueueLane=tab.dataset.queueLane;queueSelection.clear();drawQueue(state);
+  activeQueueLane=tab.dataset.queueLane;queueSelection.clear();selectionVersion++;queuePageIndex=0;drawQueue(state);$('queue').scrollTop=0;
 });
 $('queueSelectAll').addEventListener('change',()=>{
-  for(const v of currentLaneVideos())if($('queueSelectAll').checked)queueSelection.add(v.id);else queueSelection.delete(v.id);
-  drawQueue(state);
+  for(const {video:v} of pageView.items)if($('queueSelectAll').checked)queueSelection.add(v.id);else queueSelection.delete(v.id);
+  selectionVersion++;drawQueue(state);
 });
 $('queueMoveSelected').addEventListener('click',async()=>{
   const ids=currentLaneVideos().filter(v=>queueSelection.has(v.id)).map(v=>v.id);
   if(!ids.length)return;
-  await action('moveMany',{ids,destination:$('queueMoveTarget').value});queueSelection.clear();drawQueue(state);
+  if(await action('moveMany',{ids,destination:$('queueMoveTarget').value})){queueSelection.clear();selectionVersion++;drawQueue(state);}
 });
+$('queuePreviousPage').addEventListener('click',()=>{queuePageIndex--;drawQueue(state);$('queue').scrollTop=0;});
+$('queueNextPage').addEventListener('click',()=>{queuePageIndex++;drawQueue(state);$('queue').scrollTop=0;});
+$('queueSearch').addEventListener('input',()=>{
+  clearTimeout(searchTimer);searchTimer=setTimeout(()=>{queueQuery=$('queueSearch').value;queuePageIndex=0;drawQueue(state);$('queue').scrollTop=0;},180);
+});
+$('queueClearSelection').addEventListener('click',()=>{queueSelection.clear();selectionVersion++;drawQueue(state);});
 $('queueApplySort').addEventListener('click',()=>action('sortUpcoming',{order:$('queueSort').value}));
+let voteKey=null;
 function drawVote(s){
   $('countdown').textContent=s.vote?`${s.vote.remaining}s REMAINING`:'INACTIVE';
   $('startVote').disabled=Boolean(s.vote)||!s.current||!s.queue.length;
   $('cancelVote').disabled=!s.vote;
+  const key=JSON.stringify(s.vote?.choices||null)+JSON.stringify(s.vote?.counts||null);
+  if(voteKey===key)return;voteKey=key;
   const container=$('voteSummary');container.replaceChildren();
   for(let i=0;i<4;i++){
     const c=s.vote?.choices?.[i];const div=e('div',{class:'vote-mini'},e('strong',{text:`${i+1}: ${s.vote?.counts?.[i]||0}`}),e('div',{text:c?.title||'Empty'}));
@@ -204,7 +234,10 @@ function drawVote(s){
     container.append(div);
   }
 }
+let suggestionSource=null;
 function drawSuggestions(s){
+  if(suggestionSource===s.suggestions)return;
+  suggestionSource=s.suggestions;
   const container=$('suggestions');container.replaceChildren();$('suggestCount').textContent=`${s.suggestions.length} PENDING`;
   for(const v of s.suggestions){
     container.append(e('div',{class:'queue-item'},e('div',{},e('strong',{text:'REQUEST'})),e('div',{},e('strong',{text:v.title}),e('span',{text:v.videoId})),e('div',{class:'queue-actions'},
@@ -212,9 +245,16 @@ function drawSuggestions(s){
   }
   if(!s.suggestions.length)container.append(e('div',{class:'small-note',text:'No pending suggestions.'}));
 }
-async function refresh(){
+async function refreshOnce(){
   try{
-    const s=await api('operator');state=s;applyTheme(s.settings.colors);
+    const snapshot=await api(`operator?compact=1${catalogRevision?'&catalog='+encodeURIComponent(catalogRevision):''}`,{signal:AbortSignal.timeout(10000)});
+    if(snapshot.catalog){catalog=snapshot.catalog;catalogRevision=snapshot.catalogRevision;}
+    // Compatibility with the last full-response API, useful during mixed-version upgrades.
+    if(!catalog||!snapshot.catalogRevision){catalog=snapshot;catalogRevision=null;}
+    const s={...snapshot,...catalog};
+    if(snapshot.catalog||!snapshot.catalogRevision)catalog.queue=[...(s.priorityQueue||[]),...(s.upcomingQueue||s.queue||[])];
+    s.queue=catalog.queue||[];
+    state=s;applyTheme(s.settings.colors);
     drawNow(s);drawQueue(s);drawVote(s);drawSuggestions(s);
     if(!audioEditing&&!audioSending&&!audioDesired)paintAudio(s.audio||{volume:100,muted:false});
     $('workerDot').className='dot'+(s.workerActive?' ok':'');$('workerStatus').textContent=s.workerActive?'OBS player connected':'Output unavailable';
@@ -222,8 +262,12 @@ async function refresh(){
     $('skipVotes').textContent=`${s.skipCount} / ${s.settings.skipThreshold}`;
     $('twitchStatus').textContent=s.twitch.state;
     $('migration').textContent=s.migrationNotice||'';
-  }catch(err){if(err.status===401)$('auth').classList.remove('hidden');}
+  }catch(err){
+    if(err.status===401)$('auth').classList.remove('hidden');
+    $('workerDot').className='dot bad';$('workerStatus').textContent='Connection lost — retrying';
+  }
 }
+const refresh=singleFlight(refreshOnce);
 $('pause').addEventListener('click',()=>action(state?.current?.paused?'play':'pause'));
 $('skip').addEventListener('click',()=>action('skip'));
 $('startVote').addEventListener('click',()=>action('startVote'));
@@ -390,4 +434,16 @@ $('playlistImportButton').addEventListener('click',async()=>{
   finally{setPlaylistBusy(false);previewSelection();}
 });
 await initAuth(refresh);
-setInterval(()=>{if($('auth').classList.contains('hidden'))refresh();},1300);
+let pollTimer=null;
+function schedulePoll(){
+  clearTimeout(pollTimer);
+  pollTimer=setTimeout(async()=>{
+    if(!document.hidden&&$('auth').classList.contains('hidden'))await refresh();
+    schedulePoll();
+  },document.hidden?15000:1300);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&$('auth').classList.contains('hidden'))void refresh().finally(schedulePoll);
+  else schedulePoll();
+});
+schedulePoll();

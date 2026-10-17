@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.4] — 2026-10-16
+
+- Bounded 50-row queue pages, whole-lane search and cross-page selection.
+- Revision-based catalog delivery and compact live polling for dashboard, OBS and Settings.
+- Single-flight refreshes and hidden-tab polling suspension.
+- Reuse unchanged Now Playing, vote, suggestion and theme DOM; lazy thumbnails.
+- One-pass metadata scheduling and smaller durable snapshot encoding.
+- Added large-queue, cache invalidation, rollback, paging, authenticated compact API and request-coalescing regression tests.
+
+
 ## [1.2.3] — 2026-10-16
 
 - Fixed queue-row Move dropdowns closing during the regular 1.3-second operator dashboard refresh.

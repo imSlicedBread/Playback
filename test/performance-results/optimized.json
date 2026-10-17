@@ -1,0 +1,173 @@
+[
+  {
+    "version": "optimized",
+    "videos": 350,
+    "offline_initial_ui_ms": 686.0,
+    "mounted_queue_rows": 50,
+    "dom_elements": 1148,
+    "full_operator_bytes": 186076,
+    "steady_poll_bytes": 1495,
+    "queue_js_median_ms": 0.0,
+    "queue_js_max_ms": 0.3,
+    "queue_js_layout_median_ms": 0.45,
+    "refresh_median_ms": 5,
+    "heap_used_bytes": 4513384,
+    "dropdown_selection_preserved": true,
+    "errors": [],
+    "samples": [
+      {
+        "js": 0.09999999997671694,
+        "layout": 0.8000000000465661
+      },
+      {
+        "js": 0,
+        "layout": 0.6000000000931323
+      },
+      {
+        "js": 0,
+        "layout": 0.8000000000465661
+      },
+      {
+        "js": 0,
+        "layout": 0.09999999997671694
+      },
+      {
+        "js": 0,
+        "layout": 0.09999999997671694
+      },
+      {
+        "js": 0,
+        "layout": 0.5
+      },
+      {
+        "js": 0.30000000004656613,
+        "layout": 0.40000000002328306
+      },
+      {
+        "js": 0,
+        "layout": 0
+      }
+    ],
+    "refresh_samples": [
+      8,
+      5.299999999930151,
+      3.800000000046566,
+      5,
+      4.300000000046566
+    ]
+  },
+  {
+    "version": "optimized",
+    "videos": 1000,
+    "offline_initial_ui_ms": 721.5,
+    "mounted_queue_rows": 50,
+    "dom_elements": 1148,
+    "full_operator_bytes": 530576,
+    "steady_poll_bytes": 1495,
+    "queue_js_median_ms": 0.0,
+    "queue_js_max_ms": 0.1,
+    "queue_js_layout_median_ms": 0.1,
+    "refresh_median_ms": 4.2,
+    "heap_used_bytes": 7460096,
+    "dropdown_selection_preserved": true,
+    "errors": [],
+    "samples": [
+      {
+        "js": 0,
+        "layout": 0.19999999995343387
+      },
+      {
+        "js": 0,
+        "layout": 0
+      },
+      {
+        "js": 0.09999999997671694,
+        "layout": 0.5
+      },
+      {
+        "js": 0,
+        "layout": 0.09999999997671694
+      },
+      {
+        "js": 0,
+        "layout": 0.09999999997671694
+      },
+      {
+        "js": 0,
+        "layout": 0
+      },
+      {
+        "js": 0.09999999997671694,
+        "layout": 0.19999999995343387
+      },
+      {
+        "js": 0,
+        "layout": 0.09999999997671694
+      }
+    ],
+    "refresh_samples": [
+      8.29999999993015,
+      4.199999999953434,
+      4.100000000093132,
+      3,
+      4.299999999930151
+    ]
+  },
+  {
+    "version": "optimized",
+    "videos": 2000,
+    "offline_initial_ui_ms": 1012.9,
+    "mounted_queue_rows": 50,
+    "dom_elements": 1148,
+    "full_operator_bytes": 1064578,
+    "steady_poll_bytes": 1497,
+    "queue_js_median_ms": 0.0,
+    "queue_js_max_ms": 0.1,
+    "queue_js_layout_median_ms": 0.3,
+    "refresh_median_ms": 4.7,
+    "heap_used_bytes": 11496744,
+    "dropdown_selection_preserved": true,
+    "errors": [],
+    "samples": [
+      {
+        "js": 0,
+        "layout": 0.6999999999534339
+      },
+      {
+        "js": 0,
+        "layout": 0.40000000002328306
+      },
+      {
+        "js": 0,
+        "layout": 0.09999999997671694
+      },
+      {
+        "js": 0,
+        "layout": 0.09999999997671694
+      },
+      {
+        "js": 0.10000000009313226,
+        "layout": 0.10000000009313226
+      },
+      {
+        "js": 0.09999999997671694,
+        "layout": 0.19999999995343387
+      },
+      {
+        "js": 0,
+        "layout": 0.7000000000698492
+      },
+      {
+        "js": 0,
+        "layout": 0.9000000000232831
+      }
+    ],
+    "refresh_samples": [
+      8.599999999976717,
+      5.200000000069849,
+      4.699999999953434,
+      3.900000000023283,
+      4.099999999976717
+    ]
+  }
+]

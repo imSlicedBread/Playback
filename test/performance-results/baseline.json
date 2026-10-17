@@ -1,0 +1,116 @@
+[
+  {
+    "version": "baseline",
+    "videos": 350,
+    "offline_initial_ui_ms": 1247.1,
+    "mounted_queue_rows": 349,
+    "dom_elements": 6520,
+    "full_operator_bytes": 186056,
+    "steady_poll_bytes": 186056,
+    "queue_js_median_ms": 11.05,
+    "queue_js_max_ms": 12.9,
+    "queue_js_layout_median_ms": 20.55,
+    "refresh_median_ms": 43.7,
+    "heap_used_bytes": 6222148,
+    "dropdown_selection_preserved": true,
+    "errors": [],
+    "samples": [
+      {
+        "js": 11,
+        "layout": 16.29999999993015
+      },
+      {
+        "js": 11.099999999976717,
+        "layout": 15.599999999976717
+      },
+      {
+        "js": 10.599999999976717,
+        "layout": 17.699999999953434
+      },
+      {
+        "js": 10.900000000023283,
+        "layout": 21.400000000023283
+      },
+      {
+        "js": 12.900000000023283,
+        "layout": 28.70000000006985
+      },
+      {
+        "js": 8.29999999993015,
+        "layout": 19.79999999993015
+      },
+      {
+        "js": 12.099999999976717,
+        "layout": 21.29999999993015
+      },
+      {
+        "js": 12.300000000046566,
+        "layout": 30.300000000046566
+      }
+    ],
+    "refresh_samples": [
+      42.5,
+      47.90000000002328,
+      37.5,
+      43.699999999953434,
+      46
+    ]
+  },
+  {
+    "version": "baseline",
+    "videos": 1000,
+    "offline_initial_ui_ms": 4093.3,
+    "mounted_queue_rows": 999,
+    "dom_elements": 18220,
+    "full_operator_bytes": 530556,
+    "steady_poll_bytes": 530556,
+    "queue_js_median_ms": 36.85,
+    "queue_js_max_ms": 76.1,
+    "queue_js_layout_median_ms": 44.65,
+    "refresh_median_ms": 113.1,
+    "heap_used_bytes": 15057016,
+    "dropdown_selection_preserved": true,
+    "errors": [],
+    "samples": [
+      {
+        "js": 40.800000000046566,
+        "layout": 48.300000000046566
+      },
+      {
+        "js": 76.09999999997672,
+        "layout": 88
+      },
+      {
+        "js": 34.300000000046566,
+        "layout": 42.90000000002328
+      },
+      {
+        "js": 32.79999999993015,
+        "layout": 45.699999999953434
+      },
+      {
+        "js": 37.70000000006985,
+        "layout": 44.300000000046566
+      },
+      {
+        "js": 37.5,
+        "layout": 45
+      },
+      {
+        "js": 36.199999999953434,
+        "layout": 42.79999999993015
+      },
+      {
+        "js": 35,
+        "layout": 41.800000000046566
+      }
+    ],
+    "refresh_samples": [
+      130.59999999997672,
+      136.19999999995343,
+      113.10000000009313,
+      75.79999999993015,
+      78.09999999997672
+    ]
+  }
+]

@@ -1,4 +1,4 @@
-import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js?v=1.2.3';
+import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js?v=1.2.4';
 import {renderVoteScreen} from './vote-screen.js';
 const boolKeys=['loop','voteOnEnd','showLowerThird','scrollTitles','hideCaptions','skipVoting','allowSuggestions'];
 const defaultColors={background:'#0D1010',panel:'#111318',raised:'#171A1F',accent:'#00AFFF',text:'#FFFFFF',healthy:'#22C55E',warning:'#F59E0B',error:'#EF4444',info:'#3B82F6',community:'#8B5CF6'};
@@ -163,7 +163,7 @@ function setupDrag(){
 async function updateStatus(){
   if(!saved)return;
   try{
-    const s=await api('operator');lastStatus=s;
+    const s=await api('operator?compact=1&catalog=omit');lastStatus=s;
     $('twitchConnection').textContent=`${s.twitch.state} / ${s.twitch.mode.toUpperCase()}${s.twitch.channel?' / #'+s.twitch.channel:''}${s.twitch.detail?' — '+s.twitch.detail:''}`;
     const outputs=s.outputs||[];
     let status='Waiting for connected OBS output';
@@ -175,7 +175,7 @@ async function updateStatus(){
     $('syncState').textContent=`Server layout revision ${s.layoutRevision}. Output acknowledgment confirms loaded settings, not OBS display visibility.`;
   }catch(e){if(e.status===401)$('auth').classList.remove('hidden');}
 }
-async function load(){const state=await api('operator');saved=clone(state.settings);draft=clone(state.settings);populate();await updateStatus();}
+async function load(){const state=await api('operator?compact=1&catalog=omit');saved=clone(state.settings);draft=clone(state.settings);populate();await updateStatus();}
 buildColors();connectFields();setupDrag();
 if('ResizeObserver' in window)new ResizeObserver(()=>{if(draft&&!$('lowerPreview').closest('.hidden'))updatePreview();}).observe($('lowerPreview'));
 await initAuth(load);setInterval(()=>{if($('auth').classList.contains('hidden'))updateStatus();},2500);

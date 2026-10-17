@@ -3,7 +3,7 @@ let state=null;
 async function sendVote(index){try{await api('vote',{method:'POST',data:{choice:index}});showNotice('voteMessage',`Vote recorded for option ${index}. You can change it until voting closes.`,'success');await refresh();}catch(e){showNotice('voteMessage',e.message,'error');}}
 async function refresh(){
   try{
-    const s=await api('public');state=s;applyTheme(s.settings.colors);
+    const s=await api('public?compact=1');state=s;applyTheme(s.settings.colors);
     $('nowStatus').textContent=s.vote?'SELECT NEXT':s.current?.paused?'PAUSED':s.current?'PLAYING':'WAITING';
     $('nowTitle').textContent=s.current?.title||'Waiting for video';
     $('countdown').textContent=s.vote?`${s.vote.remaining}s REMAINING`:'VOTING OPENS AT END OF VIDEO';
