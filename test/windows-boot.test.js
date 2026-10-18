@@ -78,3 +78,14 @@ test('Headless boot entrypoint serves Playback on a fixed port and writes a loca
   assert.match(log,/ready/);
   assert.equal(log.includes('Could not open browser automatically'),false);
 });
+
+test('Sign-in launcher waits for backend health before opening the browser and OBS once',{
+ skip:process.platform!=='win32'?'requires Windows PowerShell 5.1':false
+},()=>{
+ const entry=path.join(root,'ops','open-dashboard-at-logon.ps1').replaceAll("'","''");
+ const obs=process.execPath.replaceAll("'","''");
+ const script=`$script:attempts=0; function Invoke-RestMethod { $script:attempts++; if($script:attempts -lt 3){ throw 'not ready' }; return @{ok=$true;app='fKey Playback'} }; function Start-Sleep {}; function Get-Process {}; function Start-Process { param($FilePath,$WorkingDirectory,$WindowStyle); if($script:attempts -ne 3){throw 'launched before ready'}; Write-Output ('LAUNCH '+$FilePath); if($WorkingDirectory){Write-Output ('WORKDIR '+$WorkingDirectory)} }; & '${entry}' -ObsPath '${obs}'`;
+ const result=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{encoding:'utf8'});
+ assert.equal(result.status,0,result.stderr);const launches=result.stdout.split(/\r?\n/).filter(s=>s.startsWith('LAUNCH '));
+ assert.equal(launches.length,2);assert.equal(launches[0],'LAUNCH http://127.0.0.1:4177/control');assert.equal(launches[1],`LAUNCH ${process.execPath}`);assert.ok(result.stdout.includes(`WORKDIR ${path.dirname(process.execPath)}`));
+});

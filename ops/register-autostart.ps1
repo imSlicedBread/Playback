@@ -9,7 +9,9 @@ Node runs under the unprivileged Windows LOCAL SERVICE account, not SYSTEM.
 param(
     [ValidateRange(1, 65535)] [int] $Port = 4177,
     [switch] $StartNow,
-    [switch] $NoDashboardAtLogon
+    [switch] $NoDashboardAtLogon,
+    [switch] $StartOBSAtLogon,
+    [string] $ObsPath = ''
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -30,6 +32,11 @@ if (-not (Test-IsAdmin)) {
     $arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -Port {1}' -f $PSCommandPath, $Port
     if ($StartNow) { $arguments += ' -StartNow' }
     if ($NoDashboardAtLogon) { $arguments += ' -NoDashboardAtLogon' }
+    if ($StartOBSAtLogon) { $arguments += ' -StartOBSAtLogon' }
+    if ($ObsPath) {
+        if ($ObsPath.Contains('"')) { throw 'Invalid OBS executable path.' }
+        $arguments += ' -ObsPath "{0}"' -f $ObsPath
+    }
     try {
         $elevated = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -Verb RunAs -PassThru -Wait
     } catch {
@@ -68,6 +75,21 @@ if (-not (Test-Path -LiteralPath (Join-Path $root 'ops\boot-service.mjs') -PathT
 # Only data/ is writable by LOCAL SERVICE; app source files keep their original
 # permissions. Running a user-editable Node app as SYSTEM would be unsafe.
 $dataDir = Join-Path $root 'data'
+if ($StartOBSAtLogon) {
+    if ($NoDashboardAtLogon) { throw 'OBS startup requires the interactive sign-in task.' }
+    if (-not $ObsPath) {
+        foreach ($base in @($env:ProgramW6432, $env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+            if ($base) {
+                $candidate = Join-Path $base 'obs-studio\bin\64bit\obs64.exe'
+                if (Test-Path -LiteralPath $candidate -PathType Leaf) { $ObsPath = $candidate; break }
+            }
+        }
+    }
+    if (-not $ObsPath -or $ObsPath.Contains('"') -or -not (Test-Path -LiteralPath $ObsPath -PathType Leaf)) {
+        throw 'OBS was not found. Run this installer with -StartOBSAtLogon -ObsPath "C:\path\to\obs64.exe".'
+    }
+    $ObsPath = (Resolve-Path -LiteralPath $ObsPath).Path
+}
 New-Item -Path $dataDir -ItemType Directory -Force | Out-Null
 & icacls.exe $dataDir /grant '*S-1-5-19:(OI)(CI)M' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Could not grant LOCAL SERVICE write access to $dataDir" }
@@ -90,6 +112,7 @@ if (-not $NoDashboardAtLogon) {
     $powershell = Join-Path $PSHOME 'powershell.exe'
     $openScript = Join-Path $root 'ops\open-dashboard-at-logon.ps1'
     $loginArguments = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}" -Port {1}' -f $openScript, $Port
+    if ($StartOBSAtLogon) { $loginArguments += ' -ObsPath "{0}"' -f $ObsPath }
     $loginAction = New-ScheduledTaskAction -Execute $powershell -Argument $loginArguments -WorkingDirectory $root
     $loginTrigger = New-ScheduledTaskTrigger -AtLogOn -User $user
     $loginPrincipal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
@@ -116,5 +139,6 @@ Write-Host "Dashboard: http://127.0.0.1:$Port/control"
 Write-Host "Log file: $dataDir\boot-service.log"
 if ($NoDashboardAtLogon) { Write-Host 'Dashboard auto-open at sign-in: off' }
 else { Write-Host 'Dashboard auto-open at sign-in: on' }
+if ($StartOBSAtLogon) { Write-Host "OBS auto-open after Playback is ready: $ObsPath" }
 if ($StartNow) { Write-Host 'Background server start requested. If another Playback is running, stop it first.' }
 Write-Host 'OBS must be started in a signed-in desktop session and configured to keep its Browser Source active.'

@@ -1,3 +1,24 @@
+# fKey Playback v1.5.1 — Windows startup and OBS recovery
+
+This update improves unattended startup after a Windows reboot and helps the OBS player recover when YouTube is not ready during startup.
+
+- **Optional OBS startup:** the Windows installer can register OBS to open at sign-in after Playback's backend is healthy. It opens the dashboard first and avoids starting another OBS process when one is already running.
+- **Remembered dashboard login:** check **Keep signed in on this computer for 30 days** when logging in. A signed HttpOnly cookie survives browser and server restarts; the operator token is not stored in browser storage or startup URLs. Logging out, clearing cookies, private browsing or expiration requires another login.
+- **Player recovery:** retry failed YouTube API/iframe startup and unstarted video loading. Preserve saved resume positions and intentional pauses, ignore callbacks from replaced iframes, and avoid quarantining videos for transient HTML5 startup errors.
+- Existing Twitch, Kick and SOOP connections, queues and SQLite data remain compatible. No database schema migration is required.
+
+## Upgrade and one-time startup setup
+
+1. Stop Playback and back up the complete `data/` directory. Extract this release while preserving `data/`, `tools/` and launcher configuration. Node.js **22.13 or newer** is required.
+2. Run **INSTALL-AUTO-START.bat** again, choose whether to start OBS, and approve the administrator prompt. Playback must be in a permanent local folder outside the user profile, with Node installed for all users. Custom OBS paths are supported by the PowerShell installer; see the [startup instructions](https://github.com/imSlicedBread/Playback#windows-automatic-startup).
+3. Sign in once using the remembered-login checkbox in your usual browser profile at `http://127.0.0.1:4177/control`.
+4. Keep the OBS Browser Source active at `http://127.0.0.1:4177/player`, with **Shutdown source when not visible** disabled. Disable **Refresh browser when scene becomes active** for continuous playback. Remove a duplicate OBS Windows startup entry if using Playback's OBS launch option.
+5. Restart Windows to validate your workstation. The backend starts before sign-in; **OBS and the browser require Windows desktop sign-in**. Playback does not configure Windows automatic sign-in or start OBS streaming/recording.
+
+All **141 automated tests** and JavaScript syntax checks pass locally on Windows, including simulated startup timing, persistent login across a real backend restart, and player recovery. Actual workstation reboot/OBS acceptance remains required. Live Kick/SOOP validation also remains pending. The release ZIP includes checksum-verified yt-dlp and a SHA-256 checksum file.
+
+---
+
 # fKey Playback v1.5.0 — Kick and SOOP admin chat
 
 Kick and SOOP now have independent admin chat readers under **Settings → Chat Connections**. Each reader starts disabled with an empty, private whitelist. Explicitly allowed platform accounts can use the existing playback, audio and video-adding commands. Broadcasters and moderators receive no automatic access.

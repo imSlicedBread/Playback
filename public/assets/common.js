@@ -40,7 +40,7 @@ export async function initAuth(onAuthenticated){
   }
   form?.addEventListener('submit',async(ev)=>{
     ev.preventDefault();const input=$('token');
-    try{await api('login',{method:'POST',data:{token:input.value}});input.value='';$('authError').textContent='';overlay?.classList.add('hidden');await onAuthenticated();}
+    try{await api('login',{method:'POST',data:{token:input.value,remember:$('rememberLogin')?.checked===true}});input.value='';$('authError').textContent='';overlay?.classList.add('hidden');await onAuthenticated();}
     catch(e){$('authError').textContent=e.message;}
   });
   $('logout')?.addEventListener('click',async()=>{try{await api('logout',{method:'POST'});}catch{}overlay?.classList.remove('hidden');});

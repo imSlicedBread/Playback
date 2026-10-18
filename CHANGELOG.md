@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.5.1 — unattended Windows startup and OBS recovery
+
+- Added optional OBS launch after the backend becomes healthy at Windows sign-in.
+- Added an explicit 30-day remembered dashboard login using a signed HttpOnly cookie, without saving the operator token in the browser.
+- Retry failed YouTube API/iframe startup and unstarted playback while preserving pause and saved positions; ignore stale iframe callbacks and startup progress.
+- Documented reboot setup and OBS source settings. Actual workstation reboot/OBS acceptance remains required.
+
 ## v1.5.0 — Kick and independent SOOP admin readers
 
 - Added separate Kick and SOOP connections and private whitelists under Chat Connections, disabled by default.

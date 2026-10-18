@@ -70,7 +70,7 @@ test('Settings failed saves preserve draft and saved access; activity uses text 
   assert.equal(result.textContent,'Error — <img src=x onerror=alert(1)>');assert.deepEqual(result.children,[]);
   h.activity=[];await h.controller.updateStatus();
   assert.match(h.$('chatAdminActivity').children[0].children[0].textContent,/No chat admin commands/);
-  assert.match(h.html,/settings\.js\?v=1\.5\.0/);
+  assert.match(h.html,/settings\.js\?v=1\.5\.1/);
 });
 
 test('Kick and SOOP Settings save independent whitelists and keep edits intact while showing platform activity',async()=>{

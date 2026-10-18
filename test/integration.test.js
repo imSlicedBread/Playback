@@ -229,3 +229,16 @@ test('Dashboard controls saved OBS audio through authenticated volume/mute actio
   const recovered=await (await fetch(`${restart.base}/api/public`)).json();
   assert.deepEqual(recovered.audio,{volume:18,muted:true});
 });
+
+test('Remembered operator login persists across server restarts without storing the operator token',async t=>{
+ const {app,base,dir}=await setup(t);
+ const ordinary=await post(base,'login',{token:'testing-token'});assert.match(ordinary.cookie,/Max-Age=43200/);
+ const remembered=await post(base,'login',{token:'testing-token',remember:true});assert.match(remembered.cookie,/Max-Age=2592000/);assert.match(remembered.cookie,/HttpOnly; SameSite=Strict/);assert.ok(!remembered.cookie.includes('testing-token'));
+ const cookie=remembered.cookie.split(';')[0];const value=JSON.parse(Buffer.from(cookie.split('=')[1].split('.')[0],'base64url'));
+ assert.ok(value.exp-Date.now()>29*86400000);
+ await app.close();const restarted=await startApp(t,dir);
+ const session=await (await fetch(`${restarted.base}/api/session`,{headers:{Cookie:cookie}})).json();assert.equal(session.authenticated,true);
+ const forged=cookie.replace(/.$/,'!');assert.equal((await (await fetch(`${restarted.base}/api/session`,{headers:{Cookie:forged}})).json()).authenticated,false);
+ const logout=await post(restarted.base,'logout',{},cookie);assert.match(logout.cookie,/Max-Age=0/);
+ for(const route of ['control','settings']){const html=await (await fetch(`${restarted.base}/${route}`)).text();assert.match(html,/id="rememberLogin" type="checkbox" checked/);}
+});

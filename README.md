@@ -1,8 +1,12 @@
-# fKey Playback 1.5.0
+# fKey Playback 1.5.1
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
 [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT license](LICENSE) · [Storage and migration](STORAGE.md) · [Security](SECURITY.md)
+
+## New in v1.5.1 — Windows startup and OBS recovery
+
+Choose optional OBS startup in **INSTALL-AUTO-START.bat**, keep dashboard login for 30 days, and recover automatically from YouTube startup failures. See [Windows automatic startup](#windows-automatic-startup) for the one-time setup and reboot check.
 
 ## New in v1.5.0 — Kick and SOOP admin chat
 
@@ -98,7 +102,15 @@ Admin commands require Twitch's numeric sender identity tag and must originate i
 
 ## Windows automatic startup
 
-Run `INSTALL-AUTO-START.bat` and approve the administrator prompt. The backend starts at boot under LOCAL SERVICE; the separate sign-in task opens the dashboard. `CHECK-AUTO-START.bat` reports status, and `UNINSTALL-AUTO-START.bat` removes the tasks without deleting data. Use an all-users Node installation. Reinstall tasks if the install location changes. OBS still needs an interactive desktop and separate startup configuration.
+1. Extract Playback into a permanent local folder such as `C:\Playback`, with Node installed for all users. Stop any manually launched Playback server, then run **INSTALL-AUTO-START.bat**, choose whether to open OBS automatically, then approve the administrator prompt. The backend starts at Windows boot under LOCAL SERVICE. The browser and optional OBS launch at Windows sign-in, after the backend is healthy.
+2. Sign in to the dashboard once with **Keep signed in on this computer for 30 days** checked. Use the same Windows account, normal browser profile and `http://127.0.0.1:4177/control` address after reboot. The browser keeps a signed HttpOnly session cookie; the operator token is not stored in browser storage or startup URLs. Private browsing, cleared cookies, logout or the 30-day expiry require a new login.
+3. In OBS, save the Browser Source URL as `http://127.0.0.1:4177/player`, disable **Shutdown source when not visible**, and keep the source active in your startup scene. Disable **Refresh browser when scene becomes active** for continuous playback. Do not open the player in a second regular browser tab.
+4. If OBS already has its own Windows startup shortcut/task, remove that duplicate startup entry when using Playback's OBS launch option. Waiting for the server avoids OBS loading a connection-error page before Playback starts. The player retries YouTube API/iframe startup failures without a manual cache refresh once the page has loaded.
+5. Restart Windows once to validate the actual workstation setup. **CHECK-AUTO-START.bat** reports task/server status; **UNINSTALL-AUTO-START.bat** removes the tasks without deleting data. Re-run the installer after moving the installation or changing startup options.
+
+Windows must sign in to a desktop before the browser or OBS can run; the boot server alone does not render video. Windows automatic sign-in, if desired, is a separate workstation configuration. Playback's OBS launcher opens OBS with its saved scene; it does not start streaming or recording.
+
+For a custom OBS install, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\ops\register-autostart.ps1 -StartNow -StartOBSAtLogon -ObsPath "D:\OBS\bin\64bit\obs64.exe"` from the Playback folder.
 
 ## Data and backups
 
