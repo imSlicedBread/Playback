@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.4.0 — Twitch chat admin whitelist
+
+- Added an operator-managed Twitch username whitelist in Settings → Twitch Chat, empty by default and private to authenticated operators.
+- Added privileged playback, seek, audio, and direct video-adding commands while preserving viewer voting, skip votes and moderated requests.
+- Require explicit whitelist membership and a numeric Twitch sender identity; moderators and broadcasters receive no automatic access.
+- Ignore commands forwarded from other Shared Chat rooms and repeated message IDs; enforce account and station rate limits.
+- Show the latest 20 authorized command attempts and results in Settings without sending chat replies or retaining ordinary messages.
+- Preserve unsaved Settings edits during activity polling and retain the whitelist when older dashboard clients save unrelated settings.
+- Added connector, HTTP, persistence, failure-recovery and Settings controller tests. All 123 tests pass locally on Windows.
+
 ## v1.3.1 — Large queue moves with progress
 
 - Move selections exceeding 500 videos via automatically acknowledged 250-item batches; server preserves the 500-item per-transaction safety limit.

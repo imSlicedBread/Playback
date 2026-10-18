@@ -1,8 +1,12 @@
-# fKey Playback 1.3.1
+# fKey Playback 1.4.0
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
 [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT license](LICENSE) · [Storage and migration](STORAGE.md) · [Security](SECURITY.md)
+
+## New in v1.4.0 — Twitch chat admin whitelist
+
+Give selected Twitch usernames playback and video-adding commands from **Settings → Twitch Chat**. The whitelist is private and empty by default. Command results appear in Settings; existing viewer voting and requests keep their behavior. See [Twitch chat admin whitelist](#twitch-chat-admin-whitelist) for commands and access rules.
 
 ## Large bulk queue moves — v1.3.1
 
@@ -50,6 +54,26 @@ There is no fixed total queue capacity. Per-action safety limits remain: 300 pas
 The dashboard includes a draggable seek bar, direct seek input, transport buttons, volume and mute. Settings support independent visibility for channel name, NOW PLAYING, duration and skip count; title-only display; title text scaling; top/bottom anchoring; card height and background opacity; and drag-to-resize editing. Long titles scroll only when needed. Caption suppression is best effort and cannot remove captions burned into video pixels.
 
 The four-choice voting screen can be styled independently. Twitch commands are `!vote 1` through `!vote 4`, `!skip` and `!request URL`. Anonymous IRC reading is unofficial and may change; authenticated IRC uses `TWITCH_USERNAME` and `TWITCH_OAUTH_TOKEN` in the server environment. No bot chat messages are sent.
+
+## Twitch chat admin whitelist
+
+In **Settings → Twitch Chat**, enter allowed Twitch usernames separated by commas or newlines, then click **Save Settings**. Names ignore capitalization and an optional leading `@`. Only explicitly listed names qualify, including the broadcaster and moderators. The list starts empty, supports up to 100 users, and is visible only to logged-in dashboard operators. Removing a name takes effect on the next command. Access follows the username if it changes ownership; update the list after username changes.
+
+| Admin command | Action |
+| --- | --- |
+| `!pause`, `!resume` | Pause or resume the current video |
+| `!forceskip` | Skip immediately, including during voting; ordinary `!skip` still casts a viewer skip vote |
+| `!previous`, `!replay` | Play the previous video or restart the current video |
+| `!seek SECONDS` | Seek to an absolute position, for example `!seek 90` |
+| `!volume 0-100` | Change volume while preserving mute; zero also mutes |
+| `!mute`, `!unmute` | Mute/unmute; unmuting at zero restores volume to 50 |
+| `!add URL` | Add directly to Upcoming without request approval |
+| `!playnext URL` | Add to Play Next |
+| `!playnow URL` | Play immediately, parking interrupted playback to resume next |
+
+Commands ignore capitalization. Video commands also accept a video ID and an optional ` | Display title`, such as `!add dQw4w9WgXcQ | Favorite`. Existing queue ordering and loop settings still apply. Pause, resume and seek are unavailable during voting. Chat cannot edit access, station settings, or the library through deletion or bulk imports.
+
+Admin commands require Twitch's numeric sender identity tag and must originate in the configured channel; messages forwarded from another Shared Chat room are ignored. Both existing connection modes can receive commands when those tags are present. Repeated message IDs are ignored for five minutes. Allow two seconds between admin commands per account; the station accepts at most 30 per minute. The Twitch Settings panel shows the latest 20 authorized attempts and their results, including usage errors and throttling. Activity clears when the server restarts. Ordinary chat messages are not stored, and no chat replies are sent.
 
 ## Windows automatic startup
 

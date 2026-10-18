@@ -1,7 +1,7 @@
-import {queuePage,QUEUE_PAGE_SIZE} from './queue-page.js?v=1.3.1';
-import {singleFlight} from './single-flight.js?v=1.3.1';
-import {moveInBatches, BULK_MOVE_BATCH_SIZE} from './bulk-move.js?v=1.3.1';
-import {$,e,api,thumbnail,formatTime,showNotice,applyTheme,initAuth} from './common.js?v=1.3.1';
+import {queuePage,QUEUE_PAGE_SIZE} from './queue-page.js?v=1.4.0';
+import {singleFlight} from './single-flight.js?v=1.4.0';
+import {moveInBatches, BULK_MOVE_BATCH_SIZE} from './bulk-move.js?v=1.4.0';
+import {$,e,api,thumbnail,formatTime,showNotice,applyTheme,initAuth} from './common.js?v=1.4.0';
 let state=null,busy=false,scrubbing=false,scrubVideoId=null;
 let audioDesired=null,audioPreview=null,audioSending=false,audioTimer=null,audioEditing=false,lastAudibleVolume=50,lastAudioSend=0;
 async function action(action,props={}){

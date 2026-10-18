@@ -1,3 +1,23 @@
+# fKey Playback v1.4.0 — Twitch chat admin whitelist
+
+Selected Twitch users can now control playback and add videos directly from chat. Configure their usernames under **Settings → Twitch Chat → Chat Admin Whitelist**, then click **Save Settings**. The list starts empty and is visible only to authenticated dashboard operators. Broadcasters and moderators must also be explicitly listed.
+
+- Playback: `!pause`, `!resume`, `!forceskip`, `!previous`, `!replay`, `!seek SECONDS`.
+- Audio: `!volume 0-100`, `!mute`, `!unmute`. Unmuting at zero restores volume to 50.
+- Video adding: `!add URL`, `!playnext URL`, `!playnow URL`, also accepting video IDs and optional ` | Display title`. Play Now parks the interrupted video to resume next.
+- Viewer `!skip` remains a skip vote. Viewer requests still require approval. Chat commands cannot manage access or edit station settings.
+- Commands require a numeric Twitch sender identity and origin in the configured channel. Duplicate message IDs and Shared Chat forwarding from other rooms are ignored.
+- Allow two seconds between commands per account; the station accepts at most 30 per minute. Settings shows the latest 20 authorized command attempts and results. Activity clears on restart; no chat replies are sent.
+- Saving access changes takes effect immediately. Existing queues, playback timestamps, overlay settings and SQLite storage remain compatible.
+
+## Upgrade
+
+Stop Playback and back up the complete `data/` directory. Extract this release while preserving `data/`, `tools/` and launcher configuration, then restart. Refresh dashboard and player pages once to load v1.4.0 assets. No database schema migration or queue reset is needed. Access follows usernames, including any later username ownership changes.
+
+All 123 automated tests and JavaScript syntax checks pass locally on Windows. Tests simulate Twitch traffic through the real connector and exercise HTTP, persistence, rollback and Settings event handlers. Live Twitch/YouTube/OBS operation still requires testing on the streaming workstation. The official Windows ZIP includes the existing checksum-verified yt-dlp bundle.
+
+---
+
 # fKey Playback v1.3.1 — Bulk queue move progress
 
 The Smart Rotation Queue can now move selections larger than 500 videos automatically. The control dashboard splits a selected move into batches of 250, waits for each confirmed server commit, and reports moved/total counts, a percentage bar, batch count, errors and safe cancellation.

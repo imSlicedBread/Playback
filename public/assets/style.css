@@ -167,3 +167,14 @@ html.obs,body.obs{width:100%;height:100%;overflow:hidden;background:#000}.obs-st
 .queue-page-info{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:10px}
 #queuePageStatus{margin-right:auto}#queue{contain:layout style}
 @media(max-width:540px){.queue-pagination{display:grid;grid-template-columns:1fr}.queue-page-buttons{justify-content:space-between}}
+/* Chat admin settings and bounded, operator-only command activity. */
+.chat-admin-commands{display:grid;gap:6px;margin:0}
+.chat-admin-commands dt{color:var(--accent);font-family:monospace;font-weight:700;overflow-wrap:anywhere}
+.chat-admin-commands dd{margin:0 0 7px;color:var(--muted);font-size:12px}
+.chat-admin-table-wrap{overflow-x:auto}
+.chat-admin-table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+.chat-admin-table th,.chat-admin-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.chat-admin-table td:last-child{min-width:180px;overflow-wrap:anywhere}
+.chat-admin-table time,.chat-admin-table code{white-space:nowrap}
+.chat-admin-success{color:var(--healthy)}
+.chat-admin-error{color:var(--error)}
