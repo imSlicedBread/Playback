@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.5.0 — Kick and independent SOOP admin readers
+
+- Added separate Kick and SOOP connections and private whitelists under Chat Connections, disabled by default.
+- Reused one admin dispatcher across Twitch, Kick and SOOP with platform-scoped identities/deduplication and a shared station rate limit/activity list.
+- Added fStream-style outbound Kick Pusher reading and a receive-only SOOP protocol adapter, with independent localhost OAuth setup and local token renewal.
+- Preserved Twitch viewer commands and existing settings when older dashboard tabs save.
+- Added simulated transport, identity, cancellation, OAuth renewal, private HTTP persistence, and Settings tests. All 135 tests and JavaScript syntax checks pass locally on Windows. Live Playback provider verification is still pending.
+
 ## v1.4.0 — Twitch chat admin whitelist
 
 - Added an operator-managed Twitch username whitelist in Settings → Twitch Chat, empty by default and private to authenticated operators.

@@ -26,8 +26,9 @@ async function settingsHarness(){
     for(const [key,value] of Object.entries(attributes))if(key==='text')element.textContent=value;else element.setAttribute(key,value);
     element.append(...children);return element;
   };
-  let saved=normalizeSettings({twitchAdminWhitelist:['alice']}),activity=[],failSave=false,posts=0;
+  let saved=normalizeSettings({twitchAdminWhitelist:['alice']}),activity=[],failSave=false,posts=0,reconnects=[];
   const api=async(route,options={})=>{
+    if(route==='control'){assert.equal(options.data.action,'reconnectChat');reconnects.push(options.data.platform);return {ok:true};}
     if(route==='settings'){
       posts++;if(failSave)throw new Error('Could not persist state');
       saved=validateSettings(options.data.settings);return {revision:2};
@@ -39,7 +40,7 @@ async function settingsHarness(){
   const context={$,e,api,document:{querySelectorAll:()=>[]},window:{},applyTheme(){},applyLowerThird(){},renderVoteScreen(){},
     showNotice:(id,message)=>{$(id).textContent=message;},initAuth:async load=>load(),setInterval(){}};
   const controller=await vm.runInNewContext(`(async()=>{${script}\nreturn {updateStatus};})()`,context);
-  return {$,controller,html,get saved(){return saved;},get posts(){return posts;},set activity(value){activity=value;},set failSave(value){failSave=value;}};
+  return {$,controller,html,get saved(){return saved;},get posts(){return posts;},get reconnects(){return reconnects;},set activity(value){activity=value;},set failSave(value){failSave=value;}};
 }
 
 test('Settings whitelist saves normalized usernames, discards edits, and survives activity polling',async()=>{
@@ -49,7 +50,7 @@ test('Settings whitelist saves normalized usernames, discards edits, and survive
   h.activity=[{id:1,timestamp:'2026-10-17T12:00:00.000Z',username:'alice',command:'!pause',success:true,result:'Applied'}];
   await h.controller.updateStatus();
   assert.equal(h.$('twitchAdminWhitelist').value,' @BOB, bob\nCarol_2','polling must not overwrite the draft');
-  assert.equal(h.$('chatAdminActivity').children[0].children[1].textContent,'alice');
+  assert.equal(h.$('chatAdminActivity').children[0].children[2].textContent,'alice');
   await h.$('save').fire('click');
   assert.deepEqual(h.saved.twitchAdminWhitelist,['bob','carol_2']);assert.equal(h.$('twitchAdminWhitelist').value,'bob\ncarol_2');
   h.$('twitchAdminWhitelist').value='unsaved';await h.$('twitchAdminWhitelist').fire('input');
@@ -65,9 +66,25 @@ test('Settings failed saves preserve draft and saved access; activity uses text 
   await h.$('discard').fire('click');assert.equal(h.$('twitchAdminWhitelist').value,'alice');
   h.activity=[{id:1,timestamp:'2026-10-17T12:00:00.000Z',username:'alice',command:'!add',success:false,result:'<img src=x onerror=alert(1)>'}];
   await h.controller.updateStatus();
-  const result=h.$('chatAdminActivity').children[0].children[3];
+  const result=h.$('chatAdminActivity').children[0].children[4];
   assert.equal(result.textContent,'Error — <img src=x onerror=alert(1)>');assert.deepEqual(result.children,[]);
   h.activity=[];await h.controller.updateStatus();
   assert.match(h.$('chatAdminActivity').children[0].children[0].textContent,/No chat admin commands/);
-  assert.match(h.html,/settings\.js\?v=1\.4\.0/);
+  assert.match(h.html,/settings\.js\?v=1\.5\.0/);
+});
+
+test('Kick and SOOP Settings save independent whitelists and keep edits intact while showing platform activity',async()=>{
+  const h=await settingsHarness();
+  h.$('kickEnabled').checked=true;h.$('kickChannel').value=' @Owner ';h.$('kickChatroomId').value='456';h.$('kickAdminWhitelist').value='@Alice-One, ALICE-one';
+  h.$('soopEnabled').checked=true;h.$('soopChannel').value='soop_owner';h.$('soopAdminWhitelist').value='account_one\naccount_two';
+  await h.$('soopAdminWhitelist').fire('input');
+  h.activity=[{id:1,timestamp:'2026-10-18T12:00:00Z',platform:'soop',username:'account_one',command:'!pause',success:true,result:'Applied'}];
+  await h.controller.updateStatus();assert.equal(h.$('soopAdminWhitelist').value,'account_one\naccount_two');
+  assert.equal(h.$('chatAdminActivity').children[0].children[1].textContent,'SOOP');
+  await h.$('kickReconnect').fire('click');await h.$('soopReconnect').fire('click');assert.deepEqual(h.reconnects,['kick','soop']);
+  assert.equal(h.posts,0,'reconnect must not save unfinished settings');assert.equal(h.$('soopAdminWhitelist').value,'account_one\naccount_two');
+  await h.$('save').fire('click');
+  assert.deepEqual(h.saved.kickAdminWhitelist,['alice-one']);assert.deepEqual(h.saved.soopAdminWhitelist,['account_one','account_two']);assert.deepEqual(h.saved.twitchAdminWhitelist,['alice']);
+  assert.equal(h.saved.kickChatroomId,'456');assert.equal(h.saved.kickChannel,'owner');
+  h.$('soopAdminWhitelist').value='discard';await h.$('discard').fire('click');assert.equal(h.$('soopAdminWhitelist').value,'account_one\naccount_two');
 });

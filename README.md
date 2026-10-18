@@ -1,12 +1,16 @@
-# fKey Playback 1.4.0
+# fKey Playback 1.5.0
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
 [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT license](LICENSE) · [Storage and migration](STORAGE.md) · [Security](SECURITY.md)
 
+## New in v1.5.0 — Kick and SOOP admin chat
+
+Connect Kick and SOOP independently under **Settings → Chat Connections**, with separate private whitelists and shared playback commands. Both readers start disabled. SOOP includes a local OAuth setup helper. See [setup and connection details](#kick-and-soop-admin-chat-readers).
+
 ## New in v1.4.0 — Twitch chat admin whitelist
 
-Give selected Twitch usernames playback and video-adding commands from **Settings → Twitch Chat**. The whitelist is private and empty by default. Command results appear in Settings; existing viewer voting and requests keep their behavior. See [Twitch chat admin whitelist](#twitch-chat-admin-whitelist) for commands and access rules.
+Give selected Twitch usernames playback and video-adding commands from **Settings → Chat Connections**. The whitelist is private and empty by default. Command results appear in Settings; existing viewer voting and requests keep their behavior. See [Twitch chat admin whitelist](#twitch-chat-admin-whitelist) for commands and access rules.
 
 ## Large bulk queue moves — v1.3.1
 
@@ -34,7 +38,7 @@ Linux/macOS: run `./start-player.sh` or `node server.js`. The official Windows Z
 | Page | Address | Purpose |
 | --- | --- | --- |
 | Control | `http://127.0.0.1:4177/control` | Operator playback, search, paginated queues, imports and requests |
-| Settings | `http://127.0.0.1:4177/settings` | Playback, Twitch, colors, lower-third and vote-screen editors |
+| Settings | `http://127.0.0.1:4177/settings` | Playback, chat connections, colors, lower-third and vote-screen editors |
 | OBS source | `http://127.0.0.1:4177/player` | Video, title overlay and end-of-video voting |
 | Clean OBS source | `http://127.0.0.1:4177/player?clean=1` | No lower third; voting screen remains available |
 | Viewer portal | `http://127.0.0.1:4177/vote` | Local viewer suggestions and voting |
@@ -55,9 +59,26 @@ The dashboard includes a draggable seek bar, direct seek input, transport button
 
 The four-choice voting screen can be styled independently. Twitch commands are `!vote 1` through `!vote 4`, `!skip` and `!request URL`. Anonymous IRC reading is unofficial and may change; authenticated IRC uses `TWITCH_USERNAME` and `TWITCH_OAUTH_TOKEN` in the server environment. No bot chat messages are sent.
 
+## Kick and SOOP admin chat readers
+
+**Settings → Chat Connections** includes independent Kick and SOOP readers, each disabled with an empty whitelist by default. Their admin commands are the same as Twitch's list below; Kick/SOOP viewer votes, suggestions and chat replies are not added. Only the saved platform-specific whitelist grants access. Being a moderator or having the same username on Twitch does not grant access on another platform. Activity identifies the platform, and the 30-per-minute station budget is shared across all three readers.
+
+**Kick:** enter the channel login and allowed account usernames, enable the reader, and save. The read-only Pusher/WebSocket transport follows fStream's live-tested adapter and requires neither OAuth nor a public webhook. It is unofficial and can change. If public channel lookup is blocked, enter the channel's numeric chatroom ID. Click **Reconnect Kick** after correcting connection settings. Only live chat events from the subscribed room and actual sender identities can execute commands; display names, old messages and duplicate message IDs cannot grant access.
+
+**SOOP:** this is an independent connection to the current SOOP platform at `sooplive.com`, following the official SDK protocol used by fStream. It does not use fKey login, fStream's application credentials, or its backend. Configure it once:
+
+1. Register your own application at [SOOP Developers](https://developers.sooplive.com/), register redirect **`http://127.0.0.1:4180/callback`**, and obtain approval for **`broad_access_chatinfo`**. This is SOOP's combined chat retrieval/sending scope; Playback uses it for reading and never sends chat messages or moderation commands.
+2. Set **`SOOP_CLIENT_ID`** and **`SOOP_CLIENT_SECRET`** in the environment used to launch Playback and its setup command. Restart Playback if its launch environment has changed.
+3. In the community app folder, run **`npm run connect:soop`** from that environment. Open the private localhost link printed in the terminal and authorize your SOOP account. The one-shot callback listener binds only to `127.0.0.1:4180` and closes on success or after ten minutes. No public listener or tunnel is required.
+4. In **Chat Connections**, enter your broadcaster account login ID and the allowed SOOP users' login IDs (not nicknames), enable SOOP, and save. Start the authorized SOOP broadcast and click **Reconnect SOOP**. The account must have access to that live broadcast.
+
+The setup tool saves tokens to **`data/soop-auth.json`**, or the corresponding `DATA_DIR`. The server renews access using your application credentials and preserves rotated refresh tokens locally. Client secrets and tokens are never returned by operator/public APIs. A pre-existing `SOOP_ACCESS_TOKEN` and optional `SOOP_REFRESH_TOKEN` can be supplied instead; environment token changes take precedence over cached credentials. Without refresh authorization, expired access requires reconnecting the account. Use the same `DATA_DIR` for setup and the station.
+
+The SOOP reader implements only authenticated login, room join, keepalive, and public/manager-message receipt. Guest identities, nicknames, whispers, donation/VOD events, and wrong-room sessions do not grant admin access. It does not download or execute a remote SDK at runtime. Its handshake was compared byte-for-byte against fStream's pinned official SDK (`2026-10-02`, SHA-256 `8f89b163d29ddf885dd3de9cddba98b8446fe26c8b3d96483644f4acb47254a5`). Live Kick/SOOP acceptance testing in Playback remains necessary; fStream's live results are reference evidence, not a Playback live test.
+
 ## Twitch chat admin whitelist
 
-In **Settings → Twitch Chat**, enter allowed Twitch usernames separated by commas or newlines, then click **Save Settings**. Names ignore capitalization and an optional leading `@`. Only explicitly listed names qualify, including the broadcaster and moderators. The list starts empty, supports up to 100 users, and is visible only to logged-in dashboard operators. Removing a name takes effect on the next command. Access follows the username if it changes ownership; update the list after username changes.
+In **Settings → Chat Connections**, enter allowed Twitch usernames separated by commas or newlines, then click **Save Settings**. Names ignore capitalization and an optional leading `@`. Only explicitly listed names qualify, including the broadcaster and moderators. The list starts empty, supports up to 100 users, and is visible only to logged-in dashboard operators. Removing a name takes effect on the next command. Access follows the username if it changes ownership; update the list after username changes.
 
 | Admin command | Action |
 | --- | --- |
@@ -73,7 +94,7 @@ In **Settings → Twitch Chat**, enter allowed Twitch usernames separated by com
 
 Commands ignore capitalization. Video commands also accept a video ID and an optional ` | Display title`, such as `!add dQw4w9WgXcQ | Favorite`. Existing queue ordering and loop settings still apply. Pause, resume and seek are unavailable during voting. Chat cannot edit access, station settings, or the library through deletion or bulk imports.
 
-Admin commands require Twitch's numeric sender identity tag and must originate in the configured channel; messages forwarded from another Shared Chat room are ignored. Both existing connection modes can receive commands when those tags are present. Repeated message IDs are ignored for five minutes. Allow two seconds between admin commands per account; the station accepts at most 30 per minute. The Twitch Settings panel shows the latest 20 authorized attempts and their results, including usage errors and throttling. Activity clears when the server restarts. Ordinary chat messages are not stored, and no chat replies are sent.
+Admin commands require Twitch's numeric sender identity tag and must originate in the configured channel; messages forwarded from another Shared Chat room are ignored. Both existing connection modes can receive commands when those tags are present. Repeated message IDs are ignored for five minutes. Allow two seconds between admin commands per account; the station accepts at most 30 per minute. The Chat Connections panel shows the latest 20 authorized attempts and their results, including usage errors and throttling. Activity clears when the server restarts. Ordinary chat messages are not stored, and no chat replies are sent.
 
 ## Windows automatic startup
 

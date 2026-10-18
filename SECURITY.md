@@ -17,7 +17,7 @@ contents in a report.
 - Keep Playback bound to `127.0.0.1` and do not expose its HTTP endpoints directly
   to the public internet.
 - Keep `data/`, `admin-token.txt`, `session-secret.txt`,
-  `voter-secret.txt`, OAuth tokens, and copied state files out of Git.
+  `voter-secret.txt`, `soop-auth.json`, OAuth tokens, and copied state files out of Git.
 - Use trusted locally installed Node.js runtimes and monitor your OBS machine.
 - Treat user-submitted URLs and votes as untrusted input and avoid running the
   application with elevated privileges.

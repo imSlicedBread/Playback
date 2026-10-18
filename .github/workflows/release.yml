@@ -65,5 +65,5 @@ jobs:
           gh release create "$TAG" "dist/Playback-${TAG}.zip" "dist/Playback-${TAG}.zip.sha256" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$(git rev-parse HEAD)" \
-            --title "fKey Playback ${TAG} — Twitch chat admin whitelist" \
+            --title "fKey Playback ${TAG} — Kick and SOOP admin chat" \
             --notes-file RELEASE_NOTES.md

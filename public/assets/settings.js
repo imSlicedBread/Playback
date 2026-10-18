@@ -1,4 +1,4 @@
-import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js?v=1.4.0';
+import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js?v=1.5.0';
 import {renderVoteScreen} from './vote-screen.js';
 const boolKeys=['loop','voteOnEnd','showLowerThird','scrollTitles','hideCaptions','skipVoting','allowSuggestions'];
 const defaultColors={background:'#0D1010',panel:'#111318',raised:'#171A1F',accent:'#00AFFF',text:'#FFFFFF',healthy:'#22C55E',warning:'#F59E0B',error:'#EF4444',info:'#3B82F6',community:'#8B5CF6'};
@@ -20,6 +20,12 @@ function readDraft(){
   draft.voteSeconds=number('voteSeconds');draft.skipThreshold=number('skipThreshold');
   draft.twitchChannel=$('twitchChannel').value.trim();draft.twitchMode=$('twitchMode').value;
   draft.twitchAdminWhitelist=[...new Set($('twitchAdminWhitelist').value.split(/[,\r\n]+/).map(name=>name.trim()).filter(Boolean).map(name=>name.replace(/^@/,'').toLowerCase()))];
+  for(const platform of ['kick','soop']){
+    draft[platform+'Enabled']=$(platform+'Enabled').checked;
+    draft[platform+'Channel']=$(platform+'Channel').value.trim().replace(/^@/,'').toLowerCase();
+    draft[platform+'AdminWhitelist']=[...new Set($(platform+'AdminWhitelist').value.split(/[,\r\n]+/).map(name=>name.trim()).filter(Boolean).map(name=>name.replace(/^@/,'').toLowerCase()))];
+  }
+  draft.kickChatroomId=$('kickChatroomId').value.trim();
   draft.lowerThird={x:number('ltX'),y:number('ltY'),width:number('ltWidth'),height:number('ltHeight'),backgroundOpacity:number('ltOpacity'),scale:number('ltScale'),titleScale:number('ltTitleScale'),anchor:$('ltAnchor').value,showChannelLabel:$('ltShowChannel').checked,showNowPlaying:$('ltShowNowPlaying').checked,showDuration:$('ltShowDuration').checked,showSkip:$('ltShowSkip').checked};
   draft.voteScreen={heading:$('vsHeading').value,instruction:$('vsInstruction').value,cardGap:number('vsGap'),panelOpacity:number('vsOpacity'),showThumbnails:$('vsThumbs').checked,showCountdown:$('vsCountdown').checked,showVotes:$('vsVotes').checked,accentBorders:$('vsBorders').checked};
   for(const [key]of Object.entries(defaultColors))draft.colors[key]=$(`colorHex_${key}`).value;
@@ -31,6 +37,12 @@ function populate(){
   $('voteSeconds').value=draft.voteSeconds;$('skipThreshold').value=draft.skipThreshold;
   $('twitchChannel').value=draft.twitchChannel;$('twitchMode').value=draft.twitchMode;
   $('twitchAdminWhitelist').value=(draft.twitchAdminWhitelist||[]).join('\n');
+  for(const platform of ['kick','soop']){
+    $(platform+'Enabled').checked=draft[platform+'Enabled']===true;
+    $(platform+'Channel').value=draft[platform+'Channel']||'';
+    $(platform+'AdminWhitelist').value=(draft[platform+'AdminWhitelist']||[]).join('\n');
+  }
+  $('kickChatroomId').value=draft.kickChatroomId||'';
   populateLower();
   const vs=draft.voteScreen;
   $('vsHeading').value=vs.heading;$('vsInstruction').value=vs.instruction;$('vsGap').value=vs.cardGap;$('vsOpacity').value=vs.panelOpacity;
@@ -72,7 +84,13 @@ function buildColors(){
   }
 }
 function connectFields(){
-  for(const id of ['channelLabel',...boolKeys,'voteSeconds','skipThreshold','twitchChannel','twitchMode','twitchAdminWhitelist','ltX','ltY','ltWidth','ltHeight','ltScale','ltTitleScale','ltOpacity','ltAnchor','ltShowChannel','ltShowNowPlaying','ltShowDuration','ltShowSkip','vsHeading','vsInstruction','vsGap','vsOpacity','vsThumbs','vsCountdown','vsVotes','vsBorders']){
+  for(const platform of ['kick','soop'])$(platform+'Reconnect').addEventListener('click',async()=>{
+    const button=$(platform+'Reconnect');button.disabled=true;
+    try{await api('control',{method:'POST',data:{action:'reconnectChat',platform}});await updateStatus();}
+    catch(error){$(platform+'Connection').textContent=error.message;}
+    finally{button.disabled=false;}
+  });
+  for(const id of ['channelLabel',...boolKeys,'voteSeconds','skipThreshold','twitchChannel','twitchMode','twitchAdminWhitelist','kickEnabled','kickChannel','kickChatroomId','kickAdminWhitelist','soopEnabled','soopChannel','soopAdminWhitelist','ltX','ltY','ltWidth','ltHeight','ltScale','ltTitleScale','ltOpacity','ltAnchor','ltShowChannel','ltShowNowPlaying','ltShowDuration','ltShowSkip','vsHeading','vsInstruction','vsGap','vsOpacity','vsThumbs','vsCountdown','vsVotes','vsBorders']){
     const el=$(id);el.addEventListener('input',dirty);el.addEventListener('change',dirty);
   }
   for(const button of document.querySelectorAll('[data-preset]'))button.addEventListener('click',()=>{
@@ -88,7 +106,10 @@ function connectFields(){
   $('save').addEventListener('click',async()=>{
     try{readDraft();const submitted=clone(draft);$('save').disabled=true;const response=await api('settings',{method:'POST',data:{settings:submitted}});
       saved=submitted;
-      if(JSON.stringify(draft.twitchAdminWhitelist)===JSON.stringify(saved.twitchAdminWhitelist))$('twitchAdminWhitelist').value=saved.twitchAdminWhitelist.join('\n');
+      for(const platform of ['twitch','kick','soop']){
+        const key=platform+'AdminWhitelist';
+        if(JSON.stringify(draft[key])===JSON.stringify(saved[key]))$(key).value=saved[key].join('\n');
+      }
       showNotice('saveState',`Settings saved — layout revision ${response.revision}.`,'success');await updateStatus();}
     catch(e){showNotice('saveState',e.message,'error');}finally{$('save').disabled=false;}
   });
@@ -170,11 +191,11 @@ function drawAdminActivity(activity=[]){
   const rows=$('chatAdminActivity');rows.replaceChildren();
   for(const item of activity){
     const timestamp=new Date(item.timestamp);
-    rows.append(e('tr',{},e('td',{},e('time',{datetime:item.timestamp,text:timestamp.toLocaleTimeString()})),
+    rows.append(e('tr',{},e('td',{},e('time',{datetime:item.timestamp,text:timestamp.toLocaleTimeString()})),e('td',{text:({twitch:'Twitch',kick:'Kick',soop:'SOOP'})[item.platform]||'Twitch'}),
       e('td',{text:item.username}),e('td',{},e('code',{text:item.command})),
       e('td',{class:item.success?'chat-admin-success':'chat-admin-error',text:`${item.success?'Success':'Error'} — ${item.result}`})));
   }
-  if(!activity.length)rows.append(e('tr',{},e('td',{colspan:4,text:'No chat admin commands since server startup.'})));
+  if(!activity.length)rows.append(e('tr',{},e('td',{colspan:5,text:'No chat admin commands since server startup.'})));
 }
 async function updateStatus(){
   if(!saved)return;
@@ -182,6 +203,10 @@ async function updateStatus(){
     const s=await api('operator?compact=1&catalog=omit');lastStatus=s;
     $('twitchConnection').textContent=`${s.twitch.state} / ${s.twitch.mode.toUpperCase()}${s.twitch.channel?' / #'+s.twitch.channel:''}${s.twitch.detail?' — '+s.twitch.detail:''}`;
     drawAdminActivity(s.chatAdminActivity);
+    for(const platform of ['kick','soop']){
+      const status=s[platform]||{state:'DISABLED',detail:''};
+      $(platform+'Connection').textContent=`${status.state}${status.channel?' / '+status.channel:''}${status.detail?' — '+status.detail:''}`;
+    }
     const outputs=s.outputs||[];
     let status='Waiting for connected OBS output';
     if(outputs.some(x=>x.layoutRevision>=s.layoutRevision&&!x.clean&&s.settings.showLowerThird))status='Applied in connected output page';

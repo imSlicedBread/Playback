@@ -1,3 +1,21 @@
+# fKey Playback v1.5.0 — Kick and SOOP admin chat
+
+Kick and SOOP now have independent admin chat readers under **Settings → Chat Connections**. Each reader starts disabled with an empty, private whitelist. Explicitly allowed platform accounts can use the existing playback, audio and video-adding commands. Broadcasters and moderators receive no automatic access.
+
+- Kick uses a read-only Pusher connection. Configure the channel and whitelist; a manual numeric chatroom ID is available when channel lookup is blocked.
+- SOOP uses an independent Playback OAuth connection. Configure your own SOOP application credentials and approved `broad_access_chatinfo` scope, then run `npm run connect:soop`. The callback is local to `127.0.0.1:4180`; tokens and refresh rotation stay in the local data directory. The authorized broadcast must be live.
+- All three readers share the station command budget and latest-20 activity list. Access uses platform-specific sender identities. Public snapshots exclude whitelists and credentials.
+- Twitch viewer votes, skip votes and requests retain their behavior. Kick/SOOP add admin commands only. No chat replies or moderation messages are sent.
+- Reconnect controls, connection status and Settings draft preservation are included. Older dashboard clients preserve the new settings when saving unrelated changes.
+
+## Upgrade and setup
+
+Stop Playback and back up the complete `data/` directory. Extract this release while preserving `data/`, `tools/` and launcher configuration, then restart and refresh dashboard/player pages. Node.js **22.13 or newer** is required. No database schema migration or queue reset is needed. See the [README setup instructions](https://github.com/imSlicedBread/Playback#kick-and-soop-admin-chat-readers) for provider configuration.
+
+All 135 automated tests and JavaScript syntax checks pass locally on Windows. Automated acceptance uses simulated provider traffic, including identity checks, malformed messages, reconnection, OAuth renewal, command dispatch, persistence and Settings behavior. Kick's transport is unofficial; SOOP implements the receive-only protocol checked against fStream's pinned official SDK. **Live Kick/SOOP validation in Playback remains pending** and requires a configured channel and an authorized SOOP account. The Windows ZIP includes the checksum-verified yt-dlp bundle.
+
+---
+
 # fKey Playback v1.4.0 — Twitch chat admin whitelist
 
 Selected Twitch users can now control playback and add videos directly from chat. Configure their usernames under **Settings → Twitch Chat → Chat Admin Whitelist**, then click **Save Settings**. The list starts empty and is visible only to authenticated dashboard operators. Broadcasters and moderators must also be explicitly listed.
