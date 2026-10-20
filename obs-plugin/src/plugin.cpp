@@ -22,6 +22,7 @@
 #include <QSpinBox>
 #include <QSettings>
 #include <QScreen>
+#include <QSet>
 #include <QTimer>
 #include <QUuid>
 #include <QUrlQuery>
@@ -183,6 +184,7 @@ class Playback final : public QObject {
   OutputResolution renderResolution;
   QTimer timer;
   QNetworkAccessManager network;
+  QSet<QNetworkReply *> requests;
   QString worker = QUuid::createUuid().toString(QUuid::WithoutBraces);
   QString nonce, loadedVideo, script;
   uint64_t fadeTicket=0;
@@ -208,12 +210,28 @@ class Playback final : public QObject {
       req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
       reply = network.post(req, QJsonDocument(*body).toJson(QJsonDocument::Compact));
     } else reply = network.get(req);
-    connect(reply, &QNetworkReply::finished, this, [reply, done]() {
+    requests.insert(reply);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, done]() {
+      requests.remove(reply);
       const int code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
       const auto bytes = reply->read(1024 * 1024);
       const auto result = QJsonDocument::fromJson(bytes).object();
       reply->deleteLater(); done(code, result);
     });
+  }
+  void cancelRequests() {
+    const auto pending=requests;requests.clear();
+    for(auto *reply:pending) {disconnect(reply,nullptr,this,nullptr);reply->abort();reply->deleteLater();}
+    busy=false;
+  }
+  void closeOutput() {
+    playback_set_output_window(nullptr);
+    if (!output) return;
+    output->savePlacement(*preferences);
+    output->onClose={};
+    if(browser) {disconnect(browser,nullptr,this,nullptr);browser->closeBrowser();browser=nullptr;}
+    delete output;output=nullptr;
+    loadedVideo.clear();generation=-1;
   }
   void pausePage() {
     if (browser) browser->executeJavaScript("if(location.origin==='https://www.youtube.com'&&location.pathname==='/watch')document.querySelector('video')?.pause()");
@@ -357,7 +375,7 @@ public:
     initializationRetries = 0;
     if (running) stop();
     activePort = port->value(); worker = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    ++epoch; running = true; port->setEnabled(false);
+    ++epoch; running = true;timer.start();port->setEnabled(false);
     outputLock->setChecked(true); applyOutputLock();
     recovery.reset(); watchdogHeld=false; lastTelemetry=watchdogClock.elapsed();
     preferences->setValue("port", activePort);
@@ -399,7 +417,7 @@ public:
       auto *b = new QPushButton(text); layout->addWidget(b); connect(b, &QPushButton::clicked, this, handler);
     };
     button("Sign in / manage YouTube account", [this]() {
-      stop(); if (!ensureBrowser()) return;
+      stop(); closeOutput(); if (!ensureBrowser()) return;
       outputLock->setChecked(false);
       browser->setURL("https://www.youtube.com/"); output->present();
       setStatus("Sign in inside this window, then choose Start queue. Google may restrict embedded browser sign-in.");
@@ -419,7 +437,7 @@ public:
       obs_source_release(sceneSource);
       setStatus(error ? error : "Playback video and overlay are ready. Check the Playback source audio meter.");
     });
-    button("Stop output", [this]() { stop(); });
+    button("Stop output", [this]() { stop(); closeOutput(); });
     layout->addStretch();
     QFile file(":/fplayback/watch-controller.js");
     if (file.open(QIODevice::ReadOnly)) script = QString::fromUtf8(file.readAll());
@@ -451,8 +469,10 @@ public:
       if (position!=frame.topLeft()) panel->move(position);
     });
     applyResolution();
-    timer.start();
-    if (autoStart->isChecked()) QTimer::singleShot(1500,this,[this]() { start(); });
+    if (autoStart->isChecked()) {
+      const auto turn=epoch;
+      QTimer::singleShot(1500,this,[this,turn]() {if(epoch==turn)start();});
+    }
   }
   bool ensureBrowser() {
     if (browser) return true;
@@ -479,12 +499,15 @@ public:
     playback_set_output_window(outputHandle);
     // QCefWidget's metaobject lives in obs-browser, not in this DLL.
     connect(browser, SIGNAL(titleChanged(QString)), this, SLOT(telemetry(QString)));
-    output->onClose = [this]() { stop(); };
+    output->onClose = [this]() {
+      stop();
+      QTimer::singleShot(0,this,[this]() {if(!running)closeOutput();});
+    };
     return true;
   }
   void stop() {
     playback_cancel_transition(); fadeTicket=0;
-    running = false; ++epoch; port->setEnabled(true);
+    running = false; ++epoch; timer.stop();cancelRequests();port->setEnabled(true);
     pausePage();
     if (lease) {
       QJsonObject body{{"workerId", worker}};
@@ -494,10 +517,7 @@ public:
   }
   ~Playback() override {
     timer.stop(); stop();
-    if (output) output->savePlacement(*preferences);
-    playback_set_output_window(nullptr);
-    if (browser) { browser->closeBrowser(); browser = nullptr; }
-    if (output) { output->onClose = {}; delete output; }
+    closeOutput();cancelRequests();
     delete cef;
     obs_frontend_remove_dock("fplayback-youtube");
   }
@@ -507,7 +527,7 @@ static Playback *playback = nullptr;
 static void frontendEvent(enum obs_frontend_event event, void *) {
   if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING && playback)
     playback->finishedLoading();
-  if (event == OBS_FRONTEND_EVENT_EXIT) { delete playback; playback = nullptr; }
+  if (event == OBS_FRONTEND_EVENT_SCRIPTING_SHUTDOWN || event == OBS_FRONTEND_EVENT_EXIT) { delete playback; playback = nullptr; }
 }
 bool obs_module_load(void) {
   playback_register_capture();
@@ -517,5 +537,5 @@ bool obs_module_load(void) {
   obs_frontend_add_event_callback(frontendEvent, nullptr);
   return true;
 }
-void obs_module_unload(void) { obs_frontend_remove_event_callback(frontendEvent, nullptr); }
+void obs_module_unload(void) { obs_frontend_remove_event_callback(frontendEvent, nullptr);delete playback;playback=nullptr; }
 #include "plugin.moc"

@@ -14,6 +14,6 @@ try {
   const p=address.port;
   console.log(`fKey Playback made by fKey Labs Inc. ${VERSION} ready\n  Dashboard: http://127.0.0.1:${p}/control\n  Settings:  http://127.0.0.1:${p}/settings\n  OBS:       http://127.0.0.1:${p}/player\n  Viewer:    http://127.0.0.1:${p}/vote\n  Token:     ${path.join(DATA_DIR,'admin-token.txt')}\n  State:     ${path.join(DATA_DIR,'playback.sqlite3')}`);
   openDashboard({port:p});
-  let closing=false;const shutdown=()=>{if(closing)return;closing=true;app.close().then(()=>process.exit(0));setTimeout(()=>process.exit(1),4000).unref();};
+  let closing=false;const shutdown=()=>{if(closing)return;closing=true;app.close().then(()=>process.exit(0),error=>{console.error('Shutdown failed:',error.message);process.exit(1);});setTimeout(()=>process.exit(1),4000).unref();};
   process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);
 }catch(e){app.cleanup();console.error('Failed to start:',e.message);process.exitCode=1;}

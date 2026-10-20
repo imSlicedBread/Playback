@@ -14,6 +14,9 @@
 #include <unordered_set>
 #include <vector>
 #include <cmath>
+#include <atomic>
+static std::atomic<bool> captureEnabled{false};
+void playback_audio_set_enabled(bool enabled) {captureEnabled.store(enabled);}
 using Microsoft::WRL::ComPtr;
 
 class AudioActivation final : public Microsoft::WRL::RuntimeClass<
@@ -127,14 +130,14 @@ struct BrowserAudio {
     HANDLE waits[]{stop,ready}; bool signaled=false, healthy=true;
     ULONGLONG lastCheck=GetTickCount64();
     while (healthy && WaitForMultipleObjects(2,waits,FALSE,500) != WAIT_OBJECT_0) {
-      if (!obs_source_active(source)) break;
+      if (!captureEnabled.load() || !obs_source_active(source)) break;
       if (GetTickCount64()-lastCheck>2000) {
         lastCheck=GetTickCount64(); const DWORD current=activeBrowserSession();
         if (current && current!=pid) break;
       }
       UINT32 pending=0;
       if (FAILED(input->GetNextPacketSize(&pending))) break;
-      while (pending) {
+      while (pending && captureEnabled.load() && WaitForSingleObject(stop,0)!=WAIT_OBJECT_0) {
         BYTE *bytes=nullptr; UINT32 frames=0; DWORD flags=0; UINT64 timestamp=0;
         if (FAILED(input->GetBuffer(&bytes,&frames,&flags,nullptr,&timestamp))) { healthy=false; break; }
         std::vector<float> silence;
@@ -160,7 +163,7 @@ struct BrowserAudio {
     const HRESULT initialized=CoInitializeEx(nullptr,COINIT_MULTITHREADED);
     if (FAILED(initialized)) return;
     while (WaitForSingleObject(stop,1000) == WAIT_TIMEOUT) {
-      if (!obs_source_active(source)) continue;
+      if (!captureEnabled.load() || !obs_source_active(source)) continue;
       const DWORD pid=activeBrowserSession();
       if (pid) capture(pid);
     }

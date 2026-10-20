@@ -10,7 +10,7 @@
 
 static std::atomic<HWND> outputWindow{nullptr};
 static std::atomic<uint64_t> outputResolution{OutputResolution{}.packed()};
-void playback_set_output_window(HWND window) { outputWindow.store(window); }
+void playback_set_output_window(HWND window) { outputWindow.store(window);playback_audio_set_enabled(window!=nullptr); }
 void playback_set_output_resolution(uint32_t width,uint32_t height) {
   const OutputResolution size{width,height};
   if (size.valid()) outputResolution.store(size.packed());
@@ -72,6 +72,14 @@ static void tick(void *data, float) {
     winrt_capture_free(state->capture); state->capture = nullptr;
   }
   state->window = window;
+  if (!window) {
+    gs_texrender_destroy(state->outgoing);state->outgoing=nullptr;
+    gs_texrender_destroy(state->incoming);state->incoming=nullptr;
+    state->cached=false;state->fade.cancel();
+  } else {
+    if(!state->outgoing)state->outgoing=gs_texrender_create(GS_RGBA,GS_ZS_NONE);
+    if(!state->incoming)state->incoming=gs_texrender_create(GS_RGBA,GS_ZS_NONE);
+  }
   if (!state->capture && window && IsWindow(window) && IsWindowVisible(window) && !IsIconic(window))
     state->capture = winrt_capture_init_window(false,window,true,true);
   obs_leave_graphics();
@@ -98,7 +106,7 @@ static void render(void *data, gs_effect_t *) {
   const auto window=outputWindow.load();
   if (!window) {state->cached=false;state->fade.cancel();return;}
   const bool active=state->capture && state->window==window && winrt_capture_active(state->capture);
-  if (!state->fadeEffect) {
+  if (!state->fadeEffect || !state->outgoing || !state->incoming) {
     if (active) {
       const auto w=winrt_capture_width(state->capture),h=winrt_capture_height(state->capture);
       if (w && h) {gs_matrix_push();gs_matrix_scale3f(float(size.width)/w,float(size.height)/h,1.f);winrt_capture_render(state->capture);gs_matrix_pop();}

@@ -1,32 +1,36 @@
-# fKey Playback 1.7.5
+# fKey Playback 1.7.6
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
 [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT license](LICENSE) · [Storage and migration](STORAGE.md) · [Security](SECURITY.md)
 
-## New in v1.7.5 — smoother transitions and pause without rewind
+## New in v1.7.6 — process and resource cleanup
 
-The native OBS source holds the outgoing frame while the next video loads, waits for a stable full-window picture, then crossfades over 300 ms. Pause and resume preserve the live frame instead of seeking back to a stale checkpoint. Install plugin 0.1.6 and update the station app for both fixes.
+Stop output now closes its browser/window and releases capture resources; Start recreates them with the saved account session and placement. Station shutdown drains connections within a deadline and cancels extraction process trees without terminating unrelated processes. Update the station app and install plugin 0.1.7 for these fixes.
+
+## Included from v1.7.5 — smoother transitions and pause without rewind
+
+The native OBS source holds the outgoing frame while the next video loads, waits for a stable full-window picture, then crossfades over 300 ms. Pause and resume preserve the live frame instead of seeking back to a stale checkpoint. Install plugin 0.1.7 and update the station app for both fixes.
 
 ## Included from v1.7.4 — use the saved Playback position
 
-Open videos at the local queue checkpoint and protect it against delayed YouTube watch-history resume during startup. Pending seeks and rejected browser-history jumps cannot overwrite the checkpoint or falsely advance the queue. Install plugin 0.1.6 for the fix.
+Open videos at the local queue checkpoint and protect it against delayed YouTube watch-history resume during startup. Pending seeks and rejected browser-history jumps cannot overwrite the checkpoint or falsely advance the queue. Install plugin 0.1.7 for the fix.
 
 ## Included from v1.7.3 — restore OBS windows after restart
 
-Restore the fKey Playback dock open state and layout after restarting OBS. Keep floating dock title bars reachable. Save the output window position and parked state on normal shutdown and restore them on startup. Locked playback also hides the channel watermark. Install plugin 0.1.6 for these improvements.
+Restore the fKey Playback dock open state and layout after restarting OBS. Keep floating dock title bars reachable. Save the output window position and parked state on normal shutdown and restore them on startup. Locked playback also hides the channel watermark. Install plugin 0.1.7 for these improvements.
 
 ## Included from v1.7.2 — cleaner OBS dock
 
-Remove the introductory experimental/sign-in text from the fKey Playback dock. The controls now begin with the station port. Install plugin 0.1.6 for this change.
+Remove the introductory experimental/sign-in text from the fKey Playback dock. The controls now begin with the station port. Install plugin 0.1.7 for this change.
 
 ## Included from v1.7.1 — OBS output lock and resolution settings
 
-The fKey Playback OBS dock now saves an output render resolution: 720p, 1080p, 1440p, 4K or Match OBS canvas. Choose a size and click Apply. Display DPI is accounted for, and the output lock keeps window resizing and player interaction from disrupting capture. YouTube stream quality remains automatic. Install the updated 0.1.6 plugin to use these controls.
+The fKey Playback OBS dock now saves an output render resolution: 720p, 1080p, 1440p, 4K or Match OBS canvas. Choose a size and click Apply. Display DPI is accounted for, and the output lock keeps window resizing and player interaction from disrupting capture. YouTube stream quality remains automatic. Install the updated 0.1.7 plugin to use these controls.
 
 ## Included from v1.7.0 — OBS plugin installer and automatic setup
 
-Run **fKey-Playback-OBS-Plugin-Setup-0.1.6.exe** with OBS closed, approve the Windows prompt, and click **Install / Update**. The installer detects OBS, checks compatibility, and backs up the previous plugin. In **Docks → fKey Playback**, **Add Playback source to current scene** sets up both video and overlay. Minimize parks the output out of view while capture continues. See the [plugin guide](obs-plugin/README.md) or **OBS Plugin Setup** in the dashboard sidebar. Members-only playback was user-verified with a signed-in, entitled account.
+Run **fKey-Playback-OBS-Plugin-Setup-0.1.7.exe** with OBS closed, approve the Windows prompt, and click **Install / Update**. The installer detects OBS, checks compatibility, and backs up the previous plugin. In **Docks → fKey Playback**, **Add Playback source to current scene** sets up both video and overlay. Minimize parks the output out of view while capture continues. See the [plugin guide](obs-plugin/README.md) or **OBS Plugin Setup** in the dashboard sidebar. Members-only playback was user-verified with a signed-in, entitled account.
 
 ## New in v1.6.1 — OBS plugin and accurate version reporting
 

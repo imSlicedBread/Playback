@@ -21,7 +21,7 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.6.exe**, approve the Windows
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.7.exe**, approve the Windows
    administrator prompt, and click **Install / Update**. The installer detects
    the usual OBS installation; use **Browse** for a custom or portable folder.
    It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual
@@ -179,3 +179,7 @@ Videos open with the local queue checkpoint in the watch URL. The controller see
 The native OBS source caches the outgoing picture during a queued video change. It waits for a decoded frame and a full-window layout stable for 500 ms, then crossfades over 300 ms. Layout changes withdraw readiness. Ads/access prompts are revealed when reported, and a 15-second loading timeout releases the held picture for inspection. Stop/sign-in cancels a pending fade; rapid queue changes replace the pending transition. First startup has no outgoing frame to blend. This is a visual transition in the native source, not an audio crossfade or preloading system; audio keeps its existing routing. The separate YouTube output window may still show page loading.
 
 Pause/resume commands now preserve the current browser frame and do not seek back to the last progress report. Seek, replay, startup restoration and history-resume protection retain their behavior. Update both the app and plugin to use the pause fix.
+
+## Stopping and cleanup
+
+Stop output closes the dedicated browser/window, releases its worker lease, cancels pending requests/retries and releases capture textures and browser audio capture. Start queue / retry recreates the output using the existing account session and saved placement. OBS shutdown closes the output before its scene/browser teardown and joins the audio capture thread. Shared OBS browser processes may remain while other OBS sources use them; the plugin does not terminate unrelated processes. Minimizing or closing a locked output still parks it intentionally so capture can continue; use Stop output to release it.

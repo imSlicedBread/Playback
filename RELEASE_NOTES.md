@@ -1,3 +1,29 @@
+# fKey Playback v1.7.6 — process and resource cleanup
+
+- **Stop output releases resources:** close the dedicated browser/window, release its worker lease, cancel pending native requests/retries, free capture textures, and disable browser audio capture. Start queue / retry recreates the output with the saved account session and placement.
+- **Earlier OBS cleanup:** close the output before OBS tears down its scenes/browser framework. Audio capture stops and its thread is joined on source destruction.
+- **Bounded station shutdown:** stop background work before draining HTTP connections, close stalled connections after a deadline, and make cleanup safe to call repeatedly. Release SQLite storage and the instance lock.
+- **Extractor process cleanup:** cancel only the extraction's owned process tree and wait for its exit. Already-cancelled extraction cannot start a process; unrelated processes are preserved.
+
+Shared OBS browser processes can remain while other OBS sources need them. Minimizing or closing a locked output still parks it intentionally for continued capture; use Stop output to release it. These fixes retain the video transitions, pause fix and saved-position protections from prior releases.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.6.zip** — updated station app and plugin source.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.7.exe** — updated Windows installer.
+- **fplayback-youtube-0.1.7-windows-x64.zip** — installer, DLL, corresponding source and license.
+- Each download has a SHA-256 checksum.
+
+Update both the station app and plugin. Stop Playback, back up and preserve `data/` and launcher configuration, extract the app update, then restart. Close OBS, run the plugin installer, and restart OBS normally. This build requires Windows x64 and OBS 32.2.2 / Qt 6.11.1; the app requires Node.js 22.13 or newer. No database migration is needed. Queues, settings and account data are preserved. Sign-in and access/age/content confirmations remain manual.
+
+## Validation
+
+All 175 app tests, JavaScript syntax checks and six native tests pass. New tests verify stalled HTTP shutdown, extraction abort, owned child-tree cleanup without killing an unrelated process, idempotent cleanup and lock release, and an actual station process exiting naturally without forced termination. Live OBS Stop/Start closed and recreated the dedicated renderer and worker lease. Full OBS shutdown left zero tracked OBS/browser processes running.
+
+See the [plugin guide](https://github.com/imSlicedBread/Playback/blob/v1.7.6/obs-plugin/README.md).
+
+---
+
 # fKey Playback v1.7.5 — smoother transitions and pause without rewind
 
 The native OBS source now holds the outgoing picture while the next queued video loads. It waits for a decoded frame and a full-window layout stable for 500 ms, then crossfades over 300 ms. YouTube layout changes withdraw readiness so the fade does not start on its smaller loading layout. Ads and access prompts are revealed when reported. A 15-second loading timeout releases the held picture for inspection; stop/sign-in cancels pending transitions and rapid queue changes replace them.

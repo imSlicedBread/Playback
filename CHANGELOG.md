@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.7.6 — process and resource cleanup
+
+- Stop output now closes its browser/window, releases capture buffers and disables browser audio capture. Start recreates the output using the saved account session and placement.
+- Cancel pending native requests and retries on stop; clean up the output before OBS tears down its scene sources and browser framework.
+- Bound HTTP shutdown, abort background work before draining connections, and make cleanup idempotent.
+- Cancel an extractor's owned process tree and wait for its exit, without terminating unrelated processes. Already-cancelled work cannot spawn a process.
+- Test stalled HTTP clients, extraction cancellation, child-tree isolation, lock release, and natural station process exit. Live OBS Stop/Start and full exit leave no tracked OBS/browser processes behind.
+
+- Package plugin and installer 0.1.7.
+
 ## v1.7.5 — smoother transitions and pause without rewind
 
 - Hold the outgoing OBS source frame while the next queued video loads, then crossfade into its decoded picture over 300 ms. Preserve normal audio routing.
