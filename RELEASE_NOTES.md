@@ -1,3 +1,42 @@
+# fKey Playback v1.7.0 — OBS plugin installer and automatic setup
+
+This release includes the Windows OBS plugin installer and all recent plugin improvements, including automatic overlay setup, the fKey Playback dock name, and output-window handling that keeps video rendering while out of view. Existing native audio capture, playback watchdog, queue and whitelisted chat controls remain included.
+
+## Downloads
+
+- **Playback-v1.7.0.zip** — the station app and plugin source.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.1.exe** — the standalone Windows installer. No PowerShell commands or .NET installation are needed.
+- **fplayback-youtube-0.1.1-windows-x64.zip** — installer, manual-install DLL, corresponding source and license.
+- Each download has a matching **.sha256** file.
+
+## Upgrade and setup
+
+1. Stop Playback and back up the complete `data/` directory. Extract the app update while preserving your data and launcher configuration. Node.js **22.13 or newer** is required. No database migration is needed.
+2. Close OBS, run the plugin installer, approve the Windows administrator prompt, and click **Install / Update**. It detects the usual OBS folder; **Browse** supports custom/portable installations. This build requires **Windows x64, OBS 32.2.2 / Qt 6.11.1** and refuses incompatible installations or an open OBS process.
+3. Start OBS using your usual shortcut. Open **Docks → fKey Playback**, sign in to YouTube manually if needed, then choose **Start queue / retry** and **Add Playback source to current scene**. Disable the old `/player` Browser Source so only one output controls the queue.
+4. The source action adds both video and transparent overlay, fits new video to the canvas, places the overlay above it, and reuses existing sources without duplicates. Existing video transforms are preserved. It repairs a missing overlay and updates its station port/canvas size on repeat use.
+5. Check the **Playback YouTube Output** audio meter and your stream/recording track. Keep monitoring off to avoid duplicate sound. Minimize parks the output outside the virtual desktop while it remains rendered; **Show output window** restores it for interaction. Keep the output window open.
+
+The installer verifies staged files, backs up existing plugin/source/license files, and restores previous files if replacement fails. It installs corresponding source and GPL license under `data/obs-plugins/fplayback-youtube` inside OBS; previous files are under its `backups` folder. Scenes, settings and YouTube login data are preserved. See the [plugin guide](https://github.com/imSlicedBread/Playback/blob/v1.7.0/obs-plugin/README.md).
+
+The dashboard sidebar now shows **fKey Playback**, **OBS Plugin Setup**, **Overlay Preview**, and the running station version. Overlay Preview does not start a competing playback controller.
+
+## Validation
+
+All **160 app tests**, JavaScript syntax checks and **three native tests** pass locally. Native tests cover watchdog limits, real libobs scene operations with test sources, installer fresh installs/upgrades, backups, injected rollback, locked-file refusal, compatibility validation and embedded DLL/source/license resources. The installer uses the static C++ runtime and imports only Windows system DLLs. Windows/Linux GitHub CI also gates publication.
+
+Live OBS checks verified video, browser audio, queue controls, automatic advancement and capture with the output parked off-screen. On **October 20, 2026**, the user confirmed actual **members-only video playback** in the native plugin using the signed-in, entitled account. That result applies to the tested account and video; the separate embedded Browser Source workflow remains unverified for members-only playback. Sign-in, age/content confirmations and access dialogs remain manual. Live Kick/SOOP and full Windows reboot acceptance remain pending.
+
+---
+
+# Validation update — October 20, 2026
+
+The user confirmed actual **members-only YouTube video playback** in the native OBS plugin using the signed-in account entitled to watch the video. This is user-reported live validation, beyond sign-in or private-playlist visibility, and applies to the tested account and video. The separate Browser Source embedded player remains unverified for members-only playback. Sign-in and YouTube access/age/content prompts remain manual.
+
+The release-time verification notes below record the status before this confirmation.
+
+---
+
 # fKey Playback v1.6.1 — correct startup version display
 
 Fix the startup banner and `/api/health` showing 1.5.1 after upgrading to v1.6.0. Both now read the version from `package.json`, and the headless startup test checks that they match. The README version is also updated.

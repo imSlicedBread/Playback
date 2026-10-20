@@ -2,3 +2,6 @@
 build/
 package/
 *.zip
+*.zip.sha256
+*.exe
+*.exe.sha256

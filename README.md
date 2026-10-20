@@ -1,12 +1,16 @@
-# fKey Playback 1.6.1
+# fKey Playback 1.7.0
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
 [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT license](LICENSE) · [Storage and migration](STORAGE.md) · [Security](SECURITY.md)
 
+## New in v1.7.0 — OBS plugin installer and automatic setup
+
+Run **fKey-Playback-OBS-Plugin-Setup-0.1.1.exe** with OBS closed, approve the Windows prompt, and click **Install / Update**. The installer detects OBS, checks compatibility, and backs up the previous plugin. In **Docks → fKey Playback**, **Add Playback source to current scene** sets up both video and overlay. Minimize parks the output out of view while capture continues. See the [plugin guide](obs-plugin/README.md) or **OBS Plugin Setup** in the dashboard sidebar. Members-only playback was user-verified with a signed-in, entitled account.
+
 ## New in v1.6.1 — OBS plugin and accurate version reporting
 
-The experimental [OBS YouTube plugin](obs-plugin/README.md) includes native audio and a bounded playback watchdog. Startup and health checks now report the package version consistently. Members-only playback remains unverified.
+The experimental [OBS YouTube plugin](obs-plugin/README.md) includes native audio and a bounded playback watchdog. Startup and health checks now report the package version consistently. The user verified members-only playback in the native plugin with a signed-in, entitled YouTube account on October 20, 2026.
 
 ## New in v1.5.1 — Windows startup and OBS recovery
 
@@ -35,7 +39,7 @@ Existing `state.json` installations migrate automatically with an exact pre-migr
 Experimental signed-in YouTube watch-page output is available as a native
 [OBS plugin prototype](obs-plugin/README.md). It keeps the Playback queue controls
 and supplies its own native video source. It requires OBS 32.2.2 / Qt 6.11.1 on Windows x64;
-members-only playback still needs validation with an entitled account.
+members-only playback has been user-verified with a signed-in, entitled account.
 
 1. Install Node.js **22.13 or newer**. There are no npm runtime dependencies.
 2. Extract the complete release into a permanent directory such as `C:\Playback`.
@@ -70,7 +74,7 @@ For account-restricted videos, use the existing OBS Browser Source with its own 
 
 Account mode keeps normal queue, audio and overlay controls. It holds the current video on player errors, with an on-screen Retry action and setup link, rather than automatically quarantining/skipping an account-restricted video. You may skip manually from the dashboard. Turn account mode off to return to default playback. Playback does not inspect Google cookies, collect credentials or claim a connected account status.
 
-**Verified locally:** Google sign-in succeeded in the OBS Browser Source and private playlists were visible. **Not yet verified:** playback of account-restricted videos through Playback's embedded player, members-only videos, and login persistence after reboot. A private playlist listing does not prove private-video playback. YouTube can still prohibit embedding or withhold account access; enabling this option is not a guarantee of members-only support. [YouTube documents](https://support.google.com/youtube/answer/171780?hl=en) that age-restricted videos cannot play on most third-party websites. Sign-in does not override that restriction: such a video may require the normal YouTube watch page. Account mode holds errors instead of skipping, but cannot make an embedding-restricted video playable.
+**Verified locally:** Google sign-in succeeded in the OBS Browser Source and private playlists were visible. **Not yet verified:** playback of account-restricted videos through Playback's embedded player, members-only videos in that embedded player, and login persistence after reboot. A private playlist listing does not prove private-video playback. YouTube can still prohibit embedding or withhold account access; enabling this option is not a guarantee of members-only support. [YouTube documents](https://support.google.com/youtube/answer/171780?hl=en) that age-restricted videos cannot play on most third-party websites. Sign-in does not override that restriction: such a video may require the normal YouTube watch page. Account mode holds errors instead of skipping, but cannot make an embedding-restricted video playable.
 
 ## Smart Rotation Queue
 

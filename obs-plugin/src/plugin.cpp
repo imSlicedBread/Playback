@@ -4,6 +4,7 @@
 #include <browser-panel.hpp>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QEvent>
 #include <QCheckBox>
 #include <QDir>
 #include <QFile>
@@ -27,6 +28,7 @@
 #include <windows.h>
 #include <QElapsedTimer>
 #include "recovery-policy.hpp"
+#include "scene-setup.hpp"
 
 OBS_DECLARE_MODULE()
 void playback_register_capture();
@@ -35,10 +37,60 @@ const char *obs_module_description(void) { return "Playback queue controls for a
 const char *obs_module_name(void) { return "Playback YouTube Output"; }
 
 class OutputWindow final : public QWidget {
+  bool parked = false;
+  bool wasMaximized = false;
+  QRect previousGeometry;
+  void park() {
+    if (parked) return;
+    wasMaximized=isMaximized();
+    previousGeometry=wasMaximized ? normalGeometry() : geometry();
+    setAttribute(Qt::WA_ShowWithoutActivating,true);
+    if (wasMaximized) showNormal();
+    parked=true;
+    // WGC needs an unminimized, painting HWND. Keep it entirely outside the
+    // virtual desktop instead of restoring a visible window over the user.
+    SetWindowPos(reinterpret_cast<HWND>(winId()),HWND_BOTTOM,
+      GetSystemMetrics(SM_XVIRTUALSCREEN)-frameGeometry().width()-64,
+      GetSystemMetrics(SM_YVIRTUALSCREEN),0,0,SWP_NOSIZE|SWP_NOACTIVATE);
+  }
 public:
   using QWidget::QWidget;
   std::function<void()> onClose;
+  void present() {
+    if (parked) {
+      parked=false;
+      setGeometry(previousGeometry);
+      if (wasMaximized) showMaximized();
+    }
+    show(); raise(); activateWindow();
+  }
 protected:
+  bool nativeEvent(const QByteArray &type, void *message, qintptr *result) override {
+    const auto *msg=static_cast<MSG *>(message);
+    if (msg->message==WM_SYSCOMMAND) {
+      const auto command=msg->wParam & 0xfff0;
+      if (command==SC_MINIMIZE || (command==SC_RESTORE && parked)) {
+        if (parked) present(); else park();
+        *result=0; return true;
+      }
+    }
+    return QWidget::nativeEvent(type,message,result);
+  }
+  void changeEvent(QEvent *event) override {
+    QWidget::changeEvent(event);
+    if (event->type()==QEvent::ActivationChange && isActiveWindow() && parked) {
+      present();
+    }
+    if (event->type()==QEvent::WindowStateChange && isMinimized()) {
+      // Fallback for programmatic minimization that bypasses WM_SYSCOMMAND.
+      QTimer::singleShot(0,this,[this]() {
+        if (!isMinimized()) return;
+        setAttribute(Qt::WA_ShowWithoutActivating,true);
+        setWindowState(windowState() & ~Qt::WindowMinimized);
+        park();
+      });
+    }
+  }
   void closeEvent(QCloseEvent *event) override {
     if (onClose) onClose();
     hide(); event->ignore();
@@ -210,7 +262,7 @@ public:
     preferences = new QSettings(QString::fromUtf8(configPath.Get()), QSettings::IniFormat, this);
     dock = new QWidget;
     auto *layout = new QVBoxLayout(dock);
-    auto *intro = new QLabel("Experimental YouTube watch-page output. Sign in manually with an account that has access, then add the Playback video source to your scene.");
+    auto *intro = new QLabel("Experimental YouTube watch-page output. Sign in manually with an account that has access, then add Playback video and overlay to your scene.");
     intro->setWordWrap(true); layout->addWidget(intro);
     port = new QSpinBox; port->setRange(1, 65535); port->setValue(preferences->value("port",4177).toInt()); port->setPrefix("Station port: "); layout->addWidget(port);
     autoStart = new QCheckBox("Start this output when OBS opens");
@@ -222,34 +274,30 @@ public:
     };
     button("Sign in / manage YouTube account", [this]() {
       stop(); if (!ensureBrowser()) return;
-      browser->setURL("https://www.youtube.com/"); output->show(); output->raise();
+      browser->setURL("https://www.youtube.com/"); output->present();
       setStatus("Sign in inside this window, then choose Start queue. Google may restrict embedded browser sign-in.");
     });
     button("Start queue / retry", [this]() { start(); });
-    button("Show output window", [this]() { if (ensureBrowser()) { output->show(); output->raise(); } });
+    button("Show output window", [this]() { if (ensureBrowser()) output->present(); });
     button("Add Playback source to current scene", [this]() {
       if (!ensureBrowser()) return;
       output->show();
       obs_source_t *sceneSource = obs_frontend_get_current_scene();
       obs_scene_t *scene = sceneSource ? obs_scene_from_source(sceneSource) : nullptr;
       if (!scene) { if (sceneSource) obs_source_release(sceneSource); setStatus("Select an OBS scene first."); return; }
-      if (obs_scene_find_source(scene,"Playback YouTube Output")) {
-        obs_source_release(sceneSource); setStatus("This scene already has Playback YouTube Output."); return;
-      }
-      obs_data_t *settings = obs_data_create();
-      obs_source_t *capture = obs_get_source_by_name("Playback YouTube Output");
-      if (!capture) capture = obs_source_create("fplayback_youtube_output","Playback YouTube Output",settings,nullptr);
-      obs_data_release(settings);
-      if (capture) { obs_scene_add(scene,capture); obs_source_release(capture); }
+      obs_video_info video{};
+      const char *error = obs_get_video_info(&video)
+        ? playback_setup_scene(scene,port->value(),video.base_width,video.base_height)
+        : "Cannot read the OBS canvas size.";
       obs_source_release(sceneSource);
-      setStatus(capture ? "Playback video source added. Verify its picture and configure audio capture in OBS." : "Playback video source could not be created.");
+      setStatus(error ? error : "Playback video and overlay are ready. Check the Playback source audio meter.");
     });
     button("Stop output", [this]() { stop(); });
     layout->addStretch();
     QFile file(":/fplayback/watch-controller.js");
     if (file.open(QIODevice::ReadOnly)) script = QString::fromUtf8(file.readAll());
     timer.setInterval(1000); connect(&timer, &QTimer::timeout, this, [this]() { poll(); }); timer.start();
-    obs_frontend_add_dock_by_id("fplayback-youtube", "Playback YouTube", dock);
+    obs_frontend_add_dock_by_id("fplayback-youtube", "fKey Playback", dock);
     if (autoStart->isChecked()) QTimer::singleShot(1500,this,[this]() { start(); });
   }
   bool ensureBrowser() {

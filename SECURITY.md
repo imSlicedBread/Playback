@@ -42,7 +42,9 @@ page; status/progress callbacks require the active generation and a per-generati
 nonce. Access barriers hold the entry and require manual attention. The plugin
 does not accept content warnings, perform age verification, or grant membership
 access. The plugin and ordinary player share the existing exclusive local worker
-lease. Account persistence and actual restricted playback require live testing.
+lease. Members-only video playback was user-verified on October 20, 2026 with
+a signed-in, entitled account in the native plugin. This does not grant access
+to other accounts or establish login persistence through a full Windows reboot.
 
 Native plugin audio capture targets active Windows audio sessions owned by
 `obs-browser-page.exe` processes descended from this OBS instance. It excludes

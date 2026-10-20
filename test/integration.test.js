@@ -153,9 +153,9 @@ test('Restored seek bar uses the official sidebar logo and seeks the authoritati
     fetch(`${base}/assets/control.js`).then(r=>r.text()),
     fetch(`${base}/assets/logo.png`)
   ]);
-  assert.match(control,/<img src="\/assets\/logo\.png" alt="fKey Playback logo" class="brand-mark"><span>Playback<small class="sub">made by fKey Labs Inc\.<\/small><\/span>/);
-  assert.match(settings,/<img src="\/assets\/logo\.png" alt="fKey Playback logo" class="brand-mark"><span>Playback<small class="sub">made by fKey Labs Inc\.<\/small><\/span>/);
-  assert.doesNotMatch(control,/<span>fKey Playback<small/);
+  assert.match(control,/<img src="\/assets\/logo\.png" alt="fKey Playback logo" class="brand-mark"><span>fKey Playback<small class="sub">made by fKey Labs Inc\.<\/small><\/span>/);
+  assert.match(settings,/<img src="\/assets\/logo\.png" alt="fKey Playback logo" class="brand-mark"><span>fKey Playback<small class="sub">made by fKey Labs Inc\.<\/small><\/span>/);
+  assert.doesNotMatch(control,/<span>Playback<small/);
   assert.match(control,/id="seekSlider"[^>]*type="range"|type="range"[^>]*id="seekSlider"/);
   assert.match(control,/id="seekCurrent"/);
   assert.match(control,/id="seekTotal"/);

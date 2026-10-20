@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.7.0 — OBS plugin installer and automatic setup
+
+- Add a standalone Windows plugin installer with OBS detection, a folder picker, compatibility checks, verified replacement, backups and rollback. Bundle corresponding plugin/installer source and license in the executable; no PowerShell or .NET setup is required.
+- Rename the OBS dock to fKey Playback while preserving its internal identifier.
+- October 20, 2026: the user confirmed actual members-only video playback in the native OBS plugin with a signed-in, entitled YouTube account. The separate embedded Browser Source workflow remains unverified for members-only playback.
+- Update the dashboard sidebar with fKey branding, an OBS Plugin Setup guide, a safe overlay preview link, and the running server version.
+- Add or repair the transparent overlay with the existing Add Playback source action, using the station port and OBS canvas dimensions. Reuse manual and managed sources, keep existing video transforms, and avoid modifying unrelated Browser sources.
+- Keep the captured window rendering when minimized by parking it outside the virtual desktop, with explicit restoration for account interaction. The window must remain open.
+- Add native libobs scene-setup coverage for creation, repeated use, ordering, name collisions, dimensions and port changes.
+
 ## v1.6.1 — correct startup and health version reporting
 
 - Read the runtime version from package.json for both the startup banner and health endpoint, removing stale 1.5.1 strings.

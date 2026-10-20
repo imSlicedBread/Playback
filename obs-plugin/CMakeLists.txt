@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(fplayback-youtube VERSION 0.1.0 LANGUAGES CXX)
+project(fplayback-youtube VERSION 0.1.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -10,7 +10,7 @@ set(OBS_HEADERS "" CACHE PATH "OBS source checkout matching the installed runtim
 set(OBS_IMPORT_LIBS "" CACHE PATH "Import libraries generated from the installed OBS DLLs")
 set(OBS_BROWSER_HEADERS "" CACHE PATH "Pinned obs-browser panel header directory")
 find_package(Qt6 6.11 REQUIRED COMPONENTS Core Widgets Network)
-add_library(fplayback-youtube MODULE src/plugin.cpp src/capture.cpp src/audio.cpp resources.qrc)
+add_library(fplayback-youtube MODULE src/plugin.cpp src/capture.cpp src/audio.cpp src/scene-setup.cpp resources.qrc)
 target_include_directories(fplayback-youtube PRIVATE
   "${OBS_HEADERS}/libobs" "${OBS_HEADERS}/libobs-winrt" "${OBS_HEADERS}/frontend/api" "${OBS_IMPORT_LIBS}" "${OBS_BROWSER_HEADERS}")
 target_link_libraries(fplayback-youtube PRIVATE Qt6::Core Qt6::Widgets Qt6::Network
@@ -21,3 +21,28 @@ enable_testing()
 add_executable(playback-recovery-policy-test src/recovery-policy-test.cpp)
 set_target_properties(playback-recovery-policy-test PROPERTIES AUTOMOC OFF)
 add_test(NAME playback-recovery-policy COMMAND playback-recovery-policy-test)
+
+add_executable(playback-scene-setup-test src/scene-setup-test.cpp src/scene-setup.cpp)
+set_target_properties(playback-scene-setup-test PROPERTIES AUTOMOC OFF)
+target_include_directories(playback-scene-setup-test PRIVATE "${OBS_HEADERS}/libobs" "${OBS_IMPORT_LIBS}")
+target_link_libraries(playback-scene-setup-test PRIVATE "${OBS_IMPORT_LIBS}/obs.lib")
+add_test(NAME playback-scene-setup COMMAND playback-scene-setup-test)
+set_tests_properties(playback-scene-setup PROPERTIES WORKING_DIRECTORY "${OBS_RUNTIME_PATH}")
+
+enable_language(RC)
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/installer-$<CONFIG>.rc" CONTENT
+"101 RCDATA \"$<TARGET_FILE:fplayback-youtube>\"\n102 RCDATA \"${INSTALLER_SOURCE_ZIP}\"\n103 RCDATA \"${CMAKE_CURRENT_SOURCE_DIR}/LICENSE\"\n1 24 \"${CMAKE_CURRENT_SOURCE_DIR}/src/installer.manifest\"\n")
+add_executable(fplayback-plugin-setup WIN32 src/installer.cpp "${CMAKE_CURRENT_BINARY_DIR}/installer-$<CONFIG>.rc")
+set_target_properties(fplayback-plugin-setup PROPERTIES AUTOMOC OFF OUTPUT_NAME "fKey-Playback-OBS-Plugin-Setup-${PROJECT_VERSION}"
+  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_link_libraries(fplayback-plugin-setup PRIVATE Shell32 Ole32 Advapi32 Version User32 Gdi32)
+target_link_options(fplayback-plugin-setup PRIVATE /MANIFEST:NO)
+add_dependencies(fplayback-plugin-setup fplayback-youtube)
+install(TARGETS fplayback-plugin-setup RUNTIME DESTINATION .)
+
+add_executable(playback-installer-test src/installer-test.cpp)
+set_target_properties(playback-installer-test PROPERTIES AUTOMOC OFF)
+target_link_libraries(playback-installer-test PRIVATE Version)
+add_dependencies(playback-installer-test fplayback-plugin-setup)
+add_test(NAME playback-plugin-installer COMMAND playback-installer-test "$<TARGET_FILE:fplayback-plugin-setup>"
+  "${OBS_RUNTIME_PATH}/../.." "$<TARGET_FILE:fplayback-youtube>" "${INSTALLER_SOURCE_ZIP}")

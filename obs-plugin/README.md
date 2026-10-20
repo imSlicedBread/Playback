@@ -5,11 +5,12 @@ default browser context. It does not use an iframe or a Chrome extension. Sign
 in manually in its output window with the account that owns the membership.
 The dashboard and whitelisted chat commands continue to control the same station.
 
-**Members-only playback is not yet verified.** Successful sign-in or seeing a
-private playlist does not prove that a restricted video will play. YouTube may
-reject sign-in from an embedded browser or restrict playback for other reasons.
-The plugin cannot grant membership access. Test a real entitled video before
-using this for a broadcast. Account/age/content confirmations remain manual.
+**Members-only playback was verified by the user on October 20, 2026**, using
+an entitled YouTube account signed in inside the native OBS plugin. This confirms
+actual members-only video playback, beyond sign-in or private-playlist visibility.
+The result applies to the tested account and video. The plugin uses the account's
+existing access; account/age/content confirmations remain manual. The separate
+Browser Source embedded-player workflow has not been verified for members-only playback.
 
 ## Install and test
 
@@ -20,19 +21,25 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. In the built ZIP, copy `obs-plugins/64bit/fplayback-youtube.dll` into
-   `C:\Program Files\obs-studio\obs-plugins\64bit`. Administrator access may be
-   required. Do not replace OBS's own Qt/browser DLLs.
-3. Start Playback and OBS. Open **Docks → Playback YouTube**.
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.1.exe**, approve the Windows
+   administrator prompt, and click **Install / Update**. The installer detects
+   the usual OBS installation; use **Browse** for a custom or portable folder.
+   It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual
+   shortcut after installation. No PowerShell commands or .NET install is needed.
+   Manual installation remains available: copy `obs-plugins/64bit/fplayback-youtube.dll`
+   from the ZIP into your OBS `obs-plugins/64bit` folder with OBS closed.
+3. Start Playback and OBS. Open **Docks → fKey Playback**.
 4. Disable/remove the station's existing `/player` Browser Source. It competes
    for the same playback lease; there can be only one playback controller.
 5. Choose **Sign in / manage YouTube account**. Complete sign-in yourself in
    this window. Existing OBS Browser sign-in may already be available because
    the plugin uses its default context. This does not share Chrome's login.
 6. Choose **Start queue / retry**, then **Add Playback source to current scene**.
-   Fit the added `Playback YouTube Output` source to the scene. Keep the output
-   window open and unminimized. Disable the old `Playback YouTube Capture` Window
-   Capture source if you installed an earlier prototype.
+   The plugin adds the video and a transparent `Playback Overlay`, sizes both
+   to the OBS canvas, and puts the overlay above the video. Clicking again
+   repairs a missing overlay and reuses existing sources without duplicates.
+   Existing video transforms are preserved. Disable the old `Playback YouTube
+   Capture` Window Capture source if you installed an earlier prototype.
 7. The same **Playback YouTube Output** source now includes browser audio in the
    OBS mixer. Its first upgrade from the video-only prototype enables Track 1.
    Check the source is unmuted and your recording/stream uses that track. Keep
@@ -41,12 +48,19 @@ excludes windows owned by OBS itself.
    `obs-browser-page.exe` children; Chrome, Discord, microphones and general
    desktop audio are not targeted. Other audible OBS browser panels sharing
    the captured browser process may also be included, so mute unused panels.
-8. Optional: add a transparent Browser Source above the Playback YouTube Output source, URL
-   `http://127.0.0.1:4177/overlay`, at the same canvas size, for the existing
-   lower third and voting screen. `/overlay` never claims playback.
+8. Lower thirds and votes use the automatically added `/overlay` Browser
+   Source. It never claims playback. Manual overlays using the configured
+   station URL are reused, even when renamed. The button updates the managed
+   overlay to the current station port and canvas size.
 9. Optional: enable **Start this output when OBS opens**. Playback must also
    start with Windows using the station's existing startup setup. A stopped
    station is retried once a second after the queue is started.
+
+Keep the output window open. Windows stops painting genuinely minimized windows,
+so its minimize action parks it entirely outside the virtual desktop instead
+of restoring it visibly over OBS. Playback stays rendered; **Show output window** brings
+it forward when you need to interact with YouTube. This does not enable capture
+of a closed output or a locked Windows desktop.
 
 YouTube access errors hold the current entry. Inspect the window, resolve access
 manually, then choose **Start queue / retry**. There are no automatic clicks on
@@ -80,6 +94,22 @@ Uninstall with OBS closed by removing only `fplayback-youtube.dll`. Restore the
 regular `/player` source. OBS Browser manages the account session; the plugin
 does not export, import, log, or copy Google cookies or account tokens.
 
+## Windows installer
+
+The standalone installer includes the plugin DLL, corresponding source ZIP and
+GPL license. It installs only those three files, leaves OBS's own DLLs, scenes,
+settings and browser sessions alone, and refuses to update while OBS is open.
+Existing plugin/source/license files are backed up under
+`data/obs-plugins/fplayback-youtube/backups` inside the OBS installation.
+It verifies staged files before replacing anything and restores previous files
+if replacement fails. The installed source is available at
+`data/obs-plugins/fplayback-youtube/source.zip` for rebuilding or redistribution.
+
+The plugin ZIP also includes the installer and uncompressed source. Both the
+installer and ZIP have SHA-256 checksum files. The installer is built with the
+static C++ runtime and uses Windows APIs; it needs neither the Qt SDK nor .NET
+on the user's computer. It does not install OBS or start a stream/recording.
+
 ## Build
 
 Install CMake ≥3.28 and Visual Studio 2026's Desktop development with C++ workload.
@@ -91,6 +121,10 @@ Build caches and binary packages are ignored by Git. No installation is performe
 
 Run `npm test` and `npm run check` from the station directory. The watch-page
 controller has simulated DOM tests and a real localhost worker-lease test.
+The build also runs installer tests for fresh installs, backups, rollback,
+locked files, folder validation and embedded resources, plus native recovery-policy and scene-setup tests against libobs
+with test video/browser sources, covering reuse, stacking, canvas size, port
+changes and unrelated sources.
 Compilation does not verify rendering, Google login, or membership access in OBS.
 
 Local live testing on OBS 32.2.2 confirmed reuse of the signed-in YouTube session,
@@ -98,7 +132,8 @@ public-video playback through the native video source, restart startup, pause,
 seek, resume, automatic end-of-video advancement and changing progress/duration heartbeats. An age-restricted video
 played on its normal watch page after the user manually accepted YouTube's
 confirmation. Native browser audio was observed as non-silent PCM and a moving
-OBS mixer meter. Actual members-only access remains unverified.
+OBS mixer meter. On October 20, 2026, the user also confirmed actual members-only
+video playback through the native plugin with the signed-in, entitled account.
 
 Plugin code in this directory is GPL-2.0-or-later (see LICENSE), consistent with
 OBS's plugin API. The rest of the station retains its existing license. The
