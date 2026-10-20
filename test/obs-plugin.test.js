@@ -7,7 +7,8 @@ import path from 'node:path';
 import {createApp} from '../lib/http.js';
 const source=fs.readFileSync(new URL('../obs-plugin/watch-controller.js',import.meta.url),'utf8');
 function harness(){
- const style=()=>({values:{},setProperty(name,value){this.values[name]=value;}});
+ const style=()=>({values:{},priorities:{},setProperty(name,value,priority=''){this.values[name]=value;this.priorities[name]=priority;},
+  getPropertyValue(name){return this.values[name]||'';},getPropertyPriority(name){return this.priorities[name]||'';},removeProperty(name){delete this.values[name];delete this.priorities[name];}});
  const listeners=new Map();
  const video={style:style(),readyState:4,duration:240,currentTime:0,paused:true,ended:false,volume:1,muted:false,
   addEventListener(type,fn){listeners.set(type,fn);},removeEventListener(type,fn){if(listeners.get(type)===fn)listeners.delete(type);},
@@ -15,15 +16,28 @@ function harness(){
  const player={style:style(),classList:{contains:()=>ad}};
  const document={title:'YouTube',documentElement:{style:style()},body:{style:style(),appendChild(node){node.parentElement=this;}},
   querySelector(selector){if(selector==='video.html5-main-video')return video;if(selector==='#movie_player')return player;return barrier?{getClientRects:()=>[{}],textContent:'Access required'}:null;}};
- document.querySelectorAll=()=>barrier?[{getClientRects:()=>[{}],textContent:'Confirmation required'}]:[];
+ const controls=[{style:style()},{style:style()}];
+ document.querySelectorAll=selector=>selector.startsWith('.ytp-chrome-bottom')?controls:barrier?[{getClientRects:()=>[{}],textContent:'Confirmation required'}]:[];
  let ad=false,barrier=false,now=0;
  const context={window:{},document,URL,performance:{now:()=>now},location:new URL('https://www.youtube.com/watch?v=dQw4w9WgXcQ')};
  const defaults={nonce:'nonce',generation:1,videoId:'dQw4w9WgXcQ',position:35,volume:70,muted:false,paused:false,voting:false};
- return {video,player,context,listeners,advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
+ return {video,player,controls,context,listeners,advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
   document.title='YouTube';vm.runInNewContext(source.replace('__PLAYBACK_COMMAND__',JSON.stringify({...defaults,...fields})),context);
   return document.title.startsWith('fPlayback:')?JSON.parse(document.title.slice('fPlayback:nonce:'.length)):null;
  }};
 }
+
+test('output lock hides transport chrome and restores its exact styles for manual interaction, ads and barriers',()=>{
+ const h=harness();h.controls[0].style.setProperty('opacity','.8','important');
+ h.run({locked:true});assert.equal(h.controls[0].style.values.visibility,'hidden');assert.equal(h.controls[1].style.values['pointer-events'],'none');
+ h.run({locked:false});assert.equal(h.controls[0].style.values.opacity,'.8');assert.equal(h.controls[0].style.getPropertyPriority('opacity'),'important');assert.equal(h.controls[1].style.getPropertyValue('visibility'),'');
+ for(const type of ['ad','barrier']){
+  h.run({locked:true});if(type==='ad')h.setAd(true);else h.setBarrier(true);
+  const report=h.run({locked:true});assert.equal(report.position,undefined);assert.equal(h.controls[0].style.values.opacity,'.8');
+  h.setAd(false);h.setBarrier(false);
+ }
+ h.run({locked:true,generation:2});h.run({locked:false,generation:3});assert.equal(h.controls[0].style.values.opacity,'.8');
+});
 test('watch controller uses the normal matching YouTube page and applies seek only once per generation',()=>{
  const h=harness();let report=h.run();assert.equal(h.video.currentTime,35);assert.equal(h.video.paused,false);assert.equal(report.position,35);
  assert.equal(report.href,'https://www.youtube.com/watch?v=dQw4w9WgXcQ');

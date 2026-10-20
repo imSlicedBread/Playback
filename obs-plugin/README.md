@@ -56,6 +56,15 @@ excludes windows owned by OBS itself.
    start with Windows using the station's existing startup setup. A stopped
    station is retried once a second after the queue is started.
 
+Playback starts with **Lock output (size + controls)** enabled. The output uses
+a fixed 1280×720 client size, ignores mouse/keyboard input, and hides ordinary
+YouTube player controls to keep hovering or accidental clicks out of the OBS
+picture. Minimize and Close park the locked window rather than stopping the queue.
+To handle a YouTube prompt, uncheck the lock and choose **Show output window**;
+interaction is visible in OBS while unlocked. Recheck the lock when finished.
+**Sign in / manage YouTube account** unlocks it automatically; **Start queue / retry**
+locks it again. Ads and access/confirmation dialogs are not hidden or accepted.
+
 Keep the output window open. Windows stops painting genuinely minimized windows,
 so its minimize action parks it entirely outside the virtual desktop instead
 of restoring it visibly over OBS. Playback stays rendered; **Show output window** brings

@@ -31,9 +31,31 @@
   const resetWatchdog = () => { state.progressAt = now; state.lastPosition = null; };
   const recover = reason => report({status:'Recovering stalled YouTube playback…',recover:reason});
   state.latestCommand = command; state.report = report;
+  const advertisement=player?.classList.contains('ad-showing');
+  const barrier=hasBarrier();
+  // Lock only the ordinary player chrome. Access prompts and advertisements
+  // retain their original UI; users unlock the native window to interact.
+  const chrome=Array.from(document.querySelectorAll('.ytp-chrome-bottom, .ytp-chrome-top, .ytp-gradient-bottom, .ytp-gradient-top, .ytp-tooltip'));
+  const saved=window.__fPlaybackChrome || (window.__fPlaybackChrome=new Map());
+  const lockChrome=command.locked===true && !advertisement && !barrier;
+  for (const [element,styles] of saved) {
+    if (lockChrome && chrome.includes(element)) continue;
+    for (const [name,value,priority] of styles) {
+      if (value) element.style.setProperty(name,value,priority);
+      else element.style.removeProperty(name);
+    }
+    saved.delete(element);
+  }
+  if (lockChrome) for (const element of chrome) {
+    if (!saved.has(element)) saved.set(element,['opacity','visibility','pointer-events'].map(name=>
+      [name,element.style.getPropertyValue(name),element.style.getPropertyPriority(name)]));
+    element.style.setProperty('opacity','0','important');
+    element.style.setProperty('visibility','hidden','important');
+    element.style.setProperty('pointer-events','none','important');
+  }
   // Ads and access barriers must never advance or overwrite the saved queue position.
-  if (player?.classList.contains('ad-showing')) { resetWatchdog(); report({ status: 'Advertisement — queue position held' }); return; }
-  if (hasBarrier()) {
+  if (advertisement) { resetWatchdog(); report({ status: 'Advertisement — queue position held' }); return; }
+  if (barrier) {
     resetWatchdog();
     report({ status: 'YouTube needs attention. Open the output window to check access or confirm playback.' }); return;
   }

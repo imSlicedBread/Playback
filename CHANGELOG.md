@@ -2,6 +2,8 @@
 
 ## v1.7.0 — OBS plugin installer and automatic setup
 
+- Lock output size and mouse/keyboard interaction during playback, hide ordinary player transport controls, and park the locked window on Close. Provide explicit manual unlocking for YouTube interaction; preserve ads and access dialogs.
+
 - Add a standalone Windows plugin installer with OBS detection, a folder picker, compatibility checks, verified replacement, backups and rollback. Bundle corresponding plugin/installer source and license in the executable; no PowerShell or .NET setup is required.
 - Rename the OBS dock to fKey Playback while preserving its internal identifier.
 - October 20, 2026: the user confirmed actual members-only video playback in the native OBS plugin with a signed-in, entitled YouTube account. The separate embedded Browser Source workflow remains unverified for members-only playback.

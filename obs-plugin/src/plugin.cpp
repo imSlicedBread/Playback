@@ -37,6 +37,7 @@ const char *obs_module_description(void) { return "Playback queue controls for a
 const char *obs_module_name(void) { return "Playback YouTube Output"; }
 
 class OutputWindow final : public QWidget {
+  bool captureLocked = true;
   bool parked = false;
   bool wasMaximized = false;
   QRect previousGeometry;
@@ -56,6 +57,15 @@ class OutputWindow final : public QWidget {
 public:
   using QWidget::QWidget;
   std::function<void()> onClose;
+  void setCaptureLocked(bool locked) {
+    captureLocked=locked;
+    if (locked) {
+      if (isMaximized()) showNormal();
+      setFixedSize(1280,720);
+    } else {
+      setMinimumSize(640,360); setMaximumSize(QWIDGETSIZE_MAX,QWIDGETSIZE_MAX);
+    }
+  }
   void present() {
     if (parked) {
       parked=false;
@@ -69,6 +79,7 @@ protected:
     const auto *msg=static_cast<MSG *>(message);
     if (msg->message==WM_SYSCOMMAND) {
       const auto command=msg->wParam & 0xfff0;
+      if (captureLocked && (command==SC_SIZE || command==SC_MAXIMIZE)) { *result=0; return true; }
       if (command==SC_MINIMIZE || (command==SC_RESTORE && parked)) {
         if (parked) present(); else park();
         *result=0; return true;
@@ -92,6 +103,7 @@ protected:
     }
   }
   void closeEvent(QCloseEvent *event) override {
+    if (captureLocked) { park(); event->ignore(); return; }
     if (onClose) onClose();
     hide(); event->ignore();
   }
@@ -107,6 +119,7 @@ class Playback final : public QObject {
   QSpinBox *port = nullptr;
   QSettings *preferences = nullptr;
   QCheckBox *autoStart = nullptr;
+  QCheckBox *outputLock = nullptr;
   QTimer timer;
   QNetworkAccessManager network;
   QString worker = QUuid::createUuid().toString(QUuid::WithoutBraces);
@@ -143,6 +156,15 @@ class Playback final : public QObject {
   void pausePage() {
     if (browser) browser->executeJavaScript("if(location.origin==='https://www.youtube.com'&&location.pathname==='/watch')document.querySelector('video')?.pause()");
   }
+  void applyOutputLock() {
+    const bool locked=outputLock->isChecked();
+    if (output) output->setCaptureLocked(locked);
+    if (browser) {
+      browser->setEnabled(!locked);
+      EnableWindow(reinterpret_cast<HWND>(browser->winId()),!locked);
+    }
+    if (running && browser) apply();
+  }
   void apply() {
     const auto current = snapshot.value("current").toObject();
     const auto video = current.value("videoId").toString();
@@ -173,6 +195,7 @@ class Playback final : public QObject {
     QJsonObject command{{"nonce", nonce}, {"generation", generation}, {"videoId", video},
       {"position", current.value("position").toDouble()}, {"paused", current.value("paused").toBool()},
       {"voting", snapshot.value("vote").isObject()},
+      {"locked", outputLock->isChecked()},
       {"volume", audio.value("volume").toInt(50)}, {"muted", audio.value("muted").toBool()}};
     auto code = script;
     code.replace("__PLAYBACK_COMMAND__", QString::fromUtf8(QJsonDocument(command).toJson(QJsonDocument::Compact)));
@@ -250,6 +273,7 @@ public:
     if (running) stop();
     activePort = port->value(); worker = QUuid::createUuid().toString(QUuid::WithoutBraces);
     ++epoch; running = true; port->setEnabled(false);
+    outputLock->setChecked(true); applyOutputLock();
     recovery.reset(); watchdogHeld=false; lastTelemetry=watchdogClock.elapsed();
     preferences->setValue("port", activePort);
     loadedVideo.clear(); generation = -1;
@@ -268,12 +292,16 @@ public:
     autoStart = new QCheckBox("Start this output when OBS opens");
     autoStart->setChecked(preferences->value("autoStart",false).toBool()); layout->addWidget(autoStart);
     connect(autoStart, &QCheckBox::toggled, this, [this](bool enabled) { preferences->setValue("autoStart", enabled); });
+    outputLock=new QCheckBox("Lock output (size + controls)");
+    outputLock->setChecked(true); layout->addWidget(outputLock);
+    connect(outputLock,&QCheckBox::toggled,this,[this](bool) { applyOutputLock(); });
     status = new QLabel("Stopped"); status->setWordWrap(true); layout->addWidget(status);
     const auto button = [this, layout](const QString &text, auto handler) {
       auto *b = new QPushButton(text); layout->addWidget(b); connect(b, &QPushButton::clicked, this, handler);
     };
     button("Sign in / manage YouTube account", [this]() {
       stop(); if (!ensureBrowser()) return;
+      outputLock->setChecked(false);
       browser->setURL("https://www.youtube.com/"); output->present();
       setStatus("Sign in inside this window, then choose Start queue. Google may restrict embedded browser sign-in.");
     });
@@ -319,6 +347,7 @@ public:
     browser = cef->create_widget(output, "https://www.youtube.com/", nullptr);
     if (!browser) { delete output; output = nullptr; setStatus("OBS could not create the YouTube browser."); return false; }
     browser->allowAllPopups(false); layout->addWidget(browser);
+    applyOutputLock();
     playback_set_output_window(outputHandle);
     // QCefWidget's metaobject lives in obs-browser, not in this DLL.
     connect(browser, SIGNAL(titleChanged(QString)), this, SLOT(telemetry(QString)));
