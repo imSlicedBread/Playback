@@ -328,8 +328,6 @@ public:
     preferences = new QSettings(QString::fromUtf8(configPath.Get()), QSettings::IniFormat, this);
     dock = new QWidget;
     auto *layout = new QVBoxLayout(dock);
-    auto *intro = new QLabel("Experimental YouTube watch-page output. Sign in manually with an account that has access, then add Playback video and overlay to your scene.");
-    intro->setWordWrap(true); layout->addWidget(intro);
     port = new QSpinBox; port->setRange(1, 65535); port->setValue(preferences->value("port",4177).toInt()); port->setPrefix("Station port: "); layout->addWidget(port);
     autoStart = new QCheckBox("Start this output when OBS opens");
     autoStart->setChecked(preferences->value("autoStart",false).toBool()); layout->addWidget(autoStart);

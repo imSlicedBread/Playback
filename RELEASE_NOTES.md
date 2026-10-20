@@ -1,3 +1,24 @@
+# fKey Playback v1.7.2 — cleaner OBS dock
+
+Remove the introductory experimental watch-page/sign-in text from the fKey Playback OBS dock. Controls now begin with the station port. Output lock, saved resolution settings, audio, watchdog, overlay and queue controls remain included.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.2.zip** — station app and corresponding plugin source.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.3.exe** — updated Windows installer.
+- **fplayback-youtube-0.1.3-windows-x64.zip** — installer, DLL, corresponding source and license.
+- Each download has a SHA-256 checksum.
+
+Close OBS and run the updated plugin installer to remove the text. This build requires Windows x64 and OBS 32.2.2 / Qt 6.11.1. For the app update, stop Playback, back up and preserve `data/` and launcher configuration, extract the update, then restart. Node.js 22.13 or newer is required; no database migration is needed. Saved account data and settings are preserved.
+
+## Validation
+
+All 161 app tests, JavaScript syntax checks and four native tests pass. Live OBS verification confirmed the text is removed and playback resumes. Sign-in and access/age/content prompts remain manual.
+
+See the [plugin guide](https://github.com/imSlicedBread/Playback/blob/v1.7.2/obs-plugin/README.md).
+
+---
+
 # fKey Playback v1.7.1 — OBS output lock and resolution settings
 
 Choose and save the native OBS output render size from **Docks → fKey Playback → Output resolution**, then click **Apply**. Presets include **720p, 1080p, 1440p, 4K**, and **Match OBS canvas**. Windows display DPI is accounted for so the native source reports the selected pixel dimensions. Match OBS canvas reads the current canvas when applied; apply again after changing the canvas. YouTube stream quality remains automatic.

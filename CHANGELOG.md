@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.2 — cleaner OBS dock
+
+- Remove the experimental watch-page and sign-in introduction from the OBS dock.
+- Package plugin and installer 0.1.3; retain output lock, resolution settings and existing playback behavior.
+
 ## v1.7.1 — OBS output lock and resolution settings
 
 - Add saved 720p, 1080p, 1440p and 4K render presets plus Match OBS canvas, applied explicitly from the dock while keeping playback locked. Account for display DPI and keep native source pixel dimensions stable. YouTube stream quality remains automatic.
