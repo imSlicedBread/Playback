@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.1 — OBS output lock and resolution settings
+
+- Add saved 720p, 1080p, 1440p and 4K render presets plus Match OBS canvas, applied explicitly from the dock while keeping playback locked. Account for display DPI and keep native source pixel dimensions stable. YouTube stream quality remains automatic.
+- Package the change as plugin/installer 0.1.2.
+
 ## v1.7.0 — OBS plugin installer and automatic setup
 
 - Lock output size and mouse/keyboard interaction during playback, hide ordinary player transport controls, and park the locked window on Close. Provide explicit manual unlocking for YouTube interaction; preserve ads and access dialogs.

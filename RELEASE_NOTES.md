@@ -1,3 +1,26 @@
+# fKey Playback v1.7.1 — OBS output lock and resolution settings
+
+Choose and save the native OBS output render size from **Docks → fKey Playback → Output resolution**, then click **Apply**. Presets include **720p, 1080p, 1440p, 4K**, and **Match OBS canvas**. Windows display DPI is accounted for so the native source reports the selected pixel dimensions. Match OBS canvas reads the current canvas when applied; apply again after changing the canvas. YouTube stream quality remains automatic.
+
+Playback keeps **Lock output (size + controls)** enabled: resizing and ordinary mouse/keyboard interaction cannot change the captured output, ordinary player controls stay hidden, and minimizing/closing the locked window parks it while rendering continues. Unlock for manual interaction; sign-in, ads and access/age/content dialogs remain manual.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.1.zip** — station app and plugin source.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.2.exe** — Windows installer.
+- **fplayback-youtube-0.1.2-windows-x64.zip** — installer, DLL, corresponding source and license.
+- Each download includes a SHA-256 checksum.
+
+Stop Playback, back up and preserve the complete `data/` directory and launcher configuration, then extract the app update. Node.js 22.13 or newer is required; no database migration is needed. Close OBS and run the new plugin installer. This build requires Windows x64 and OBS 32.2.2 / Qt 6.11.1. Restart OBS normally, open the fKey Playback dock, and apply the desired resolution. Existing signed-in account data and queue controls are preserved. Older manually transformed sources may need OBS **Transform → Fit to Screen** after changing resolution; plugin-added sources with canvas bounds fit automatically.
+
+## Validation
+
+All 161 app tests, JavaScript syntax checks, and four native tests pass. Native tests cover recovery policy, output resolution validation/DPI sizing, libobs scene setup, and installer upgrade/rollback/resources. Live OBS validation confirmed 1080p application with continuing playback and preserved framing. Members-only playback was previously confirmed by the user with an entitled signed-in account.
+
+See the [plugin guide](https://github.com/imSlicedBread/Playback/blob/v1.7.1/obs-plugin/README.md).
+
+---
+
 # fKey Playback v1.7.0 — OBS plugin installer and automatic setup
 
 This release includes the Windows OBS plugin installer and all recent plugin improvements, including automatic overlay setup, the fKey Playback dock name, and output-window handling that keeps video rendering while out of view. Existing native audio capture, playback watchdog, queue and whitelisted chat controls remain included.

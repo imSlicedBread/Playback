@@ -6,6 +6,8 @@
 #include <QCloseEvent>
 #include <QEvent>
 #include <QCheckBox>
+#include <QComboBox>
+#include <QHBoxLayout>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -29,10 +31,12 @@
 #include <QElapsedTimer>
 #include "recovery-policy.hpp"
 #include "scene-setup.hpp"
+#include "output-resolution.hpp"
 
 OBS_DECLARE_MODULE()
 void playback_register_capture();
 void playback_set_output_window(HWND window);
+void playback_set_output_resolution(uint32_t width,uint32_t height);
 const char *obs_module_description(void) { return "Playback queue controls for a signed-in YouTube watch window (experimental)"; }
 const char *obs_module_name(void) { return "Playback YouTube Output"; }
 
@@ -41,6 +45,19 @@ class OutputWindow final : public QWidget {
   bool parked = false;
   bool wasMaximized = false;
   QRect previousGeometry;
+  OutputResolution renderResolution;
+  void sizeForResolution() {
+    const auto logical=renderResolution.logical(devicePixelRatioF());
+    const QSize size(int(logical.width),int(logical.height));
+    if (captureLocked) setFixedSize(size);
+    else resize(size);
+    if (parked) {
+      previousGeometry.setSize(size);
+      SetWindowPos(reinterpret_cast<HWND>(winId()),HWND_BOTTOM,
+        GetSystemMetrics(SM_XVIRTUALSCREEN)-frameGeometry().width()-64,
+        GetSystemMetrics(SM_YVIRTUALSCREEN),0,0,SWP_NOSIZE|SWP_NOACTIVATE);
+    }
+  }
   void park() {
     if (parked) return;
     wasMaximized=isMaximized();
@@ -57,11 +74,15 @@ class OutputWindow final : public QWidget {
 public:
   using QWidget::QWidget;
   std::function<void()> onClose;
+  void setRenderResolution(OutputResolution size) {
+    if (!size.valid()) return;
+    renderResolution=size; sizeForResolution();
+  }
   void setCaptureLocked(bool locked) {
     captureLocked=locked;
     if (locked) {
       if (isMaximized()) showNormal();
-      setFixedSize(1280,720);
+      sizeForResolution();
     } else {
       setMinimumSize(640,360); setMaximumSize(QWIDGETSIZE_MAX,QWIDGETSIZE_MAX);
     }
@@ -77,6 +98,8 @@ public:
 protected:
   bool nativeEvent(const QByteArray &type, void *message, qintptr *result) override {
     const auto *msg=static_cast<MSG *>(message);
+    if (msg->message==WM_DPICHANGED && captureLocked)
+      QTimer::singleShot(0,this,[this]() {sizeForResolution();});
     if (msg->message==WM_SYSCOMMAND) {
       const auto command=msg->wParam & 0xfff0;
       if (captureLocked && (command==SC_SIZE || command==SC_MAXIMIZE)) { *result=0; return true; }
@@ -120,6 +143,8 @@ class Playback final : public QObject {
   QSettings *preferences = nullptr;
   QCheckBox *autoStart = nullptr;
   QCheckBox *outputLock = nullptr;
+  QComboBox *resolution = nullptr;
+  OutputResolution renderResolution;
   QTimer timer;
   QNetworkAccessManager network;
   QString worker = QUuid::createUuid().toString(QUuid::WithoutBraces);
@@ -164,6 +189,23 @@ class Playback final : public QObject {
       EnableWindow(reinterpret_cast<HWND>(browser->winId()),!locked);
     }
     if (running && browser) apply();
+  }
+  bool applyResolution() {
+    const auto choice=resolution->currentData().toString();
+    OutputResolution size;
+    if (choice=="canvas") {
+      obs_video_info video{};
+      if (!obs_get_video_info(&video)) {setStatus("Cannot read the OBS canvas size."); return false;}
+      size={video.base_width,video.base_height};
+    } else if (choice=="1080p") size={1920,1080};
+    else if (choice=="1440p") size={2560,1440};
+    else if (choice=="2160p") size={3840,2160};
+    if (!size.valid()) {setStatus("Unsupported output resolution. Choose a smaller OBS canvas or preset."); return false;}
+    renderResolution=size;
+    preferences->setValue("resolution",choice);
+    playback_set_output_resolution(size.width,size.height);
+    if (output) output->setRenderResolution(size);
+    return true;
   }
   void apply() {
     const auto current = snapshot.value("current").toObject();
@@ -296,6 +338,23 @@ public:
     outputLock->setChecked(true); layout->addWidget(outputLock);
     connect(outputLock,&QCheckBox::toggled,this,[this](bool) { applyOutputLock(); });
     status = new QLabel("Stopped"); status->setWordWrap(true); layout->addWidget(status);
+    layout->addWidget(new QLabel("Output resolution"));
+    auto *resolutionRow=new QHBoxLayout;
+    resolution=new QComboBox;
+    resolution->addItem("1280 x 720 (720p)","720p");
+    resolution->addItem("1920 x 1080 (1080p)","1080p");
+    resolution->addItem("2560 x 1440 (1440p)","1440p");
+    resolution->addItem("3840 x 2160 (4K)","2160p");
+    resolution->addItem("Match OBS canvas","canvas");
+    const int savedResolution=resolution->findData(preferences->value("resolution","720p").toString());
+    resolution->setCurrentIndex(savedResolution<0?0:savedResolution);
+    resolutionRow->addWidget(resolution);
+    auto *applyResolutionButton=new QPushButton("Apply"); resolutionRow->addWidget(applyResolutionButton);
+    layout->addLayout(resolutionRow);
+    connect(applyResolutionButton,&QPushButton::clicked,this,[this]() {
+      if (applyResolution()) setStatus("Output resolution applied. YouTube stream quality remains automatic.");
+    });
+    applyResolution();
     const auto button = [this, layout](const QString &text, auto handler) {
       auto *b = new QPushButton(text); layout->addWidget(b); connect(b, &QPushButton::clicked, this, handler);
     };
@@ -338,6 +397,7 @@ public:
     if (!cef->init_browser()) { setStatus("Initializing OBS browser…"); return false; }
     output = new OutputWindow;
     output->setWindowTitle("Playback YouTube Output"); output->resize(1280, 720);
+    output->setRenderResolution(renderResolution);
     // Like OBS projectors, this dedicated output is explicitly intended for capture.
     // Keep the main OBS window's existing capture privacy preference intact.
     const auto outputHandle = reinterpret_cast<HWND>(output->winId());

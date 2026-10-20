@@ -21,7 +21,7 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.1.exe**, approve the Windows
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.2.exe**, approve the Windows
    administrator prompt, and click **Install / Update**. The installer detects
    the usual OBS installation; use **Browse** for a custom or portable folder.
    It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual
@@ -57,7 +57,7 @@ excludes windows owned by OBS itself.
    station is retried once a second after the queue is started.
 
 Playback starts with **Lock output (size + controls)** enabled. The output uses
-a fixed 1280×720 client size, ignores mouse/keyboard input, and hides ordinary
+the selected output resolution (720p by default), ignores mouse/keyboard input, and hides ordinary
 YouTube player controls to keep hovering or accidental clicks out of the OBS
 picture. Minimize and Close park the locked window rather than stopping the queue.
 To handle a YouTube prompt, uncheck the lock and choose **Show output window**;
@@ -82,6 +82,21 @@ Test pause/resume, seek, replay, previous, force skip, audio, Play Next, Play No
 and interrupted-video resumption, plus a complete voting round. Then test a
 members-only video using an entitled account. Check access still works after
 restarting OBS. These live checks are not replaced by the automated tests.
+
+## Output resolution
+
+Choose **Output resolution** in the fKey Playback dock and click **Apply**.
+Presets are 1280×720, 1920×1080, 2560×1440 and 3840×2160, or choose **Match OBS
+canvas** to use the current canvas dimensions, including portrait canvases.
+The applied choice is saved for the next OBS restart. Existing installations
+default to 720p. Click Apply again after changing the OBS canvas size.
+
+This controls the native source's rendered pixel dimensions, with DPI-aware
+window sizing. The size lock uses the selected resolution; you do not need to
+unlock playback to change it. YouTube stream quality remains automatic and may
+be lower than the selected render resolution. The overlay continues to use the
+OBS canvas size. Sources added by the plugin fit to the canvas automatically;
+if you manually transformed an older source, use OBS's Fit to Screen as needed.
 
 ## Playback watchdog
 
