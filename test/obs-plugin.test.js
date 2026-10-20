@@ -17,15 +17,27 @@ function harness(){
  const document={title:'YouTube',documentElement:{style:style()},body:{style:style(),appendChild(node){node.parentElement=this;}},
   querySelector(selector){if(selector==='video.html5-main-video')return video;if(selector==='#movie_player')return player;return barrier?{getClientRects:()=>[{}],textContent:'Access required'}:null;}};
  const controls=[{style:style()},{style:style()}];
- document.querySelectorAll=selector=>selector.startsWith('.ytp-chrome-bottom')?controls:barrier?[{getClientRects:()=>[{}],textContent:'Confirmation required'}]:[];
+ const watermark={style:style()};
+ document.querySelectorAll=selector=>selector.startsWith('.ytp-chrome-bottom')?[...controls,...(selector.includes('.ytp-watermark')?[watermark]:[])]:barrier?[{getClientRects:()=>[{}],textContent:'Confirmation required'}]:[];
  let ad=false,barrier=false,now=0;
  const context={window:{},document,URL,performance:{now:()=>now},location:new URL('https://www.youtube.com/watch?v=dQw4w9WgXcQ')};
  const defaults={nonce:'nonce',generation:1,videoId:'dQw4w9WgXcQ',position:35,volume:70,muted:false,paused:false,voting:false};
- return {video,player,controls,context,listeners,advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
+ return {video,player,controls,watermark,context,listeners,advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
   document.title='YouTube';vm.runInNewContext(source.replace('__PLAYBACK_COMMAND__',JSON.stringify({...defaults,...fields})),context);
   return document.title.startsWith('fPlayback:')?JSON.parse(document.title.slice('fPlayback:nonce:'.length)):null;
  }};
 }
+
+test('channel watermark is hidden while locked and restored when unlocked or showing ads or access prompts',()=>{
+ const h=harness();h.watermark.style.setProperty('opacity','.7','important');
+ h.run({locked:true});assert.equal(h.watermark.style.getPropertyValue('visibility'),'hidden');
+ h.run({locked:false});assert.equal(h.watermark.style.getPropertyValue('opacity'),'.7');assert.equal(h.watermark.style.getPropertyValue('visibility'),'');
+ for(const kind of ['ad','barrier']) {
+  h.setAd(false);h.setBarrier(false);h.run({locked:true});
+  if(kind==='ad')h.setAd(true);else h.setBarrier(true);
+  h.run({locked:true});assert.equal(h.watermark.style.getPropertyValue('visibility'),'');
+ }
+});
 
 test('output lock hides transport chrome and restores its exact styles for manual interaction, ads and barriers',()=>{
  const h=harness();h.controls[0].style.setProperty('opacity','.8','important');

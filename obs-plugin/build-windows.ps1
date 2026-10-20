@@ -50,10 +50,10 @@ New-Item -ItemType Directory -Force $sourcePath | Out-Null
 foreach ($name in @('src', 'vendor', 'CMakeLists.txt', 'build-windows.ps1', 'install-local.ps1', 'resources.qrc', 'watch-controller.js', 'README.md', 'LICENSE')) {
   Copy-Item -LiteralPath (Join-Path $root $name) -Destination $sourcePath -Recurse -Force
 }
-$installer = Join-Path $root 'fKey-Playback-OBS-Plugin-Setup-0.1.3.exe'
-Copy-Item -LiteralPath "$root/package/fKey-Playback-OBS-Plugin-Setup-0.1.3.exe" -Destination $installer -Force
+$installer = Join-Path $root 'fKey-Playback-OBS-Plugin-Setup-0.1.4.exe'
+Copy-Item -LiteralPath "$root/package/fKey-Playback-OBS-Plugin-Setup-0.1.4.exe" -Destination $installer -Force
 ((Get-FileHash -LiteralPath $installer).Hash.ToLowerInvariant()+'  '+(Split-Path -Leaf $installer)) | Set-Content -LiteralPath ($installer+'.sha256') -Encoding ascii
-Compress-Archive -LiteralPath "$root/package/obs-plugins", "$root/package/source", "$root/package/README.md", "$root/package/LICENSE", $installer -DestinationPath "$root/fplayback-youtube-0.1.3-windows-x64.zip" -Force
-((Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.3-windows-x64.zip").Hash.ToLowerInvariant()+'  fplayback-youtube-0.1.3-windows-x64.zip') | Set-Content -LiteralPath "$root/fplayback-youtube-0.1.3-windows-x64.zip.sha256" -Encoding ascii
-Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.3-windows-x64.zip" -Algorithm SHA256 | Format-List
+Compress-Archive -LiteralPath "$root/package/obs-plugins", "$root/package/source", "$root/package/README.md", "$root/package/LICENSE", $installer -DestinationPath "$root/fplayback-youtube-0.1.4-windows-x64.zip" -Force
+((Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.4-windows-x64.zip").Hash.ToLowerInvariant()+'  fplayback-youtube-0.1.4-windows-x64.zip') | Set-Content -LiteralPath "$root/fplayback-youtube-0.1.4-windows-x64.zip.sha256" -Encoding ascii
+Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.4-windows-x64.zip" -Algorithm SHA256 | Format-List
 Write-Output "Built plugin: $root/package/obs-plugins/64bit/fplayback-youtube.dll"

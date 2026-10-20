@@ -1,3 +1,27 @@
+# fKey Playback v1.7.3 — restore OBS windows after restart
+
+- **Dock restoration:** preserve the fKey Playback dock open state, position and tab groups when OBS restarts. Playback begins after OBS finishes loading.
+- **Reachable title bars:** move floating docks restored off-screen back into the monitor work area.
+- **Output placement:** save position and minimized/parked state on normal OBS shutdown, then restore them at startup. Render size follows the saved resolution. Positions are adjusted to available monitors; Show output window restores a parked output for interaction.
+- **Cleaner locked playback:** hide the channel watermark alongside ordinary player controls. Unlocking, ads and access prompts restore original styles.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.3.zip** — station app and plugin source.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.4.exe** — updated Windows installer.
+- **fplayback-youtube-0.1.4-windows-x64.zip** — installer, DLL, corresponding source and license.
+- Each download has a SHA-256 checksum.
+
+Close OBS and run the plugin installer. This build requires Windows x64 and OBS 32.2.2 / Qt 6.11.1. Restart OBS normally. Open and arrange the dock/output once, then close OBS normally to save their placement. For the app update, stop Playback, back up and preserve `data/` and launcher configuration, extract the update, then restart. Node.js 22.13 or newer is required; no database migration is needed. Account data and queue settings are preserved. Sign-in and access/age/content confirmations remain manual.
+
+## Validation
+
+All 162 app tests, JavaScript syntax checks and four native tests pass. Controller tests cover watermark hiding and exact style restoration for unlocked playback, ads and access prompts. Live OBS checks confirmed an open dock surviving restart, accessible dock title bar, hidden watermark, saved output position and playback reconnection. Parked state persistence is implemented; complete live parked-state restart acceptance remains pending.
+
+See the [plugin guide](https://github.com/imSlicedBread/Playback/blob/v1.7.3/obs-plugin/README.md).
+
+---
+
 # fKey Playback v1.7.2 — cleaner OBS dock
 
 Remove the introductory experimental watch-page/sign-in text from the fKey Playback OBS dock. Controls now begin with the station port. Output lock, saved resolution settings, audio, watchdog, overlay and queue controls remain included.

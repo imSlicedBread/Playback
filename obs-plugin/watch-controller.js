@@ -35,7 +35,7 @@
   const barrier=hasBarrier();
   // Lock only the ordinary player chrome. Access prompts and advertisements
   // retain their original UI; users unlock the native window to interact.
-  const chrome=Array.from(document.querySelectorAll('.ytp-chrome-bottom, .ytp-chrome-top, .ytp-gradient-bottom, .ytp-gradient-top, .ytp-tooltip'));
+  const chrome=Array.from(document.querySelectorAll('.ytp-chrome-bottom, .ytp-chrome-top, .ytp-gradient-bottom, .ytp-gradient-top, .ytp-tooltip, .ytp-watermark, .branding-img-container, .iv-branding'));
   const saved=window.__fPlaybackChrome || (window.__fPlaybackChrome=new Map());
   const lockChrome=command.locked===true && !advertisement && !barrier;
   for (const [element,styles] of saved) {

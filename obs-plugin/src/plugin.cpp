@@ -9,6 +9,7 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QDir>
+#include <QDockWidget>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
@@ -20,12 +21,14 @@
 #include <QRegularExpression>
 #include <QSpinBox>
 #include <QSettings>
+#include <QScreen>
 #include <QTimer>
 #include <QUuid>
 #include <QUrlQuery>
 #include <QVBoxLayout>
 #include <QWindow>
 #include <functional>
+#include <algorithm>
 #include <cmath>
 #include <windows.h>
 #include <QElapsedTimer>
@@ -74,6 +77,36 @@ class OutputWindow final : public QWidget {
 public:
   using QWidget::QWidget;
   std::function<void()> onClose;
+  void savePlacement(QSettings &settings) const {
+    const QRect normal=parked ? previousGeometry : (isMaximized() ? normalGeometry() : geometry());
+    settings.setValue("outputGeometry",normal);
+    settings.setValue("outputParked",parked);
+    settings.sync();
+  }
+  void restorePlacement(const QSettings &settings) {
+    const auto saved=settings.value("outputGeometry").toRect();
+    if (saved.isValid()) {
+      // The locked render size comes from the resolution setting. Restore the
+      // window position independently, without reviving obsolete monitor bounds.
+      move(saved.topLeft());
+      if (!captureLocked) resize(saved.size());
+      const auto frame=frameGeometry();
+      QScreen *screen=this->screen();
+      int largestArea=0;
+      for (auto *candidate:QApplication::screens()) {
+        const auto overlap=frame.intersected(candidate->availableGeometry());
+        const int area=overlap.width()*overlap.height();
+        if (area>largestArea) {screen=candidate;largestArea=area;}
+      }
+      if (screen) {
+        const auto available=screen->availableGeometry().adjusted(12,12,-12,-12);
+        const QPoint safe(std::clamp(frame.x(),available.left(),std::max(available.left(),available.right()-frame.width()+1)),
+                          std::clamp(frame.y(),available.top(),std::max(available.top(),available.bottom()-frame.height()+1)));
+        if (safe!=frame.topLeft()) move(safe);
+      }
+    }
+    if (settings.value("outputParked",false).toBool()) park();
+  }
   void setRenderResolution(OutputResolution size) {
     if (!size.valid()) return;
     renderResolution=size; sizeForResolution();
@@ -352,7 +385,6 @@ public:
     connect(applyResolutionButton,&QPushButton::clicked,this,[this]() {
       if (applyResolution()) setStatus("Output resolution applied. YouTube stream quality remains automatic.");
     });
-    applyResolution();
     const auto button = [this, layout](const QString &text, auto handler) {
       auto *b = new QPushButton(text); layout->addWidget(b); connect(b, &QPushButton::clicked, this, handler);
     };
@@ -381,8 +413,35 @@ public:
     layout->addStretch();
     QFile file(":/fplayback/watch-controller.js");
     if (file.open(QIODevice::ReadOnly)) script = QString::fromUtf8(file.readAll());
-    timer.setInterval(1000); connect(&timer, &QTimer::timeout, this, [this]() { poll(); }); timer.start();
+    timer.setInterval(1000); connect(&timer, &QTimer::timeout, this, [this]() { poll(); });
     obs_frontend_add_dock_by_id("fplayback-youtube", "fKey Playback", dock);
+  }
+  void finishedLoading() {
+    // OBS can restore a floating dock with its title bar outside the desktop.
+    // Run after Qt has applied the restored layout and native window frame.
+    QTimer::singleShot(0,this,[this]() {
+      auto *panel=qobject_cast<QDockWidget *>(dock->parentWidget());
+      if (!panel || !panel->isFloating() || !panel->isVisible()) return;
+      const auto frame=panel->frameGeometry();
+      QScreen *screen=panel->screen();
+      int largestArea=0;
+      for (auto *candidate:QApplication::screens()) {
+        const auto overlap=frame.intersected(candidate->availableGeometry());
+        const int area=overlap.width()*overlap.height();
+        if (area>largestArea) {screen=candidate;largestArea=area;}
+      }
+      if (!screen) return;
+      const auto available=screen->availableGeometry().adjusted(12,12,-12,-12);
+      const auto border=frame.size()-panel->size();
+      if (frame.width()>available.width() || frame.height()>available.height())
+        panel->resize(panel->size().boundedTo(available.size()-border));
+      const auto size=panel->frameGeometry().size();
+      const QPoint position(std::clamp(frame.x(),available.left(),std::max(available.left(),available.right()-size.width()+1)),
+                            std::clamp(frame.y(),available.top(),std::max(available.top(),available.bottom()-size.height()+1)));
+      if (position!=frame.topLeft()) panel->move(position);
+    });
+    applyResolution();
+    timer.start();
     if (autoStart->isChecked()) QTimer::singleShot(1500,this,[this]() { start(); });
   }
   bool ensureBrowser() {
@@ -406,6 +465,7 @@ public:
     if (!browser) { delete output; output = nullptr; setStatus("OBS could not create the YouTube browser."); return false; }
     browser->allowAllPopups(false); layout->addWidget(browser);
     applyOutputLock();
+    output->restorePlacement(*preferences);
     playback_set_output_window(outputHandle);
     // QCefWidget's metaobject lives in obs-browser, not in this DLL.
     connect(browser, SIGNAL(titleChanged(QString)), this, SLOT(telemetry(QString)));
@@ -423,6 +483,7 @@ public:
   }
   ~Playback() override {
     timer.stop(); stop();
+    if (output) output->savePlacement(*preferences);
     playback_set_output_window(nullptr);
     if (browser) { browser->closeBrowser(); browser = nullptr; }
     if (output) { output->onClose = {}; delete output; }
@@ -433,10 +494,17 @@ public:
 
 static Playback *playback = nullptr;
 static void frontendEvent(enum obs_frontend_event event, void *) {
-  if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING && !playback)
-    playback = new Playback(static_cast<QWidget *>(obs_frontend_get_main_window()));
+  if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING && playback)
+    playback->finishedLoading();
   if (event == OBS_FRONTEND_EVENT_EXIT) { delete playback; playback = nullptr; }
 }
-bool obs_module_load(void) { playback_register_capture(); obs_frontend_add_event_callback(frontendEvent, nullptr); return true; }
+bool obs_module_load(void) {
+  playback_register_capture();
+  // Register before OBS restores its saved dock layout, including visibility,
+  // position, floating state and tab groups. Start playback only after loading.
+  playback = new Playback(static_cast<QWidget *>(obs_frontend_get_main_window()));
+  obs_frontend_add_event_callback(frontendEvent, nullptr);
+  return true;
+}
 void obs_module_unload(void) { obs_frontend_remove_event_callback(frontendEvent, nullptr); }
 #include "plugin.moc"

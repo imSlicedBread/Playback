@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.7.3 — restore OBS windows after restart
+
+- Register the dock before OBS restores its layout; start playback after OBS finishes loading.
+- Keep floating dock title bars on-screen.
+- Save output position and parked state on normal shutdown and restore them at startup, retaining render resolution and accounting for available monitors.
+- Hide the channel watermark while output is locked, restoring original styles for manual interaction, ads and access prompts.
+- Package plugin and installer 0.1.4.
+
 ## v1.7.2 — cleaner OBS dock
 
 - Remove the experimental watch-page and sign-in introduction from the OBS dock.

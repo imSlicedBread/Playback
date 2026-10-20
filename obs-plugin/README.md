@@ -21,7 +21,7 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.3.exe**, approve the Windows
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.4.exe**, approve the Windows
    administrator prompt, and click **Install / Update**. The installer detects
    the usual OBS installation; use **Browse** for a custom or portable folder.
    It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual
@@ -165,3 +165,7 @@ downloaded OBS/Qt SDKs retain their respective licenses. The browser panel heade
 is from obsproject/obs-browser commit
 `23075aaed66df030d553d9ef603136e72127bffd`. Redistributing the binary requires
 providing its corresponding plugin source and applicable license notices.
+
+## Restoring windows after restart
+
+OBS restores the dock layout and open state. Floating docks restored off-screen are moved into the monitor work area. The output window saves its position and parked state on normal OBS shutdown and restores them at startup. Render size follows the saved resolution. Show output window restores a parked output. Positions are adjusted for available monitors to keep title bars reachable. Locked playback hides the channel watermark alongside ordinary player controls; manual interaction, ads and access prompts restore original styles.
