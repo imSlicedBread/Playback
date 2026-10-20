@@ -29,11 +29,10 @@ out.mkdir(exist_ok=True)
 archive = out / f'Playback-v{version}.zip'
 files = []
 for name in ('README.md', 'LICENSE', 'SECURITY.md', 'TRADEMARKS.md',
-             'CHANGELOG.md', 'RELEASE_NOTES.md', 'BUILD-REPORT.md',
-             'PERFORMANCE.md', 'STORAGE.md', 'package.json', 'server.js', 'start-player.bat', 'start-player.sh',
+             'CHANGELOG.md', 'package.json', 'server.js', 'start-player.bat', 'start-player.sh',
              'INSTALL-AUTO-START.bat', 'UNINSTALL-AUTO-START.bat', 'CHECK-AUTO-START.bat'):
     files.append(root / name)
-for folder in ('lib', 'public', 'ops', 'test', 'tools', '.github'):
+for folder in ('docs', 'lib', 'public', 'ops', 'test', 'tools', '.github'):
     files.extend(p for p in (root / folder).rglob('*') if p.is_file() and not p.name.endswith('.download'))
 # Include the experimental plugin's corresponding source, never local SDK/build caches.
 plugin = root / 'obs-plugin'

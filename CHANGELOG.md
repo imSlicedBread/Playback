@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.7.7 — tidier app folder
+
+- Move storage documentation, build reports, historical performance measurements and release notes into `docs/`.
+- Update README links and release packaging to use the new documentation paths.
+- Keep startup shortcuts in the main folder and preserve local data, backups and existing release artifacts.
+- OBS plugin and installer remain at 0.1.7; no plugin reinstall or database migration is required.
+
 ## v1.7.6 — process and resource cleanup
 
 - Stop output now closes its browser/window, releases capture buffers and disables browser audio capture. Start recreates the output using the saved account session and placement.

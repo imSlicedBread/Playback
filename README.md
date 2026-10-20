@@ -1,10 +1,16 @@
-# fKey Playback 1.7.6
+# fKey Playback 1.7.7
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
-[Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT license](LICENSE) · [Storage and migration](STORAGE.md) · [Security](SECURITY.md)
+[Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT license](LICENSE) · [Storage and migration](docs/STORAGE.md) · [Security](SECURITY.md)
 
-## New in v1.7.6 — process and resource cleanup
+Supporting documentation: [release notes](docs/RELEASE_NOTES.md), [storage verification](docs/BUILD-REPORT.md), and [historical performance measurements](docs/PERFORMANCE.md).
+
+## New in v1.7.7 — tidier app folder
+
+Supporting documentation now lives in `docs/`, with updated links and release packaging. Startup shortcuts stay in the main folder. Local data and backups are preserved. The OBS plugin remains at 0.1.7.
+
+## Included from v1.7.6 — process and resource cleanup
 
 Stop output now closes its browser/window and releases capture resources; Start recreates them with the saved account session and placement. Station shutdown drains connections within a deadline and cancels extraction process trees without terminating unrelated processes. Update the station app and install plugin 0.1.7 for these fixes.
 
@@ -50,13 +56,13 @@ Give selected Twitch usernames playback and video-adding commands from **Setting
 
 ## Large bulk queue moves — v1.3.1
 
-The queue panel now includes **Select all in lane / Select all matching**, so operators can choose all 1,702+ videos with one click even though only 50 queue rows are rendered per page. Click **Move Selected** to move the entire selection, automatically processed in **250-entry durable batches**. A live progress bar reports confirmed moved/total, percentage and batch number. **Stop after current batch** cancels safely between server requests; batches already committed remain moved. Failed batches leave unconfirmed videos selected for retry. The server deliberately retains its 500-ID maximum per request, which is not a limit on how many videos can be moved in one dashboard operation. Avoid closing the browser while a bulk move is active. See `STORAGE.md` for persistence and backup details.
+The queue panel now includes **Select all in lane / Select all matching**, so operators can choose all 1,702+ videos with one click even though only 50 queue rows are rendered per page. Click **Move Selected** to move the entire selection, automatically processed in **250-entry durable batches**. A live progress bar reports confirmed moved/total, percentage and batch number. **Stop after current batch** cancels safely between server requests; batches already committed remain moved. Failed batches leave unconfirmed videos selected for retry. The server deliberately retains its 500-ID maximum per request, which is not a limit on how many videos can be moved in one dashboard operation. Avoid closing the browser while a bulk move is active. See `docs/STORAGE.md` for persistence and backup details.
 
 ## New: SQLite storage and no fixed queue cap
 
 The fixed 2,000-entry rotation-queue cap and startup truncation are removed. SQLite stores queue entries separately from playback state, so frequent playhead saves no longer rewrite a large JSON library. Tested with **10,000 videos**, while keeping the existing 50-row paginated dashboard and compact live polling.
 
-Existing `state.json` installations migrate automatically with an exact pre-migration backup. The new database is `data/playback.sqlite3`; it becomes authoritative after migration. **Back up the complete data folder before upgrading.** Read [STORAGE.md](STORAGE.md) for migration, backup and rollback instructions. Do not copy only the database file from a running station.
+Existing `state.json` installations migrate automatically with an exact pre-migration backup. The new database is `data/playback.sqlite3`; it becomes authoritative after migration. **Back up the complete data folder before upgrading.** Read [STORAGE.md](docs/STORAGE.md) for migration, backup and rollback instructions. Do not copy only the database file from a running station.
 
 ## Start on Windows
 
@@ -174,7 +180,7 @@ npm run check
 npm run benchmark:storage
 ```
 
-The backup command writes a verified database snapshot under `data/backups`. See [STORAGE.md](STORAGE.md) for a safe restore procedure and the distinction between a database backup and a complete station backup.
+The backup command writes a verified database snapshot under `data/backups`. See [STORAGE.md](docs/STORAGE.md) for a safe restore procedure and the distinction between a database backup and a complete station backup.
 
 ## Operational scope
 

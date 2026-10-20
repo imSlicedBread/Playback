@@ -1,3 +1,23 @@
+# fKey Playback v1.7.7 — tidier app folder
+
+Supporting documentation now lives in `docs/`: storage and migration guidance, build reports, historical performance measurements and release notes. README links and the GitHub release workflow use the new paths, and release ZIPs include the documentation in its new folder.
+
+Startup shortcuts stay in the main folder. Runtime files, local data and backups are preserved. This release includes the process cleanup fixes from v1.7.6.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.7.zip** — updated station app and organized documentation.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.7.exe** and **fplayback-youtube-0.1.7-windows-x64.zip** — unchanged plugin downloads from v1.7.6.
+- Each download has a SHA-256 checksum.
+
+Stop Playback, back up and preserve `data/` and launcher configuration, extract the app update, then restart. No database migration is needed. Existing plugin 0.1.7 installations do not need to be reinstalled. Upgrading in place may leave old root-level copies of the moved documentation; the current copies are in `docs/`.
+
+## Validation
+
+All 175 app tests and JavaScript syntax checks pass. Release-package verification checks documentation links, packaged documentation and startup shortcuts, ZIP integrity, and exclusion of private data and build outputs.
+
+---
+
 # fKey Playback v1.7.6 — process and resource cleanup
 
 - **Stop output releases resources:** close the dedicated browser/window, release its worker lease, cancel pending native requests/retries, free capture textures, and disable browser audio capture. Start queue / retry recreates the output with the saved account session and placement.
