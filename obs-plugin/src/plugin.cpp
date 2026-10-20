@@ -258,7 +258,8 @@ class Playback final : public QObject {
     if (loadedVideo != video) {
       recovery.reset();
       loadedVideo = video;
-      browser->setURL(("https://www.youtube.com/watch?v=" + video).toStdString());
+      const double position=std::max(0.0,current.value("position").toDouble());
+      browser->setURL(("https://www.youtube.com/watch?v=" + video + "&t=" + QString::number(position,'f',3) + "s").toStdString());
       setStatus("Loading YouTube watch page…"); return;
     }
     if (watchdogHeld) { pausePage(); setStatus("Automatic recovery stopped after 3 reloads. Check YouTube, then Start queue / retry."); return; }

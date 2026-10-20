@@ -21,7 +21,7 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.4.exe**, approve the Windows
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.5.exe**, approve the Windows
    administrator prompt, and click **Install / Update**. The installer detects
    the usual OBS installation; use **Browse** for a custom or portable folder.
    It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual
@@ -169,3 +169,7 @@ providing its corresponding plugin source and applicable license notices.
 ## Restoring windows after restart
 
 OBS restores the dock layout and open state. Floating docks restored off-screen are moved into the monitor work area. The output window saves its position and parked state on normal OBS shutdown and restores them at startup. Render size follows the saved resolution. Show output window restores a parked output. Positions are adjusted for available monitors to keep title bars reachable. Locked playback hides the channel watermark alongside ordinary player controls; manual interaction, ads and access prompts restore original styles.
+
+## Saved playback position
+
+Videos open with the local queue checkpoint in the watch URL. The controller seeks to that checkpoint and rejects implausible browser-history jumps during the first ten seconds after position initialization. Pending seeks and rejected jumps do not report progress or completion. Ads and access prompts hold the queue checkpoint, which is reapplied afterward. New dashboard seek/replay generations establish a new checkpoint. Ordinary later manual seeks remain available when unlocked. This protects future startup reports; it cannot recover an older checkpoint already replaced before upgrading.

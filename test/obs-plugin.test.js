@@ -55,11 +55,35 @@ test('watch controller uses the normal matching YouTube page and applies seek on
  assert.equal(report.href,'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
  assert.equal(h.player.parentElement,h.context.document.body);
  assert.equal(h.player.style.values.position,'fixed');assert.equal(h.video.style.values['object-fit'],'contain');
- h.video.currentTime=40;h.run();assert.equal(h.video.currentTime,40);
+ h.advance(5000);h.video.currentTime=40;h.run();assert.equal(h.video.currentTime,40);
  h.run({generation:2,position:90,paused:true});assert.equal(h.video.currentTime,90);assert.equal(h.video.paused,true);
  h.context.location=new URL('https://accounts.google.com/');assert.equal(h.run(),null);
  h.context.location=new URL('https://www.youtube.com/watch?v=jNQXAC9IVRw');assert.equal(h.run(),null);
 });
+test('late YouTube history resume cannot overwrite the local checkpoint, including zero and paused playback',()=>{
+ for(const position of [0,35])for(const paused of [false,true]) {
+  const h=harness();h.run({position,paused});h.advance(1000);h.video.currentTime=180;
+  const rejected=h.run({position,paused});assert.equal(rejected.position,undefined);assert.equal(rejected.ended,undefined);assert.equal(h.video.currentTime,position);
+  h.advance(1000);h.video.currentTime=position+(paused?0:1);
+  assert.equal(h.run({position,paused}).position,position+(paused?0:1));
+  h.run({generation:2,position:90,paused:true});assert.equal(h.video.currentTime,90);
+ }
+});
+
+test('history resume at the end cannot advance the queue and pending seeks do not report the browser position',()=>{
+ const h=harness();h.run();h.video.currentTime=240;h.video.ended=true;h.context.document.title='unchanged';h.listeners.get('ended')();assert.equal(h.context.document.title,'unchanged');
+ const rejected=h.run();assert.equal(rejected.ended,undefined);assert.equal(rejected.position,undefined);assert.equal(h.video.currentTime,35);
+ const pending=harness();pending.video.seeking=true;assert.equal(pending.run().position,undefined);
+ pending.advance(30000);assert.equal(pending.run().recover,'startup');
+ pending.video.seeking=false;pending.video.currentTime=35;assert.equal(pending.run().position,35);
+});
+
+test('post-ad resume is reset to the queue checkpoint and normal later manual seeks remain available',()=>{
+ const h=harness();h.run({position:35});h.setAd(true);h.advance(20000);assert.equal(h.run({position:35}).position,undefined);
+ h.setAd(false);h.video.currentTime=180;assert.equal(h.run({position:35}).position,35);
+ h.advance(11000);h.video.currentTime=100;assert.equal(h.run().position,100);
+});
+
 test('watch controller recovers the delayed initial homepage without navigating account or other video pages',()=>{
  const h=harness();let destination='';
  h.context.location={origin:'https://www.youtube.com',pathname:'/',replace(url){destination=url;}};

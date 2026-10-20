@@ -29,6 +29,11 @@
     return Array.from(elements).some(element => element.getClientRects().length && element.textContent.trim());
   };
   const resetWatchdog = () => { state.progressAt = now; state.lastPosition = null; };
+  const positionMatches = (position,sampleNow=now) => {
+    if (!state.applied || sampleNow >= state.positionGuardUntil) return true;
+    const elapsed=command.paused || command.voting ? 0 : Math.max(0,(sampleNow-state.checkpointAt)/1000);
+    return position>=state.checkpoint-2 && position<=state.checkpoint+elapsed+2;
+  };
   const recover = reason => report({status:'Recovering stalled YouTube playback…',recover:reason});
   state.latestCommand = command; state.report = report;
   const advertisement=player?.classList.contains('ad-showing');
@@ -54,9 +59,9 @@
     element.style.setProperty('pointer-events','none','important');
   }
   // Ads and access barriers must never advance or overwrite the saved queue position.
-  if (advertisement) { resetWatchdog(); report({ status: 'Advertisement — queue position held' }); return; }
+  if (advertisement) { state.applied=false; resetWatchdog(); report({ status: 'Advertisement — queue position held' }); return; }
   if (barrier) {
-    resetWatchdog();
+    state.applied=false; resetWatchdog();
     report({ status: 'YouTube needs attention. Open the output window to check access or confirm playback.' }); return;
   }
   if (!video || video.readyState < 1 || !Number.isFinite(video.duration) || video.duration <= 0) {
@@ -65,10 +70,11 @@
     report({ status: 'Waiting for YouTube. Sign in or check video access in the output window.' }); return;
   }
   if (state.video !== video) {
-    state.detach?.(); state.video = video;
+    state.detach?.(); state.video = video; state.applied=false;
     const ended = () => {
       const latest = state.latestCommand;
       if (window.__fPlaybackWatch !== state || !state.played || latest.paused || latest.voting ||
+          video.seeking || !positionMatches(video.currentTime,performance.now()) ||
           location.origin !== 'https://www.youtube.com' || location.pathname !== '/watch' ||
           new URL(location.href).searchParams.get('v') !== latest.videoId ||
           document.querySelector('#movie_player')?.classList.contains('ad-showing') ||
@@ -91,9 +97,24 @@
   if (player) css(player,{position:'fixed',inset:'0',width:'100vw',height:'100vh',background:'#000','z-index':'2147483646'});
   css(video,{width:'100vw',height:'100vh',left:'0',top:'0','object-fit':'contain'});
   if (!state.applied) {
-    video.currentTime = Math.max(0, Math.min(command.position, video.duration));
+    state.checkpoint = Math.max(0, Math.min(command.position, video.duration));
+    state.checkpointAt=now; state.positionGuardUntil=now+10000;
+    video.currentTime = state.checkpoint;
     state.applied = true;
   }
+  // YouTube can apply account watch-history resume after our initial seek.
+  // Reject that jump before it can replace Playback's saved queue checkpoint.
+  if (!positionMatches(video.currentTime)) {
+    video.currentTime=state.checkpoint;
+    state.checkpointAt=now;
+    report({status:'Restoring Playback saved position…'}); return;
+  }
+  if (video.seeking) {
+    if (now-state.progressAt>=30000) recover('startup');
+    else report({status:'Restoring Playback saved position…'});
+    return;
+  }
+  state.checkpoint=video.currentTime; state.checkpointAt=now;
   video.volume = command.volume / 100;
   video.muted = command.muted;
   if (command.paused || command.voting) {

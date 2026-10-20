@@ -1,3 +1,26 @@
+# fKey Playback v1.7.4 — prioritize the saved playback position
+
+Previously, YouTube could apply its remembered watch position after Playback's initial seek, replacing the local queue checkpoint. The native plugin now opens the watch page with the saved queue time and rejects implausible history jumps during a ten-second startup guard. Pending seeks and rejected jumps do not report progress or completion. After ads or access prompts, the local queue position is reapplied. Dashboard seek/replay establishes a new checkpoint, and ordinary later manual seeks remain available when unlocked.
+
+This protects future startup reports. It cannot recover an older checkpoint already overwritten before upgrading.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.4.zip** — station app and plugin source.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.5.exe** — updated Windows installer.
+- **fplayback-youtube-0.1.5-windows-x64.zip** — installer, DLL, corresponding source and license.
+- Each download has a SHA-256 checksum.
+
+Close OBS and run the plugin installer to apply the playback fix, then restart OBS normally. This build requires Windows x64 and OBS 32.2.2 / Qt 6.11.1. For the app update, stop Playback, back up and preserve `data/` and launcher configuration, extract the update, then restart. Node.js 22.13 or newer is required; no database migration is needed. Account data, queues and settings are preserved. Sign-in and access/age/content confirmations remain manual.
+
+## Validation
+
+All 165 app tests, JavaScript syntax checks and four native tests pass. Regression tests cover late history jumps, zero and paused checkpoints, false completion, pending seeks, post-ad resumption and preserved controls/watchdog behavior. A live OBS restart confirmed the paused video matched the local checkpoint and the worker reconnected; simulated traffic covers the late history override.
+
+See the [plugin guide](https://github.com/imSlicedBread/Playback/blob/v1.7.4/obs-plugin/README.md).
+
+---
+
 # fKey Playback v1.7.3 — restore OBS windows after restart
 
 - **Dock restoration:** preserve the fKey Playback dock open state, position and tab groups when OBS restarts. Playback begins after OBS finishes loading.

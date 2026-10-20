@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.7.4 — prioritize the saved playback position
+
+- Include the local queue checkpoint in the native watch-page URL.
+- Guard against delayed browser-history resume during startup before reporting progress or completion. Hold pending seeks and reapply the checkpoint after ads/access prompts. Preserve dashboard seek/replay and later manual interaction.
+- Add regression tests for zero/paused positions, late history jumps, false completion, pending seeks, and post-ad resumption.
+- Package plugin and installer 0.1.5.
+
 ## v1.7.3 — restore OBS windows after restart
 
 - Register the dock before OBS restores its layout; start playback after OBS finishes loading.
