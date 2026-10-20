@@ -35,6 +35,12 @@ for name in ('README.md', 'LICENSE', 'SECURITY.md', 'TRADEMARKS.md',
     files.append(root / name)
 for folder in ('lib', 'public', 'ops', 'test', 'tools', '.github'):
     files.extend(p for p in (root / folder).rglob('*') if p.is_file() and not p.name.endswith('.download'))
+# Include the experimental plugin's corresponding source, never local SDK/build caches.
+plugin = root / 'obs-plugin'
+for name in ('README.md', 'LICENSE', 'CMakeLists.txt', 'build-windows.ps1', 'install-local.ps1', 'resources.qrc', 'watch-controller.js'):
+    files.append(plugin / name)
+files.extend(p for p in (plugin / 'src').rglob('*') if p.is_file())
+files.extend(p for p in (plugin / 'vendor').rglob('*') if p.is_file())
 with ZipFile(archive, mode='w', compression=ZIP_DEFLATED, compresslevel=9) as z:
     for file in sorted(files):
         relative = file.relative_to(root).as_posix()

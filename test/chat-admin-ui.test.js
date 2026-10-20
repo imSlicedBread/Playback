@@ -88,3 +88,11 @@ test('Kick and SOOP Settings save independent whitelists and keep edits intact w
   assert.equal(h.saved.kickChatroomId,'456');assert.equal(h.saved.kickChannel,'owner');
   h.$('soopAdminWhitelist').value='discard';await h.$('discard').fire('click');assert.equal(h.$('soopAdminWhitelist').value,'account_one\naccount_two');
 });
+
+test('OBS YouTube account setting saves/discards through normal Settings controls and preserves drafts during polling',async()=>{
+ const h=await settingsHarness();assert.equal(h.$('youtubeAccountPlayback').checked,false);
+ h.$('youtubeAccountPlayback').checked=true;await h.controller.updateStatus();assert.equal(h.$('youtubeAccountPlayback').checked,true,'activity refresh must keep the unsaved mode');
+ await h.$('save').fire('click');assert.equal(h.saved.youtubeAccountPlayback,true);
+ h.$('youtubeAccountPlayback').checked=false;await h.$('discard').fire('click');assert.equal(h.$('youtubeAccountPlayback').checked,true);
+ h.failSave=true;h.$('youtubeAccountPlayback').checked=false;await h.$('save').fire('click');assert.equal(h.saved.youtubeAccountPlayback,true);assert.equal(h.$('youtubeAccountPlayback').checked,false);
+});

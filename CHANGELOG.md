@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.6.0 — experimental OBS YouTube output, audio and watchdog
+
+- Add a playback watchdog: recover 10-second stalls and 30-second startup waits at the saved queue position. Respect paused playback, votes, ads, blocked autoplay and access dialogs. Bound reloads to three per five minutes with a cooldown and a manual-retry hold.
+- Capture audio from this OBS instance's browser subprocesses into the native Playback source. Upgrade video-only sources to Track 1 once, reconnect after browser-process changes, and stop capture when the source is inactive.
+- Add a Windows native OBS dock and normal YouTube watch-page output, with manual sign-in using OBS Browser's default session. Connect queue, seeking, audio, voting and completion through the existing local worker lease; account barriers hold playback. Membership access remains unverified.
+- Add a native Playback video source using OBS's Windows Graphics Capture library, optional start with OBS, explicit worker release, and a transparent `/overlay` for lower thirds and votes without a second playback controller. Standard Window Capture excludes OBS-owned windows.
+- Live OBS tests confirmed saved YouTube sign-in, public-video picture, restart startup, pause/seek/resume, progress and automatic end-of-video advancement. Native browser audio was verified as non-silent PCM and a moving OBS mixer meter after restart. Restricted prompts remain manual; members-only access still needs validation.
+- Include plugin source, pinned checksum-verified build tooling and Windows build instructions. Native rendering and actual members-only access require live OBS acceptance.
+
+### OBS Browser Source account mode
+
+- Added a saved, opt-in OBS account-playback setting using the regular YouTube embed host, with default public playback unchanged.
+- Added sign-in/setup instructions for the existing OBS Browser Source; no extension or Window Capture setup is required.
+- Hold account-mode errors with Retry/setup controls instead of automatically quarantining or skipping the video. Preserve normal queue, audio, lower-third and voting controls.
+- Removed the unreleased Chrome extension/controller, build, release packaging and profile-specific startup setup.
+- Enforce account-mode error holds on the server as well, including errors sent by cached older players; explain YouTube age-restricted embedding limitations.
+- OBS Google sign-in and private-playlist listing were observed locally. Account-restricted embedded playback, members-only videos and reboot persistence remain unverified.
+
 ## v1.5.1 — unattended Windows startup and OBS recovery
 
 - Added optional OBS launch after the backend becomes healthy at Windows sign-in.

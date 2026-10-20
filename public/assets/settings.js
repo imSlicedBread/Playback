@@ -1,6 +1,6 @@
 import {$,e,api,applyTheme,applyLowerThird,showNotice,initAuth} from './common.js?v=1.5.1';
 import {renderVoteScreen} from './vote-screen.js';
-const boolKeys=['loop','voteOnEnd','showLowerThird','scrollTitles','hideCaptions','skipVoting','allowSuggestions'];
+const boolKeys=['loop','voteOnEnd','showLowerThird','scrollTitles','hideCaptions','skipVoting','allowSuggestions','youtubeAccountPlayback'];
 const defaultColors={background:'#0D1010',panel:'#111318',raised:'#171A1F',accent:'#00AFFF',text:'#FFFFFF',healthy:'#22C55E',warning:'#F59E0B',error:'#EF4444',info:'#3B82F6',community:'#8B5CF6'};
 const presetColors={cyan:defaultColors,purple:{...defaultColors,accent:'#8B5CF6'},green:{...defaultColors,accent:'#22C55E'},amber:{...defaultColors,accent:'#F59E0B'}};
 const ltDefault={x:3,y:0,width:34,height:0,backgroundOpacity:89,scale:100,titleScale:100,anchor:'bottom',showChannelLabel:false,showNowPlaying:false,showDuration:false,showSkip:false};

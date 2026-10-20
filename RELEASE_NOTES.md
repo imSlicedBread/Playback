@@ -1,3 +1,28 @@
+# fKey Playback v1.6.0 — OBS YouTube plugin, audio and watchdog
+
+This release adds an experimental Windows OBS plugin that plays the normal YouTube watch page using the account signed in inside OBS, while keeping Playback dashboard and chat queue controls. No Chrome extension is required.
+
+- **Native video and audio:** the Playback YouTube Output source captures the plugin window and audio from this OBS instance's browser subprocesses. An upgrade from the video-only prototype enables Track 1 once. Other audible OBS browser panels sharing that process may also be captured; mute unused panels and keep source monitoring off.
+- **Playback watchdog:** reload the same video after 10 seconds without playhead movement or a 30-second startup wait, restoring the saved queue position and audio. Pause, voting, ads, blocked autoplay and visible access/confirmation dialogs suspend recovery. Limit reloads to three per five minutes with a 15-second cooldown, then hold for manual retry. A completely unresponsive browser requires manual inspection.
+- **Existing controls:** pause/resume, seek, previous/replay, audio, direct video adding, voting and completion use the existing local worker lease. Optional start with OBS and a transparent `/overlay` source are included.
+- **OBS Browser Source account mode:** an opt-in signed-in embed host and error holds are also available. YouTube embedding restrictions still apply; account mode cannot guarantee restricted-video playback.
+
+## Downloads and upgrade
+
+1. Download **Playback-v1.6.0.zip** and its checksum. Stop Playback and back up the complete `data/` directory. Extract the update while preserving your data and launcher configuration. Node.js **22.13 or newer** is required; no database schema migration is needed.
+2. For the experimental plugin, also download **fplayback-youtube-0.1.0-windows-x64.zip** and its checksum. It targets **Windows x64, OBS 32.2.2 / Qt 6.11.1**. Other versions have not been tested.
+3. Close OBS, back up your scene collection/profile, then copy `obs-plugins/64bit/fplayback-youtube.dll` from the plugin ZIP into `C:\Program Files\obs-studio\obs-plugins\64bit`. Do not replace OBS's own DLLs.
+4. Start Playback and OBS. Open **Docks → Playback YouTube**, disable the old `/player` Browser Source, sign into YouTube manually, choose **Start queue / retry**, and add **Playback YouTube Output** to the scene. Fit it to the canvas and keep the output window open and unminimized. Check its mixer signal and Track 1 routing. Optional overlays use `http://127.0.0.1:4177/overlay` above this source.
+5. Follow the [plugin setup and troubleshooting guide](https://github.com/imSlicedBread/Playback/blob/v1.6.0/obs-plugin/README.md). The plugin ZIP includes corresponding GPL-2.0-or-later source; the main station retains its existing license.
+
+## Validation and limitations
+
+All **160 app tests**, JavaScript syntax checks, the Windows native build and the native recovery-policy test pass locally. Watchdog fault cases use simulated DOM traffic and native policy tests. Live OBS checks confirmed signed-in session reuse, public-video playback, pause/seek/resume, progress, completion, startup after restarting OBS, and browser audio reaching the OBS mixer. An age-restricted video played after the user manually accepted YouTube's prompt.
+
+**Members-only playback remains unverified.** Sign-in or private-playlist visibility does not prove access to a restricted video. Membership entitlement, account challenges and YouTube playback restrictions remain YouTube's responsibility. Sign-in, age/content confirmations and access dialogs require manual interaction. YouTube page changes may require plugin updates. Live Kick/SOOP and full Windows reboot acceptance remain pending.
+
+---
+
 # fKey Playback v1.5.1 — Windows startup and OBS recovery
 
 This update improves unattended startup after a Windows reboot and helps the OBS player recover when YouTube is not ready during startup.

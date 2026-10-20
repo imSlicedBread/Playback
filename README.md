@@ -28,6 +28,11 @@ Existing `state.json` installations migrate automatically with an exact pre-migr
 
 ## Start on Windows
 
+Experimental signed-in YouTube watch-page output is available as a native
+[OBS plugin prototype](obs-plugin/README.md). It keeps the Playback queue controls
+and supplies its own native video source. It requires OBS 32.2.2 / Qt 6.11.1 on Windows x64;
+members-only playback still needs validation with an entitled account.
+
 1. Install Node.js **22.13 or newer**. There are no npm runtime dependencies.
 2. Extract the complete release into a permanent directory such as `C:\Playback`.
 3. Double-click `start-player.bat`. The dashboard opens after the server is ready.
@@ -44,10 +49,24 @@ Linux/macOS: run `./start-player.sh` or `node server.js`. The official Windows Z
 | Control | `http://127.0.0.1:4177/control` | Operator playback, search, paginated queues, imports and requests |
 | Settings | `http://127.0.0.1:4177/settings` | Playback, chat connections, colors, lower-third and vote-screen editors |
 | OBS source | `http://127.0.0.1:4177/player` | Video, title overlay and end-of-video voting |
+| YouTube sign-in setup | `http://127.0.0.1:4177/youtube-setup` | Sign-in instructions for the existing OBS Browser Source |
 | Clean OBS source | `http://127.0.0.1:4177/player?clean=1` | No lower third; voting screen remains available |
 | Viewer portal | `http://127.0.0.1:4177/vote` | Local viewer suggestions and voting |
 
 The server does not render/encode video by itself. OBS or an active player browser is required. Closing the Control tab does not stop a separate OBS player; disabling the player source does stop playback.
+
+## YouTube sign-in inside OBS
+
+For account-restricted videos, use the existing OBS Browser Source with its own YouTube login:
+
+1. In **Settings → Playback**, enable **Use the YouTube account signed in inside OBS** and **Save Settings**. This opt-in switches the embedded player to `www.youtube.com`; the default remains the privacy-enhanced `youtube-nocookie.com` player.
+2. Temporarily change the Playback Browser Source URL in OBS to **https://www.youtube.com/**, click **Interact**, then sign in to the Google/YouTube account that can play the video. Enter credentials only on Google's own sign-in screen. The [local setup page](http://127.0.0.1:4177/youtube-setup) can also open YouTube in that same source.
+3. Restore the **same source** to **http://127.0.0.1:4177/player** (or `/player?clean=1`). Keep **Shutdown source when not visible** and **Refresh browser when scene becomes active** disabled. Use only one active player output.
+4. Test actual video playback, dashboard controls, voting and a restart of OBS on the streaming workstation. OBS manages its own login session; signing into Chrome or the Playback dashboard is separate. Clearing OBS browser cookies, account expiration or a Google challenge can require another login.
+
+Account mode keeps normal queue, audio and overlay controls. It holds the current video on player errors, with an on-screen Retry action and setup link, rather than automatically quarantining/skipping an account-restricted video. You may skip manually from the dashboard. Turn account mode off to return to default playback. Playback does not inspect Google cookies, collect credentials or claim a connected account status.
+
+**Verified locally:** Google sign-in succeeded in the OBS Browser Source and private playlists were visible. **Not yet verified:** playback of account-restricted videos through Playback's embedded player, members-only videos, and login persistence after reboot. A private playlist listing does not prove private-video playback. YouTube can still prohibit embedding or withhold account access; enabling this option is not a guarantee of members-only support. [YouTube documents](https://support.google.com/youtube/answer/171780?hl=en) that age-restricted videos cannot play on most third-party websites. Sign-in does not override that restriction: such a video may require the normal YouTube watch page. Account mode holds errors instead of skipping, but cannot make an embedding-restricted video playable.
 
 ## Smart Rotation Queue
 

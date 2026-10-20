@@ -178,3 +178,6 @@ html.obs,body.obs{width:100%;height:100%;overflow:hidden;background:#000}.obs-st
 .chat-admin-table time,.chat-admin-table code{white-space:nowrap}
 .chat-admin-success{color:var(--healthy)}
 .chat-admin-error{color:var(--error)}
+
+/* Account-mode errors hold playback and keep recovery controls readable in OBS Interact. */
+.account-notice{position:fixed;top:20px;left:20px;right:20px;max-width:760px;padding:18px;background:#111318;color:#fff;border:1px solid #f59e0b;z-index:200;font:16px/1.5 sans-serif}.account-notice p{margin:0 0 12px}.account-notice a{color:#00afff}.youtube-setup{max-width:1000px;margin:40px auto;padding:20px}.youtube-setup li{margin-bottom:14px}.youtube-setup code{overflow-wrap:anywhere}

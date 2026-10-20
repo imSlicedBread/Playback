@@ -8,7 +8,19 @@ try{workerId=sessionStorage.getItem('playback-worker-id');}catch{}
 if(!/^[0-9a-f-]{36}$/i.test(workerId||''))workerId=crypto.randomUUID();
 try{sessionStorage.setItem('playback-worker-id',workerId);}catch{}
 let isWorker=false;
-let lastLoad=0,apiScript=null,playerStarted=0,playerEpoch=0;
+let lastLoad=0,apiScript=null,playerStarted=0,playerEpoch=0,activeAccountMode=false,accountBlockedGen=-1;
+const accountMode=()=>data?.settings.youtubeAccountPlayback===true;
+function accountNotice(message=''){
+  $('accountMessage').textContent=message;
+  hide($('accountNotice'),!message);
+}
+function resetYouTube(){
+  playerEpoch++;ytReady=false;
+  try{player?.destroy();}catch{}
+  player=null;appliedGen=-1;lastAudioKey='';accountBlockedGen=-1;accountNotice();
+  const mount=document.createElement('div');mount.id='ytMount';mount.className='yt-frame';
+  const old=$('ytMount');if(old)old.replaceWith(mount);else $('stage').prepend(mount);
+}
 function hide(el,yes){el.classList.toggle('hidden',yes);}
 async function claim(){
   if(isWorker||Date.now()-lastClaim<3500)return;
@@ -57,6 +69,10 @@ function syncAudio(s,{force=false}={}){
 function applyPlayback(s){
   if(!player||!ytReady)return;
   const c=s.current;
+  if(accountBlockedGen!==-1){
+    if(accountBlockedGen===s.generation&&c&&!s.vote)return;
+    accountBlockedGen=-1;accountNotice();
+  }
   const newGeneration=appliedGen!==s.generation;
   syncAudio(s,{force:newGeneration});
   if(!c){
@@ -85,6 +101,7 @@ function applyPlayback(s){
 async function poll(){
   try{
     const s=await api('public?compact=1');data=s;applyTheme(s.settings.colors);
+    if(player&&activeAccountMode!==accountMode()){resetYouTube();ensureYouTube();}
     updateHud(s);updateVote(s);
     hide($('waiting'),!!s.current||!!s.vote);
     if(ytReady)applyPlayback(s);
@@ -96,7 +113,7 @@ setInterval(poll,1100);poll();
 setInterval(async()=>{
   if(!player||!ytReady||!data||!isWorker)return;
   await claim();
-  if(!data.current||data.vote)return;
+  if(!data.current||data.vote||accountBlockedGen===data.generation)return;
   try{
     // An unready or previous iframe must not overwrite saved resume progress.
     if(appliedGen!==data.generation||![1,2].includes(player.getPlayerState())||player.getVideoData?.().video_id!==data.current.videoId)return;
@@ -113,22 +130,34 @@ setInterval(async()=>{
 window.onYouTubeIframeAPIReady=()=>{
   if(!window.YT?.Player||player)return;
   const epoch=++playerEpoch;
+  activeAccountMode=accountMode();
   playerStarted=Date.now();
   player=new YT.Player('ytMount',{
-    height:'100%',width:'100%',host:'https://www.youtube-nocookie.com',
-    playerVars:{autoplay:1,controls:0,playsinline:1,enablejsapi:1,cc_load_policy:0,iv_load_policy:3,rel:0,origin:location.origin},
+    height:'100%',width:'100%',host:activeAccountMode?'https://www.youtube.com':'https://www.youtube-nocookie.com',
+    playerVars:{autoplay:1,controls:activeAccountMode?1:0,playsinline:1,enablejsapi:1,cc_load_policy:0,iv_load_policy:3,rel:0,origin:location.origin},
     events:{onReady:()=>{if(epoch!==playerEpoch)return;ytReady=true;poll();},onStateChange:ev=>{
       if(epoch!==playerEpoch||!ytReady)return;
-      if(ev.data===window.YT.PlayerState.PLAYING){concealCaptions();if(data)syncAudio(data,{force:true});}
-      if(ev.data===window.YT.PlayerState.ENDED && data?.current && !data.vote && reportedEndGen!==data.generation){
+      if(ev.data===window.YT.PlayerState.PLAYING){concealCaptions();if(data)syncAudio(data,{force:true});
+        try{if(player.getVideoData()?.video_id===data?.current?.videoId){accountBlockedGen=-1;accountNotice();}}catch{}
+      }
+      if(ev.data===window.YT.PlayerState.ENDED && data?.current && !data.vote && accountBlockedGen!==data.generation && reportedEndGen!==data.generation){
         reportedEndGen=data.generation;asWorker('ended',{generation:data.generation}).then(r=>{if(r?.accepted)poll();});
       }
+    },onAutoplayBlocked:()=>{
+      if(epoch===playerEpoch&&activeAccountMode)accountNotice('YouTube blocked autoplay. Use OBS → Interact and click Play in the video.');
     },onApiChange:()=>{if(epoch===playerEpoch)concealCaptions();},onError:ev=>{
       if(epoch!==playerEpoch)return;
       // HTML5 startup failure is a player failure, not proof that this video
       // is unavailable. Rebuild after the readiness timeout without skipping.
       if(ev.data===5){ytReady=false;playerStarted=Date.now();return;}
       if(!data?.current||data.vote||reportedErrorGen===data.generation)return;
+      if(activeAccountMode){
+        accountBlockedGen=data.generation;
+        const reason=[101,150].includes(ev.data)?'YouTube does not allow this video in an embedded player. Age-restricted videos often require the normal YouTube watch page, even when signed in.':
+          ev.data===153?'YouTube could not identify this player. Check the OBS source URL and referrer configuration.':
+          'YouTube could not play this video. Check the account, sign-in and video access in OBS. Age restrictions can also prevent embedded playback.';
+        accountNotice(`${reason} Queue held. Retry after fixing access, or skip from the dashboard.`);return;
+      }
       reportedErrorGen=data.generation;asWorker('error',{generation:data.generation}).then(()=>poll());
     }}
   });
@@ -139,11 +168,7 @@ function ensureYouTube(){
   if(ytReady)return;
   if(player){
     if(Date.now()-playerStarted<30000)return;
-    playerEpoch++;
-    try{player.destroy();}catch{}
-    player=null;appliedGen=-1;lastAudioKey='';
-    const mount=document.createElement('div');mount.id='ytMount';mount.className='yt-frame';
-    const old=$('ytMount');if(old)old.replaceWith(mount);else $('stage').prepend(mount);
+    resetYouTube();
   }
   if(window.YT?.Player){try{window.onYouTubeIframeAPIReady();}catch{player=null;}return;}
   apiScript?.remove();
@@ -152,4 +177,5 @@ function ensureYouTube(){
 }
 setInterval(ensureYouTube,15000);
 window.addEventListener('online',ensureYouTube);
+$('accountRetry').addEventListener('click',()=>{accountBlockedGen=-1;appliedGen=-1;reportedErrorGen=-1;accountNotice();void poll();});
 ensureYouTube();
