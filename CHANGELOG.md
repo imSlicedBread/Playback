@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.7.5 — smoother transitions and pause without rewind
+
+- Hold the outgoing OBS source frame while the next queued video loads, then crossfade into its decoded picture over 300 ms. Preserve normal audio routing.
+- Require the player and video to fill the output viewport with a stable layout for 500 ms before releasing the fade. Watch YouTube style changes and withdraw readiness if its layout changes again.
+- Mark pause/resume generations as transport-only so the native output pauses at its live frame without rewinding to a stale progress checkpoint.
+- Reveal ads and access prompts immediately when reported; stop holding after 15 seconds if loading never becomes ready. Cancel stale transitions on stop, sign-in, or rapid queue changes.
+- Add transition-policy and D3D11 pixel tests, plus controller readiness and access-prompt coverage.
+
+- Package plugin and installer 0.1.6.
+
 ## v1.7.4 — prioritize the saved playback position
 
 - Include the local queue checkpoint in the native watch-page URL.

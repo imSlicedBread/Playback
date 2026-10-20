@@ -40,6 +40,9 @@ OBS_DECLARE_MODULE()
 void playback_register_capture();
 void playback_set_output_window(HWND window);
 void playback_set_output_resolution(uint32_t width,uint32_t height);
+uint64_t playback_begin_transition();
+void playback_transition_ready(uint64_t ticket,bool ready,bool reveal);
+void playback_cancel_transition();
 const char *obs_module_description(void) { return "Playback queue controls for a signed-in YouTube watch window (experimental)"; }
 const char *obs_module_name(void) { return "Playback YouTube Output"; }
 
@@ -182,6 +185,7 @@ class Playback final : public QObject {
   QNetworkAccessManager network;
   QString worker = QUuid::createUuid().toString(QUuid::WithoutBraces);
   QString nonce, loadedVideo, script;
+  uint64_t fadeTicket=0;
   QJsonObject snapshot;
   bool running = false, busy = false, lease = false, endedSent = false;
   quint64 epoch = 0;
@@ -246,6 +250,7 @@ class Playback final : public QObject {
     const auto nextGeneration = snapshot.value("generation").toInteger(-1);
     static const QRegularExpression validVideo("^[A-Za-z0-9_-]{11}$");
     if (!validVideo.match(video).hasMatch()) {
+      playback_cancel_transition(); fadeTicket=0;
       pausePage();
       setStatus("Queue empty — add a video in Playback."); return;
     }
@@ -256,6 +261,7 @@ class Playback final : public QObject {
       lastTelemetry = watchdogClock.elapsed();
     }
     if (loadedVideo != video) {
+      if (!loadedVideo.isEmpty()) fadeTicket=playback_begin_transition();
       recovery.reset();
       loadedVideo = video;
       const double position=std::max(0.0,current.value("position").toDouble());
@@ -269,6 +275,7 @@ class Playback final : public QObject {
     // main-frame location before applying controls; telemetry validates it again.
     const auto audio = snapshot.value("audio").toObject();
     QJsonObject command{{"nonce", nonce}, {"generation", generation}, {"videoId", video},
+      {"transportOnly", snapshot.value("transportOnly").toBool()},
       {"position", current.value("position").toDouble()}, {"paused", current.value("paused").toBool()},
       {"voting", snapshot.value("vote").isObject()},
       {"locked", outputLock->isChecked()},
@@ -308,6 +315,8 @@ private slots:
     if (location.scheme() != "https" || location.host() != "www.youtube.com" ||
         location.path() != "/watch" || QUrlQuery(location).queryItemValue("v") != loadedVideo) return;
     lastTelemetry = watchdogClock.elapsed();
+    if (fadeTicket && (result.contains("displayReady") || result.value("revealDisplay").toBool()))
+      playback_transition_ready(fadeTicket,result.value("displayReady").toBool(),result.value("revealDisplay").toBool());
     if (result.contains("recover")) {
       const auto reason = result.value("recover").toString();
       if (reason != "startup" && reason != "buffering" && reason != "stalled") return;
@@ -474,6 +483,7 @@ public:
     return true;
   }
   void stop() {
+    playback_cancel_transition(); fadeTicket=0;
     running = false; ++epoch; port->setEnabled(true);
     pausePage();
     if (lease) {

@@ -10,19 +10,24 @@ function harness(){
  const style=()=>({values:{},priorities:{},setProperty(name,value,priority=''){this.values[name]=value;this.priorities[name]=priority;},
   getPropertyValue(name){return this.values[name]||'';},getPropertyPriority(name){return this.priorities[name]||'';},removeProperty(name){delete this.values[name];delete this.priorities[name];}});
  const listeners=new Map();
- const video={style:style(),readyState:4,duration:240,currentTime:0,paused:true,ended:false,volume:1,muted:false,
+ let smallLayout=false;
+ const rect=()=>({left:0,top:0,width:smallLayout?640:1280,height:smallLayout?360:720});
+ const video={style:style(),videoWidth:1280,videoHeight:720,getBoundingClientRect:rect,readyState:4,duration:240,currentTime:0,paused:true,ended:false,volume:1,muted:false,
   addEventListener(type,fn){listeners.set(type,fn);},removeEventListener(type,fn){if(listeners.get(type)===fn)listeners.delete(type);},
   pause(){this.paused=true;},play(){this.paused=false;return Promise.resolve();}};
- const player={style:style(),classList:{contains:()=>ad}};
+ const player={style:style(),getBoundingClientRect:rect,classList:{contains:()=>ad}};
  const document={title:'YouTube',documentElement:{style:style()},body:{style:style(),appendChild(node){node.parentElement=this;}},
   querySelector(selector){if(selector==='video.html5-main-video')return video;if(selector==='#movie_player')return player;return barrier?{getClientRects:()=>[{}],textContent:'Access required'}:null;}};
  const controls=[{style:style()},{style:style()}];
  const watermark={style:style()};
  document.querySelectorAll=selector=>selector.startsWith('.ytp-chrome-bottom')?[...controls,...(selector.includes('.ytp-watermark')?[watermark]:[])]:barrier?[{getClientRects:()=>[{}],textContent:'Confirmation required'}]:[];
  let ad=false,barrier=false,now=0;
- const context={window:{},document,URL,performance:{now:()=>now},location:new URL('https://www.youtube.com/watch?v=dQw4w9WgXcQ')};
+ const frames=new Map(),observers=new Set();let frameId=0;
+ const context={window:{innerWidth:1280,innerHeight:720},document,URL,performance:{now:()=>now},location:new URL('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+  requestAnimationFrame(cb){frames.set(++frameId,cb);return frameId;},cancelAnimationFrame(id){frames.delete(id);},
+  MutationObserver:class{constructor(cb){this.cb=cb;observers.add(cb);}observe(){}disconnect(){observers.delete(this.cb);}}};
  const defaults={nonce:'nonce',generation:1,videoId:'dQw4w9WgXcQ',position:35,volume:70,muted:false,paused:false,voting:false};
- return {video,player,controls,watermark,context,listeners,advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
+ return {video,player,controls,watermark,context,listeners,frame(ms=0){now+=ms;const pending=[...frames.values()];frames.clear();for(const cb of pending)cb();},setSmallLayout(value){smallLayout=value;for(const cb of observers)cb();},advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
   document.title='YouTube';vm.runInNewContext(source.replace('__PLAYBACK_COMMAND__',JSON.stringify({...defaults,...fields})),context);
   return document.title.startsWith('fPlayback:')?JSON.parse(document.title.slice('fPlayback:nonce:'.length)):null;
  }};
@@ -60,6 +65,47 @@ test('watch controller uses the normal matching YouTube page and applies seek on
  h.context.location=new URL('https://accounts.google.com/');assert.equal(h.run(),null);
  h.context.location=new URL('https://www.youtube.com/watch?v=jNQXAC9IVRw');assert.equal(h.run(),null);
 });
+test('pause and resume preserve the live frame instead of seeking to an older reported checkpoint',()=>{
+ const h=harness();h.run({position:35});h.advance(3000);h.video.currentTime=38;
+ const paused=h.run({generation:2,transportOnly:true,position:35,paused:true});
+ assert.equal(h.video.currentTime,38);assert.equal(h.video.paused,true);assert.equal(paused.position,38);
+ const resumed=h.run({generation:3,transportOnly:true,position:35,paused:false});
+ assert.equal(h.video.currentTime,38);assert.equal(h.video.paused,false);assert.equal(resumed.position,38);
+ h.run({generation:4,transportOnly:false,position:12,paused:true});assert.equal(h.video.currentTime,12);
+ h.run({generation:5,transportOnly:false,position:0});assert.equal(h.video.currentTime,0);
+});
+
+test('transport-only startup still restores the checkpoint, while pausing an in-flight seek pauses immediately',()=>{
+ const startup=harness();startup.video.currentTime=100;startup.run({transportOnly:true,paused:true,position:35});assert.equal(startup.video.currentTime,35);assert.equal(startup.video.paused,true);
+ const h=harness();h.run();h.video.seeking=true;h.video.paused=false;
+ const paused=h.run({generation:2,transportOnly:true,paused:true});assert.equal(h.video.paused,true);assert.equal(paused.position,undefined);
+});
+
+test('video fade readiness waits for a decoded frame and reveals ads or access prompts immediately',()=>{
+ const h=harness();h.video.readyState=1;assert.equal(h.run().displayReady,false);
+ h.video.readyState=2;assert.equal(h.run({paused:true}).displayReady,false);h.frame();h.frame(500);assert.equal(h.run({paused:true}).displayReady,true);
+ h.video.seeking=true;assert.equal(h.run().displayReady,undefined);
+ h.setAd(true);assert.equal(h.run().revealDisplay,true);
+ h.setAd(false);h.setBarrier(true);assert.equal(h.run().revealDisplay,true);
+ h.setBarrier(false);h.video.seeking=false;h.video.readyState=0;assert.equal(h.run().displayReady,undefined);
+});
+
+test('crossfade waits for stable full-window layout and withdraws readiness when YouTube resizes it',()=>{
+ const h=harness();h.setSmallLayout(true);assert.equal(h.run().displayReady,false);
+ h.frame();h.frame(1000);assert.equal(h.run().displayReady,false);
+ h.setSmallLayout(false);h.frame();h.frame(499);assert.equal(h.run().displayReady,false);
+ h.frame(1);assert.equal(h.run().displayReady,true);
+ h.setSmallLayout(true);h.frame();assert.equal(h.run().displayReady,false);
+ h.setSmallLayout(false);h.frame();h.frame(500);assert.equal(h.run().displayReady,true);
+});
+
+test('old layout observers stop reporting after a seek or navigation and access prompts remain visible',()=>{
+ const h=harness();h.run();h.frame();const old=h.context.window.__fPlaybackWatch;
+ h.run({generation:2,position:90});h.frame(500);assert.notEqual(h.context.window.__fPlaybackWatch,old);
+ h.setBarrier(true);h.frame();assert.match(h.context.document.title,/"revealDisplay":true/);
+ h.setBarrier(false);h.context.location=new URL('https://accounts.google.com/');h.context.document.title='unchanged';h.frame(1000);assert.equal(h.context.document.title,'unchanged');
+});
+
 test('late YouTube history resume cannot overwrite the local checkpoint, including zero and paused playback',()=>{
  for(const position of [0,35])for(const paused of [false,true]) {
   const h=harness();h.run({position,paused});h.advance(1000);h.video.currentTime=180;
@@ -176,4 +222,9 @@ test('local worker ownership transfers explicitly and stale output cannot releas
  assert.equal(app.engine.state.current.position,45);
  app.engine.seek(100);const stale=await (await post('progress',{workerId:b,generation:gen,position:46,duration:240})).json();assert.equal(stale.accepted,false);
  assert.equal(app.engine.state.current.position,100);
+ assert.equal(app.engine.publicState({compact:true}).transportOnly,false);
+ app.engine.pause(true);assert.equal(app.engine.publicState({compact:true}).transportOnly,true);
+ app.engine.pause(false);assert.equal(app.engine.publicState({compact:true}).transportOnly,true);
+ app.engine.seek(50);assert.equal(app.engine.publicState({compact:true}).transportOnly,false);
+ app.engine.pause(true);app.engine.replay();assert.equal(app.engine.publicState({compact:true}).transportOnly,false);
 });

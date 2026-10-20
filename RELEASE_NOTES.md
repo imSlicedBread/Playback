@@ -1,3 +1,28 @@
+# fKey Playback v1.7.5 — smoother transitions and pause without rewind
+
+The native OBS source now holds the outgoing picture while the next queued video loads. It waits for a decoded frame and a full-window layout stable for 500 ms, then crossfades over 300 ms. YouTube layout changes withdraw readiness so the fade does not start on its smaller loading layout. Ads and access prompts are revealed when reported. A 15-second loading timeout releases the held picture for inspection; stop/sign-in cancels pending transitions and rapid queue changes replace them.
+
+Pause and resume now preserve the browser's live position instead of seeking back to the last reported queue checkpoint. Explicit seek/replay, startup position restoration and protection against YouTube history resume remain included.
+
+The fade is visual in the native OBS source. Audio retains its existing routing; videos are not preloaded, and first startup has no outgoing frame to blend. The separate YouTube output window may still show loading.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.5.zip** — updated station app and plugin source.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.6.exe** — updated Windows installer.
+- **fplayback-youtube-0.1.6-windows-x64.zip** — installer, DLL, corresponding source and license.
+- Each download has a SHA-256 checksum.
+
+Update both the station app and plugin for the pause fix. Stop Playback, back up and preserve `data/` and launcher configuration, extract the app update, then restart. Close OBS, run the plugin installer, and restart OBS normally. This build requires Windows x64 and OBS 32.2.2 / Qt 6.11.1; the app requires Node.js 22.13 or newer. No database migration is needed. Account data and queues are preserved. Sign-in and access/age/content confirmations remain manual.
+
+## Validation
+
+All 170 app tests, JavaScript syntax checks and six native tests pass. Coverage includes live-frame pause/resume, explicit seeks, stable layout readiness, late layout changes, stale callbacks, access/ad visibility, transition timing/timeouts, and D3D11 pixel checks for outgoing, blended midpoint and incoming frames. Live OBS checks confirmed rendering, audio, decoded/full-size readiness, and pause/resume without backward playhead movement. Visual timing across every YouTube loading variation remains subject to live testing.
+
+See the [plugin guide](https://github.com/imSlicedBread/Playback/blob/v1.7.5/obs-plugin/README.md).
+
+---
+
 # fKey Playback v1.7.4 — prioritize the saved playback position
 
 Previously, YouTube could apply its remembered watch position after Playback's initial seek, replacing the local queue checkpoint. The native plugin now opens the watch page with the saved queue time and rejects implausible history jumps during a ten-second startup guard. Pending seeks and rejected jumps do not report progress or completion. After ads or access prompts, the local queue position is reapplied. Dashboard seek/replay establishes a new checkpoint, and ordinary later manual seeks remain available when unlocked.

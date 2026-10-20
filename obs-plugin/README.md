@@ -21,7 +21,7 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.5.exe**, approve the Windows
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.6.exe**, approve the Windows
    administrator prompt, and click **Install / Update**. The installer detects
    the usual OBS installation; use **Browse** for a custom or portable folder.
    It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual
@@ -173,3 +173,9 @@ OBS restores the dock layout and open state. Floating docks restored off-screen 
 ## Saved playback position
 
 Videos open with the local queue checkpoint in the watch URL. The controller seeks to that checkpoint and rejects implausible browser-history jumps during the first ten seconds after position initialization. Pending seeks and rejected jumps do not report progress or completion. Ads and access prompts hold the queue checkpoint, which is reapplied afterward. New dashboard seek/replay generations establish a new checkpoint. Ordinary later manual seeks remain available when unlocked. This protects future startup reports; it cannot recover an older checkpoint already replaced before upgrading.
+
+## Video transitions and pause
+
+The native OBS source caches the outgoing picture during a queued video change. It waits for a decoded frame and a full-window layout stable for 500 ms, then crossfades over 300 ms. Layout changes withdraw readiness. Ads/access prompts are revealed when reported, and a 15-second loading timeout releases the held picture for inspection. Stop/sign-in cancels a pending fade; rapid queue changes replace the pending transition. First startup has no outgoing frame to blend. This is a visual transition in the native source, not an audio crossfade or preloading system; audio keeps its existing routing. The separate YouTube output window may still show page loading.
+
+Pause/resume commands now preserve the current browser frame and do not seek back to the last progress report. Seek, replay, startup restoration and history-resume protection retain their behavior. Update both the app and plugin to use the pause fix.
