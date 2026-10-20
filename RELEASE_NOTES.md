@@ -1,3 +1,15 @@
+# fKey Playback v1.6.1 — correct startup version display
+
+Fix the startup banner and `/api/health` showing 1.5.1 after upgrading to v1.6.0. Both now read the version from `package.json`, and the headless startup test checks that they match. The README version is also updated.
+
+This release retains the OBS YouTube plugin, native browser audio capture and playback watchdog from v1.6.0. The plugin binary is unchanged and is included as a separate download with corresponding source and checksum. Members-only playback remains unverified; sign-in and YouTube access prompts remain manual.
+
+Download **Playback-v1.6.1.zip**, stop Playback, back up and preserve `data/`, extract the update, then restart Playback. The console will show **1.6.1 ready**. Existing v1.6.0 plugin installations need no plugin reinstall. New installations can follow the [OBS plugin guide](https://github.com/imSlicedBread/Playback/blob/v1.6.1/obs-plugin/README.md). No database migration is needed.
+
+All 160 app tests and syntax checks pass locally, including version checks against a real server startup. The unchanged plugin passed its native build and recovery-policy test for v1.6.0.
+
+---
+
 # fKey Playback v1.6.0 — OBS YouTube plugin, audio and watchdog
 
 This release adds an experimental Windows OBS plugin that plays the normal YouTube watch page using the account signed in inside OBS, while keeping Playback dashboard and chat queue controls. No Chrome extension is required.

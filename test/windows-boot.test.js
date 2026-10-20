@@ -72,10 +72,13 @@ test('Headless boot entrypoint serves Playback on a fixed port and writes a loca
   }
   assert.equal(health?.ok,true,`Boot server failed: ${errors}`);
   assert.equal(health?.app,'fKey Playback');
+  const version=JSON.parse(read('package.json')).version;
+  assert.equal(health.version,version);
   assert.ok(fs.existsSync(path.join(dir,'boot-service.log')));
   const log=fs.readFileSync(path.join(dir,'boot-service.log'),'utf8');
   assert.match(log,/Starting fKey Playback/);
   assert.match(log,/ready/);
+  assert.ok(log.includes(`fKey Playback made by fKey Labs Inc. ${version} ready`));
   assert.equal(log.includes('Could not open browser automatically'),false);
 });
 

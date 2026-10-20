@@ -2,6 +2,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createApp} from './lib/http.js';
 import {openDashboard} from './lib/open-dashboard.js';
+import {VERSION} from './lib/version.js';
 
 const PORT=Number(process.env.PORT||4177);
 const HOST=process.env.HOST||'127.0.0.1';
@@ -11,7 +12,7 @@ const app=createApp({host:HOST,port:PORT,dataDir:DATA_DIR});
 try {
   const address=await app.listen();
   const p=address.port;
-  console.log(`fKey Playback made by fKey Labs Inc. 1.5.1 ready\n  Dashboard: http://127.0.0.1:${p}/control\n  Settings:  http://127.0.0.1:${p}/settings\n  OBS:       http://127.0.0.1:${p}/player\n  Viewer:    http://127.0.0.1:${p}/vote\n  Token:     ${path.join(DATA_DIR,'admin-token.txt')}\n  State:     ${path.join(DATA_DIR,'playback.sqlite3')}`);
+  console.log(`fKey Playback made by fKey Labs Inc. ${VERSION} ready\n  Dashboard: http://127.0.0.1:${p}/control\n  Settings:  http://127.0.0.1:${p}/settings\n  OBS:       http://127.0.0.1:${p}/player\n  Viewer:    http://127.0.0.1:${p}/vote\n  Token:     ${path.join(DATA_DIR,'admin-token.txt')}\n  State:     ${path.join(DATA_DIR,'playback.sqlite3')}`);
   openDashboard({port:p});
   let closing=false;const shutdown=()=>{if(closing)return;closing=true;app.close().then(()=>process.exit(0));setTimeout(()=>process.exit(1),4000).unref();};
   process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);

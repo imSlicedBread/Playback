@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.1 — correct startup and health version reporting
+
+- Read the runtime version from package.json for both the startup banner and health endpoint, removing stale 1.5.1 strings.
+- Verify both outputs against the package version in the real headless startup test.
+- Retain the v1.6.0 OBS plugin, audio fix and watchdog; the plugin binary is unchanged.
+
 ## v1.6.0 — experimental OBS YouTube output, audio and watchdog
 
 - Add a playback watchdog: recover 10-second stalls and 30-second startup waits at the saved queue position. Respect paused playback, votes, ads, blocked autoplay and access dialogs. Bound reloads to three per five minutes with a cooldown and a manual-retry hold.

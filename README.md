@@ -1,8 +1,12 @@
-# fKey Playback 1.5.1
+# fKey Playback 1.6.1
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
 [Releases](https://github.com/imSlicedBread/Playback/releases) · [MIT license](LICENSE) · [Storage and migration](STORAGE.md) · [Security](SECURITY.md)
+
+## New in v1.6.1 — OBS plugin and accurate version reporting
+
+The experimental [OBS YouTube plugin](obs-plugin/README.md) includes native audio and a bounded playback watchdog. Startup and health checks now report the package version consistently. Members-only playback remains unverified.
 
 ## New in v1.5.1 — Windows startup and OBS recovery
 
