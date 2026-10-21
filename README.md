@@ -1,4 +1,4 @@
-# fKey Playback 1.7.7
+# fKey Playback 1.7.8
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
@@ -6,7 +6,11 @@ Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS 
 
 Supporting documentation: [release notes](docs/RELEASE_NOTES.md), [storage verification](docs/BUILD-REPORT.md), and [historical performance measurements](docs/PERFORMANCE.md).
 
-## New in v1.7.7 — tidier app folder
+## New in v1.7.8 — Windows startup lock handling
+
+If Windows denies the process check for an existing instance, Playback now preserves the lock and explains how to use or stop the existing station. A second interactive launch opens a healthy existing dashboard instead of starting another server. Startup failures show a readable message. The OBS plugin remains at 0.1.7.
+
+## Included from v1.7.7 — tidier app folder
 
 Supporting documentation now lives in `docs/`, with updated links and release packaging. Startup shortcuts stay in the main folder. Local data and backups are preserved. The OBS plugin remains at 0.1.7.
 

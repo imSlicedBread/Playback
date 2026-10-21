@@ -1,3 +1,23 @@
+# fKey Playback v1.7.8 — Windows startup fix
+
+Windows can deny Playback's process check when the instance recorded in the startup lock is running under another account, such as the automatic startup service. Playback now handles this without an uncaught `kill EPERM` stack trace and keeps the lock intact.
+
+A second interactive launch checks the configured local port and opens the existing dashboard if a healthy Playback server responds. If it cannot reach the dashboard, it shows an actionable message to stop the existing Playback process or startup task before trying again. Background startup remains headless. The fix never starts a second writer or deletes an inaccessible process's lock.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.8.zip** — updated station app, tests and documentation.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.7.exe** and **fplayback-youtube-0.1.7-windows-x64.zip** — unchanged plugin downloads.
+- Each download has a SHA-256 checksum.
+
+Stop Playback, back up and preserve `data/` and launcher configuration, extract the app update, then restart. If automatic startup is enabled, stop that task before upgrading. No database migration or plugin reinstall is required for existing plugin 0.1.7 installations.
+
+## Validation
+
+JavaScript syntax checks and the full app suite cover simulated Windows permission denial, lock preservation, dead-PID recovery, duplicate background launch, healthy-dashboard detection and rejected/unavailable health responses. The duplicate interactive process test runs on headless Linux; browser launches are mocked on all platforms to avoid opening a real browser during tests.
+
+---
+
 # fKey Playback v1.7.7 — tidier app folder
 
 Supporting documentation now lives in `docs/`: storage and migration guidance, build reports, historical performance measurements and release notes. README links and the GitHub release workflow use the new paths, and release ZIPs include the documentation in its new folder.

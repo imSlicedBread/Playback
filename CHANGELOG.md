@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.7.8 — Windows startup lock handling
+
+- Handle Windows EPERM during the existing-process check without an uncaught stack trace. Preserve the lock when the process cannot be inspected.
+- On a second interactive launch, check the configured local port and open an existing healthy Playback dashboard. Never start a second writer or remove the running station lock.
+- Show actionable startup errors when the existing dashboard is unavailable. Background startup stays headless.
+- Add regression coverage for permission denial, live and exited process IDs, unexpected probe errors, duplicate launches and dashboard health validation.
+- OBS plugin and installer remain at 0.1.7; no plugin reinstall or database migration is required.
+
 ## v1.7.7 — tidier app folder
 
 - Move storage documentation, build reports, historical performance measurements and release notes into `docs/`.

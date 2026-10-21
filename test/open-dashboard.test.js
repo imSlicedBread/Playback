@@ -4,7 +4,25 @@ import {EventEmitter} from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {dashboardBrowserCommand,openDashboard} from '../lib/open-dashboard.js';
+import {dashboardBrowserCommand,openDashboard,openExistingDashboard} from '../lib/open-dashboard.js';
+
+test('duplicate interactive launch opens only a healthy Playback dashboard',async()=>{
+  const calls=[];
+  const options={port:4177,env:{PB_OPEN_BROWSER:'1'},launch:options=>calls.push(options)};
+  assert.equal(await openExistingDashboard({...options,fetchHealth:async(url,request)=>{
+    assert.equal(url,'http://127.0.0.1:4177/api/health');
+    assert.ok(request.signal instanceof AbortSignal);
+    return {ok:true,json:async()=>({ok:true,app:'fKey Playback'})};
+  }}),true);
+  assert.equal(calls.length,1);assert.equal(calls[0].port,4177);
+  for(const health of [{ok:true,app:'Other app'},{ok:false,app:'fKey Playback'},null]) {
+    assert.equal(await openExistingDashboard({...options,fetchHealth:async()=>({ok:true,json:async()=>health})}),false);
+  }
+  assert.equal(await openExistingDashboard({...options,fetchHealth:async()=>({ok:false})}),false);
+  assert.equal(await openExistingDashboard({...options,fetchHealth:async()=>{throw new Error('offline');}}),false);
+  assert.equal(await openExistingDashboard({...options,env:{PB_OPEN_BROWSER:'0'},fetchHealth:()=>{throw new Error('must not probe');}}),false);
+  assert.equal(calls.length,1);
+});
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 
