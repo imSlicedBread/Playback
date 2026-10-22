@@ -40,7 +40,7 @@
     const advertisement = isAdvertisement();
     if (advertisement) {
       const suppress = state.latestCommand?.suppressAdOutput === true;
-      value = { status: suppress ? 'Advertisement hidden + muted — queue position held'
+      value = { status: state.latestCommand?.blockAdRequests ? 'Ad reached the player; filtering needs attention — queue position held' : suppress ? 'Advertisement hidden + muted — queue position held'
         : 'Advertisement — queue position held', displayReady: false, revealDisplay: !suppress };
     }
     document.title = 'fPlayback:' + command.nonce + ':' + JSON.stringify({
@@ -48,7 +48,36 @@
     });
   };
   const player = document.querySelector('#movie_player');
+  const promoSelector='ytd-mealbar-promo-renderer, yt-mealbar-promo-renderer, ytd-premium-upsell-renderer, ytd-premium-promo-renderer';
+  const hardBarrierSelector='ytd-enforcement-message-view-model, .ytp-error-content-wrap, #error-screen:not([hidden])';
+  const isPromotion=element=>{
+    if(element.matches?.(hardBarrierSelector)||element.querySelector?.(hardBarrierSelector))return false;
+    if(element.matches?.(promoSelector)||element.querySelector?.(promoSelector))return true;
+    const text=element.textContent||'';
+    return /YouTube\s+Premium/i.test(text)&&/No\s+thanks/i.test(text)&&
+      /Get YouTube without (?:the )?ads|\b(?:1|one)\s+month\s+free\b/i.test(text);
+  };
+  const suppressPromotions=()=>{
+    const locked=state.latestCommand?.locked===true;
+    const saved=window.__fPlaybackPromos||(window.__fPlaybackPromos=new Map());
+    for(const [element,styles] of saved){
+      if(locked&&element.isConnected!==false)continue;
+      for(const [name,value,priority] of styles){if(value)element.style.setProperty(name,value,priority);else element.style.removeProperty(name);}
+      saved.delete(element);
+    }
+    let css=document.getElementById?.('fplayback-promotion-style');
+    if(!css&&document.createElement){css=document.createElement('style');css.id='fplayback-promotion-style';(document.head||document.documentElement).appendChild(css);}
+    const rules=locked?`:is(${promoSelector}):not(:has(${hardBarrierSelector})), tp-yt-paper-dialog:has(${promoSelector}):not(:has(${hardBarrierSelector})) { display:none!important; visibility:hidden!important; pointer-events:none!important; }`:'';
+    if(css&&css.textContent!==rules)css.textContent=rules;
+    if(!locked)return;
+    for(const element of document.querySelectorAll(`${promoSelector}, tp-yt-paper-dialog, ytd-confirm-dialog-renderer`)){
+      if(!isPromotion(element))continue;
+      if(!saved.has(element))saved.set(element,['display','visibility','pointer-events'].map(name=>[name,element.style.getPropertyValue(name),element.style.getPropertyPriority(name)]));
+      element.style.setProperty('display','none','important');element.style.setProperty('visibility','hidden','important');element.style.setProperty('pointer-events','none','important');
+    }
+  };
   const hasBarrier = () => {
+    suppressPromotions();
     const elements = document.querySelectorAll('ytd-enforcement-message-view-model, .ytp-error-content-wrap, #error-screen:not([hidden]), tp-yt-paper-dialog, ytd-confirm-dialog-renderer');
     return Array.from(elements).some(element => element.getClientRects().length && element.textContent.trim());
   };
@@ -111,10 +140,10 @@
   const advertisement=isAdvertisement();
   const barrier=hasBarrier();
   // Lock only the ordinary player chrome. Access prompts and advertisements
-  // retain their original UI; users unlock the native window to interact.
+  // retain their original UI. Interaction does not unlock the output size.
   const chrome=Array.from(document.querySelectorAll('.ytp-chrome-bottom, .ytp-chrome-top, .ytp-gradient-bottom, .ytp-gradient-top, .ytp-tooltip, .ytp-watermark, .branding-img-container, .iv-branding'));
   const saved=window.__fPlaybackChrome || (window.__fPlaybackChrome=new Map());
-  const lockChrome=command.locked===true && !advertisement && !barrier;
+  const lockChrome=command.locked===true && command.interacting!==true && !advertisement && !barrier;
   for (const [element,styles] of saved) {
     if (lockChrome && chrome.includes(element)) continue;
     for (const [name,value,priority] of styles) {

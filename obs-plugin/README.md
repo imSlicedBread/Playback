@@ -1,4 +1,4 @@
-# Playback YouTube Output — experimental Windows OBS plugin
+# fKey Playback OBS plugin — 0.1.9 — ad filtering and interaction
 
 This native plugin opens a **normal YouTube watch page**, using OBS Browser's
 default browser context. It does not use an iframe or a Chrome extension. Sign
@@ -12,9 +12,25 @@ The result applies to the tested account and video. The plugin uses the account'
 existing access; account/age/content confirmations remain manual. The separate
 Browser Source embedded-player workflow has not been verified for members-only playback.
 
+## Experimental request filtering
+
+The dock's **Interact with output** button temporarily enables mouse and keyboard input and restores the YouTube player controls. **Finish interaction** hides the controls and restores input locking. The selected output resolution and full-window player layout stay in place. Parking/closing the output, stopping it, or starting the queue ends interaction; interaction is never saved across restarts. These buttons live in the OBS dock, outside the captured output. Visible YouTube controls during interaction can appear on the broadcast.
+
+**Experimental feature shipped with Playback v1.7.10.** Live testing on October 22, 2026 in OBS 32.2.2 loaded `UHCo5KfkUE4` using the existing signed-in profile. The dock reported an intercepted player response; the video filled the output, the OBS audio meter was active, pause held the position, and independent seek/resume controls worked. No ad or black-screen wait appeared during that load. A second live test with the user-identified ad-supported video `uWTzrV7Qpmw` reported **Player ad data filtered** and advanced through content playback (past 21 seconds) with a visible video picture. No ad wait was observed during that load. Playback also crossed 14:45 to 15:24 after seeking without an observed ad interruption. Seeking may not trigger the same scheduling as uninterrupted viewing; these spot checks do not establish complete ad coverage or long-duration mid-roll behavior. Members-only playback still needs verification with this filtered browser. Enable **Block ads before playback (experimental)** in the dock. This creates a filtered child browser inside OBS's already-initialized CEF runtime and uses its existing global request context. It does not initialize a second runtime, export cookies, move the account to another profile, or expose a remote debugging port. Playback's watch-page controller still handles the saved position, pause/resume, seeks and queue completion.
+
+The browser configures internal Network/Fetch interception before navigating to YouTube. It blocks the listed ad-delivery URLs and removes recognized `adPlacements`, `playerAds` and `adSlots` data from the initial watch-page player data and selected player API responses. It leaves video details, signed media URLs and playability/access responses intact. It does not bypass membership, sign-in, age or content confirmations. This is targeted YouTube filtering, not the complete AdGuard filter engine; unrecognized ads or future player changes may still reach the player. The dock reports filtering failures.
+
+Ad masking is disabled while request filtering is enabled, so a missed ad is not replaced with a black-screen wait. Turning request filtering off reloads the current page with the original filtering behavior; the separately saved masking option becomes available again. Failed response interception retains the original response, with bounded pending requests and body sizes.
+
+When output is locked, recognized YouTube Premium marketing popups are hidden without clicking their buttons and the full-window player layout is restored. Actual access and confirmation prompts remain visible. Unlocking restores promotional elements' original styles.
+
+The CEF SDK is pinned to the exact 127.145.7 runtime shipped with the tested OBS 32.2.2 installation, including an API-hash check before creating the browser. The build downloads the SHA-256-verified official SDK and rebuilds its wrapper with Qt's dynamic runtime. CEF's license is included under `vendor/CEF-LICENSE.txt`. Developer builds also require Python 3.10+ for the isolated loopback HTTPS fixture; the installed plugin does not require Python.
+
+Automated acceptance uses real Chromium, an isolated temporary profile and a loopback HTTPS server: ad delivery blocked before reaching the server, initial/API ad data removed, cookie continuity across browser recreation, access responses and signed media URL preservation, Playback pause/resume/seek, Premium-popup layout recovery and browser shutdown. The fixture's host mapping, test TLS certificate and certificate-error switch exist only in the test executable, not the plugin. No live account credentials are used in automated tests.
+
 ## Ad Guard
 
-Plugin 0.1.8 adds **Hide ad video + mute ad audio** to the dock. It is off by default for new installs and saved in OBS preferences. Existing saved choices are retained. When a YouTube ad is detected, the native Playback source outputs black video and silent audio while the queue checkpoint is held. Content returns after the player reports a ready content frame. The normal transition timeout cannot reveal a detected ad.
+Plugin 0.1.9 adds **Hide ad video + mute ad audio** to the dock. It is off by default for new installs and saved in OBS preferences. Existing saved choices are retained. When a YouTube ad is detected, the native Playback source outputs black video and silent audio while the queue checkpoint is held. Content returns after the player reports a ready content frame. The normal transition timeout cannot reveal a detected ad.
 
 Ads still play and take their normal time in the signed-in output window. This setting masks the native OBS output; it does not skip ads or cover a separate Window Capture source. Disable it to show ads normally. Detection depends on YouTube player markers, so live ad behavior should be checked with your account. Sign-in and access/age/content confirmations remain manual.
 
@@ -27,7 +43,7 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.8.exe**, approve the Windows
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.9.exe**, approve the Windows
    administrator prompt, and click **Install / Update**. The installer detects
    the usual OBS installation; use **Browse** for a custom or portable folder.
    It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual

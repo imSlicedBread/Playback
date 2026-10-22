@@ -1,3 +1,28 @@
+# fKey Playback v1.7.10 — ad blocking and Interact button
+
+Plugin 0.1.9 adds **Block ads before playback (experimental)**, enabled by default. It filters known YouTube ad delivery URLs and recognized ad-placement data before playback in OBS's existing Chromium runtime, using the same signed-in profile. Playback queue controls, saved positions and audio routing remain available. Ad masking is disabled while request filtering is enabled, avoiding an added black-screen hold for missed ads.
+
+The fKey Playback dock now has **Interact with output** and **Finish interaction**. Temporarily enable YouTube mouse/keyboard controls while keeping the selected output size and full-window layout. Interaction ends on park/close, stop, queue start or restart. Controls visible during interaction can appear on the broadcast. Premium marketing prompts no longer hold the player in the smaller watch-page layout; genuine access and content confirmations remain manual.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.10.zip** — station app, tests, documentation and plugin source.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.9.exe** — Windows plugin installer.
+- **fplayback-youtube-0.1.9-windows-x64.zip** — installer, plugin DLL, corresponding source and licenses.
+- Each asset has a SHA-256 checksum.
+
+Stop Playback and its startup task before updating the station. Back up and preserve `data/` and launcher configuration. Close OBS, run the 0.1.9 installer, then restart OBS. No database migration is required. If moving the station, rerun `INSTALL-AUTO-START.bat`. Requires Node.js 22.13+; the plugin requires Windows x64, OBS 32.2.2 / Qt 6.11.1 and its matching Chromium 127.145.7 runtime. The plugin checks the exact runtime/API hash before creating its browser. Other OBS builds are not verified.
+
+## Validation and limits
+
+JavaScript syntax checks and the app suite pass (191 passed, one Linux-only check skipped locally). All nine native tests pass. Real Chromium fixtures verify request blocking, HTML/API ad-data rewriting, cookie continuity, unchanged access/media data, queue controls, Premium-popup recovery and browser shutdown. Tests also cover temporary interaction and restoration of the control lock.
+
+Live OBS testing with the existing signed-in profile played the supplied videos with an active audio meter. An ad-supported video reported **Player ad data filtered**, with no observed ad or black-screen wait. A seek-based check crossed 14:45–15:24 without interruption. This does not verify long-duration mid-roll scheduling. The new filtered browser still needs a live entitled members-only video test; prior user verification was with the earlier browser implementation.
+
+This is targeted experimental YouTube filtering, not the complete AdGuard engine. Unrecognized ads and future YouTube changes may still appear. Filtering failures preserve the original response and report status rather than leaving a paused request indefinitely. Membership, sign-in, age and content checks are unchanged. No cookies are exported, no second browser runtime is initialized, and no remote debugging port is opened.
+
+---
+
 # fKey Playback v1.7.9 — Recycled sorting + plugin 0.1.8
 
 ## Recycled queue ordering

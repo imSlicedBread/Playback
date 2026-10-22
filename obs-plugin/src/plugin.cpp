@@ -21,6 +21,7 @@
 #include <QRegularExpression>
 #include <QSpinBox>
 #include <QSettings>
+#include <QSignalBlocker>
 #include <QScreen>
 #include <QSet>
 #include <QTimer>
@@ -37,6 +38,7 @@
 #include "scene-setup.hpp"
 #include "output-resolution.hpp"
 #include "ad-output-guard.hpp"
+#include "filtered-browser.hpp"
 
 OBS_DECLARE_MODULE()
 void playback_register_capture();
@@ -69,6 +71,7 @@ class OutputWindow final : public QWidget {
   }
   void park() {
     if (parked) return;
+    if (onPark) onPark();
     wasMaximized=isMaximized();
     previousGeometry=wasMaximized ? normalGeometry() : geometry();
     setAttribute(Qt::WA_ShowWithoutActivating,true);
@@ -83,6 +86,7 @@ class OutputWindow final : public QWidget {
 public:
   using QWidget::QWidget;
   std::function<void()> onClose;
+  std::function<void()> onPark;
   void savePlacement(QSettings &settings) const {
     const QRect normal=parked ? previousGeometry : (isMaximized() ? normalGeometry() : geometry());
     settings.setValue("outputGeometry",normal);
@@ -174,7 +178,7 @@ protected:
 class Playback final : public QObject {
   Q_OBJECT
   QCef *cef = nullptr;
-  QCefWidget *browser = nullptr;
+  FilteredBrowser *browser = nullptr;
   OutputWindow *output = nullptr;
   QWidget *dock = nullptr;
   QLabel *status = nullptr;
@@ -182,7 +186,11 @@ class Playback final : public QObject {
   QSettings *preferences = nullptr;
   QCheckBox *autoStart = nullptr;
   QCheckBox *outputLock = nullptr;
+  QPushButton *interactButton = nullptr;
+  bool interacting = false;
   QCheckBox *suppressAds = nullptr;
+  QCheckBox *blockAds = nullptr;
+  QLabel *filterStatus = nullptr;
   AdOutputGuard adOutputGuard;
   QComboBox *resolution = nullptr;
   OutputResolution renderResolution;
@@ -204,6 +212,11 @@ class Playback final : public QObject {
   qint64 lastTelemetry = 0;
 
   void updateAdOutput() { playback_set_ad_output_suppressed(adOutputGuard.suppressed()); }
+  void configureAdMask(){
+    const bool permitted=!blockAds->isChecked();
+    suppressAds->setEnabled(permitted);
+    adOutputGuard.configure(permitted&&suppressAds->isChecked(),running);updateAdOutput();
+  }
   void holdAdOutputForNavigation() { adOutputGuard.beginNavigation(); updateAdOutput(); }
   void setStatus(const QString &message) { status->setText(message); }
   void request(const QString &path, const QJsonObject *body,
@@ -231,6 +244,7 @@ class Playback final : public QObject {
     busy=false;
   }
   void closeOutput() {
+    setInteracting(false);
     playback_set_output_window(nullptr);
     adOutputGuard.stop(); updateAdOutput();
     if (!output) return;
@@ -247,10 +261,22 @@ class Playback final : public QObject {
     const bool locked=outputLock->isChecked();
     if (output) output->setCaptureLocked(locked);
     if (browser) {
-      browser->setEnabled(!locked);
-      EnableWindow(reinterpret_cast<HWND>(browser->winId()),!locked);
+      browser->setEnabled(!locked || interacting);
+      EnableWindow(reinterpret_cast<HWND>(browser->winId()),!locked || interacting);
     }
     if (running && browser) apply();
+  }
+  void setInteracting(bool enabled) {
+    interacting=enabled;
+    if (interactButton) {
+      const QSignalBlocker blocker(interactButton);
+      interactButton->setChecked(enabled);
+      interactButton->setText(enabled ? "Finish interaction" : "Interact with output");
+    }
+    applyOutputLock();
+    if (enabled && output && browser) {
+      output->present(); browser->setFocus(Qt::OtherFocusReason);
+    }
   }
   bool applyResolution() {
     const auto choice=resolution->currentData().toString();
@@ -304,7 +330,9 @@ class Playback final : public QObject {
       {"transportOnly", snapshot.value("transportOnly").toBool()},
       {"position", current.value("position").toDouble()}, {"paused", current.value("paused").toBool()},
       {"voting", snapshot.value("vote").isObject()},
-      {"locked", outputLock->isChecked()}, {"suppressAdOutput", suppressAds->isChecked()},
+      {"locked", outputLock->isChecked()}, {"suppressAdOutput", suppressAds->isChecked()&&!blockAds->isChecked()},
+      {"interacting",interacting},
+      {"blockAdRequests",blockAds->isChecked()},
       {"volume", audio.value("volume").toInt(50)}, {"muted", audio.value("muted").toBool()}};
     auto code = script;
     code.replace("__PLAYBACK_COMMAND__", QString::fromUtf8(QJsonDocument(command).toJson(QJsonDocument::Compact)));
@@ -385,6 +413,7 @@ public:
     }
     initializationRetries = 0;
     if (running) stop();
+    setInteracting(false);
     activePort = port->value(); worker = QUuid::createUuid().toString(QUuid::WithoutBraces);
     ++epoch; running = true;timer.start();port->setEnabled(false);
     outputLock->setChecked(true); applyOutputLock();
@@ -408,14 +437,23 @@ public:
     outputLock=new QCheckBox("Lock output (size + controls)");
     outputLock->setChecked(true); layout->addWidget(outputLock);
     connect(outputLock,&QCheckBox::toggled,this,[this](bool) { applyOutputLock(); });
+    blockAds=new QCheckBox("Block ads before playback (experimental)");
+    blockAds->setToolTip("Filters ad delivery and player ad-placement data in Playback's browser, using the existing signed-in OBS account. No ad wait is added; results require live verification.");
+    blockAds->setChecked(preferences->value("blockAdRequests",true).toBool());layout->addWidget(blockAds);
+    connect(blockAds,&QCheckBox::toggled,this,[this](bool enabled){
+      preferences->setValue("blockAdRequests",enabled);
+      configureAdMask();
+      if(browser)browser->setAdBlocking(enabled);
+    });
+    filterStatus=new QLabel("Experimental request filtering starts with the output");filterStatus->setWordWrap(true);layout->addWidget(filterStatus);
     suppressAds = new QCheckBox("Hide ad video + mute ad audio");
     suppressAds->setToolTip("Masks detected YouTube ads in the native OBS source. Ads may still run in the output window; this does not remove ad waiting time.");
     suppressAds->setChecked(preferences->value("suppressAdOutput",false).toBool());
-    adOutputGuard.configure(suppressAds->isChecked(),false);
+    configureAdMask();
     layout->addWidget(suppressAds);
     connect(suppressAds,&QCheckBox::toggled,this,[this](bool enabled) {
       preferences->setValue("suppressAdOutput",enabled);
-      adOutputGuard.configure(enabled,running); updateAdOutput();
+      configureAdMask();
       if (running && browser) apply();
     });
     status = new QLabel("Stopped"); status->setWordWrap(true); layout->addWidget(status);
@@ -446,6 +484,14 @@ public:
     });
     button("Start queue / retry", [this]() { start(); });
     button("Show output window", [this]() { if (ensureBrowser()) output->present(); });
+    interactButton=new QPushButton("Interact with output");
+    interactButton->setCheckable(true);
+    interactButton->setToolTip("Temporarily enable YouTube mouse and keyboard controls. The output size stays locked. Finish interaction to hide controls again.");
+    layout->addWidget(interactButton);
+    connect(interactButton,&QPushButton::toggled,this,[this](bool enabled) {
+      if (enabled && !ensureBrowser()) {setInteracting(false);return;}
+      setInteracting(enabled);
+    });
     button("Add Playback source to current scene", [this]() {
       if (!ensureBrowser()) return;
       output->show();
@@ -504,6 +550,9 @@ public:
     if (!cef) cef = obs_browser_init_panel();
     if (!cef) { setStatus("OBS Browser is unavailable."); return false; }
     if (!cef->init_browser()) { setStatus("Initializing OBS browser…"); return false; }
+    if(!FilteredBrowser::runtimeCompatible()){
+      setStatus("Request-filter browser requires the matching OBS 32.2.2 Chromium runtime. No account data was changed.");return false;
+    }
     output = new OutputWindow;
     output->setWindowTitle("Playback YouTube Output"); output->resize(1280, 720);
     output->setRenderResolution(renderResolution);
@@ -513,7 +562,7 @@ public:
     output->windowHandle()->setProperty("isOBSProjectorWindow",true);
     SetWindowDisplayAffinity(outputHandle,WDA_NONE);
     auto *layout = new QVBoxLayout(output); layout->setContentsMargins(0, 0, 0, 0);
-    browser = cef->create_widget(output, "https://www.youtube.com/", nullptr);
+    browser = new FilteredBrowser(output,"https://www.youtube.com/",blockAds->isChecked());
     if (!browser) { delete output; output = nullptr; setStatus("OBS could not create the YouTube browser."); return false; }
     browser->allowAllPopups(false); layout->addWidget(browser);
     applyOutputLock();
@@ -521,13 +570,16 @@ public:
     playback_set_output_window(outputHandle);
     // QCefWidget's metaobject lives in obs-browser, not in this DLL.
     connect(browser, SIGNAL(titleChanged(QString)), this, SLOT(telemetry(QString)));
+    connect(browser,&FilteredBrowser::filterStatus,this,[this](const QString &message){filterStatus->setText(message);});
     output->onClose = [this]() {
       stop();
       QTimer::singleShot(0,this,[this]() {if(!running)closeOutput();});
     };
+    output->onPark = [this]() {setInteracting(false);};
     return true;
   }
   void stop() {
+    setInteracting(false);
     playback_cancel_transition(); fadeTicket=0;
     running = false; ++epoch; timer.stop();cancelRequests();port->setEnabled(true);
     pausePage();

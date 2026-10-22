@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.7.10 — ad filtering and output interaction
+
+- Package OBS plugin and installer 0.1.9 with experimental request filtering in the existing signed-in OBS Chromium profile.
+- Block known ad URLs and remove recognized player ad data before playback; retain access checks, media URLs and queue controls. Disable black ad masking while filtering is enabled.
+- Add temporary Interact / Finish interaction controls without unlocking output resolution. End interaction on park, stop and restart.
+- Restore full-window layout around Premium marketing prompts while retaining manual access/content confirmations.
+- Add real Chromium acceptance coverage for filtering, account-cookie continuity, controls and shutdown, plus interaction regression tests.
+- Require the matching OBS 32.2.2 Chromium runtime; no database migration.
+
 ## v1.7.9 — Recycled sorting and optional ad masking
 
 - Sort the entire Recycled lane by title or VOD date in the title; save the order and apply it to additions, moves, imports and completed videos. Undated titles go last; manual reordering disables automatic sorting.

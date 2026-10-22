@@ -12,6 +12,9 @@ function Fetch-Verified($Url, $Name, $Hash) {
   if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $Hash) { throw "Checksum mismatch: $Name" }
   return $file
 }
+$cefArchive = Fetch-Verified 'https://cdn-fastly.obsproject.com/downloads/cef_binary_6533_windows_x64_v2.zip' 'cef_binary_6533_windows_x64_v2.zip' '922EFBDA1F2F8BE9E5B2754D878A14D90AFC81F04E94FC9101A7513E2B5CECC1'
+if (!(Test-Path "$deps/cef-sdk/include/cef_version.h")) { Expand-Archive -LiteralPath $cefArchive -DestinationPath "$deps/cef-sdk" -Force }
+Copy-Item -LiteralPath "$deps/cef-sdk/LICENSE.txt" -Destination "$root/vendor/CEF-LICENSE.txt" -Force
 $qt = Fetch-Verified 'https://github.com/obsproject/obs-deps/releases/download/2026-08-26/windows-deps-qt6-2026-08-26-x64-RelWithDebInfo.zip' 'qt.zip' '590B8122154E5FDA214A4B7EFD0EA50C69036DDCF6511F0A4AC11AE851DE1A23'
 $obs = Fetch-Verified 'https://github.com/obsproject/obs-studio/archive/refs/tags/32.2.2.zip' 'obs.zip' 'F15F001F1FA526405318835F44F9910046502F496EBC3A30D5296A5018B831AA'
 if ((Get-FileHash -LiteralPath "$root/vendor/browser-panel.hpp" -Algorithm SHA256).Hash -ne '519895569D7567B8677804F4031D96FF99FEE5D1164600C48DABE15F13C4A253') { throw 'Browser panel header checksum mismatch' }
@@ -36,7 +39,7 @@ foreach ($name in @('obs', 'obs-frontend-api', 'libobs-winrt')) {
   if ($LASTEXITCODE) { throw 'Import library generation failed' }
 }
 @('#pragma once', '#define OBS_RELEASE_CANDIDATE 0', '#define OBS_BETA 0') | Set-Content -LiteralPath "$imports/obsconfig.h" -Encoding ascii
-& cmake -S $root -B "$root/build" -G 'Visual Studio 18 2026' -A x64 "-DCMAKE_PREFIX_PATH=$deps/qt" "-DOBS_HEADERS=$deps/obs/obs-studio-32.2.2" "-DOBS_BROWSER_HEADERS=$root/vendor" "-DOBS_IMPORT_LIBS=$imports" "-DOBS_RUNTIME_PATH=$ObsPath/bin/64bit" "-DINSTALLER_SOURCE_ZIP=$($sourceArchive.Replace([char]92,[char]47))"
+& cmake -S $root -B "$root/build" -G 'Visual Studio 18 2026' -A x64 "-DCMAKE_PREFIX_PATH=$deps/qt" "-DCEF_ROOT=$deps/cef-sdk" "-DOBS_HEADERS=$deps/obs/obs-studio-32.2.2" "-DOBS_BROWSER_HEADERS=$root/vendor" "-DOBS_IMPORT_LIBS=$imports" "-DOBS_RUNTIME_PATH=$ObsPath/bin/64bit" "-DINSTALLER_SOURCE_ZIP=$($sourceArchive.Replace([char]92,[char]47))"
 if ($LASTEXITCODE) { throw 'CMake configuration failed' }
 & cmake --build "$root/build" --config RelWithDebInfo --parallel
 if ($LASTEXITCODE) { throw 'Plugin compilation failed' }
@@ -50,10 +53,10 @@ New-Item -ItemType Directory -Force $sourcePath | Out-Null
 foreach ($name in @('src', 'vendor', 'CMakeLists.txt', 'build-windows.ps1', 'install-local.ps1', 'resources.qrc', 'watch-controller.js', 'README.md', 'LICENSE')) {
   Copy-Item -LiteralPath (Join-Path $root $name) -Destination $sourcePath -Recurse -Force
 }
-$installer = Join-Path $root 'fKey-Playback-OBS-Plugin-Setup-0.1.8.exe'
-Copy-Item -LiteralPath "$root/package/fKey-Playback-OBS-Plugin-Setup-0.1.8.exe" -Destination $installer -Force
+$installer = Join-Path $root 'fKey-Playback-OBS-Plugin-Setup-0.1.9.exe'
+Copy-Item -LiteralPath "$root/package/fKey-Playback-OBS-Plugin-Setup-0.1.9.exe" -Destination $installer -Force
 ((Get-FileHash -LiteralPath $installer).Hash.ToLowerInvariant()+'  '+(Split-Path -Leaf $installer)) | Set-Content -LiteralPath ($installer+'.sha256') -Encoding ascii
-Compress-Archive -LiteralPath "$root/package/obs-plugins", "$root/package/source", "$root/package/README.md", "$root/package/LICENSE", $installer -DestinationPath "$root/fplayback-youtube-0.1.8-windows-x64.zip" -Force
-((Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.8-windows-x64.zip").Hash.ToLowerInvariant()+'  fplayback-youtube-0.1.8-windows-x64.zip') | Set-Content -LiteralPath "$root/fplayback-youtube-0.1.8-windows-x64.zip.sha256" -Encoding ascii
-Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.8-windows-x64.zip" -Algorithm SHA256 | Format-List
+Compress-Archive -LiteralPath "$root/package/obs-plugins", "$root/package/source", "$root/package/README.md", "$root/package/LICENSE", $installer -DestinationPath "$root/fplayback-youtube-0.1.9-windows-x64.zip" -Force
+((Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.9-windows-x64.zip").Hash.ToLowerInvariant()+'  fplayback-youtube-0.1.9-windows-x64.zip') | Set-Content -LiteralPath "$root/fplayback-youtube-0.1.9-windows-x64.zip.sha256" -Encoding ascii
+Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.9-windows-x64.zip" -Algorithm SHA256 | Format-List
 Write-Output "Built plugin: $root/package/obs-plugins/64bit/fplayback-youtube.dll"

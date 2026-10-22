@@ -18,20 +18,40 @@ function harness(){
  const player={style:style(),getBoundingClientRect:rect,classList:{contains:()=>ad}};
  const document={title:'YouTube',documentElement:{style:style()},body:{style:style(),appendChild(node){node.parentElement=this;}},
   querySelector(selector){if(selector==='video.html5-main-video')return video;if(selector==='#movie_player')return player;return barrier?{getClientRects:()=>[{}],textContent:'Access required'}:null;}};
+ const promo={style:style(),textContent:'YouTube Premium Get YouTube without the ads No thanks 1 month free',
+  getClientRects(){return this.style.getPropertyValue('display')==='none'?[]:[{}];}};
+ let promotion=false;
  const controls=[{style:style()},{style:style()}];
  const watermark={style:style()};
- document.querySelectorAll=selector=>selector.startsWith('.ytp-chrome-bottom')?[...controls,...(selector.includes('.ytp-watermark')?[watermark]:[])]:barrier?[{getClientRects:()=>[{}],textContent:'Confirmation required'}]:[];
+ document.querySelectorAll=selector=>selector.startsWith('.ytp-chrome-bottom')?[...controls,...(selector.includes('.ytp-watermark')?[watermark]:[])]:
+   [...(promotion?[promo]:[]),...(barrier?[{getClientRects:()=>[{}],textContent:'Confirmation required'}]:[])];
  let ad=false,barrier=false,now=0;
  const frames=new Map(),observers=new Set();let frameId=0;
  const context={window:{innerWidth:1280,innerHeight:720},document,URL,performance:{now:()=>now},location:new URL('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
   requestAnimationFrame(cb){frames.set(++frameId,cb);return frameId;},cancelAnimationFrame(id){frames.delete(id);},
   MutationObserver:class{constructor(cb){this.cb=cb;observers.add(cb);}observe(){}disconnect(){observers.delete(this.cb);}}};
  const defaults={nonce:'nonce',generation:1,videoId:'dQw4w9WgXcQ',position:35,volume:70,muted:false,paused:false,voting:false};
- return {video,player,controls,watermark,context,listeners,frame(ms=0){now+=ms;const pending=[...frames.values()];frames.clear();for(const cb of pending)cb();},setSmallLayout(value){smallLayout=value;for(const cb of observers)cb();},advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
+ return {video,player,controls,watermark,promo,context,listeners,setPromotion(value){promotion=value;},frame(ms=0){now+=ms;const pending=[...frames.values()];frames.clear();for(const cb of pending)cb();},setSmallLayout(value){smallLayout=value;for(const cb of observers)cb();},advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
   document.title='YouTube';vm.runInNewContext(source.replace('__PLAYBACK_COMMAND__',JSON.stringify({...defaults,...fields})),context);
   return document.title.startsWith('fPlayback:')?JSON.parse(document.title.slice('fPlayback:nonce:'.length)):null;
  }};
 }
+
+test('Premium marketing popups cannot hold locked playback in the normal YouTube layout',()=>{
+ const h=harness();h.run({locked:true});h.advance(5000);h.video.currentTime=40;
+ h.setPromotion(true);const report=h.run({locked:true});
+ assert.equal(h.promo.style.getPropertyValue('display'),'none');assert.equal(report.status,'Playing');
+ assert.equal(h.video.currentTime,40);assert.equal(h.player.style.getPropertyValue('width'),'100vw');
+ h.run({locked:false});assert.equal(h.promo.style.getPropertyValue('display'),'');
+ h.run({locked:true});h.setBarrier(true);
+ assert.match(h.run({locked:true}).status,/attention/);
+});
+
+test('request-blocking failures are reported without adding an ad mask or overwriting the queue position',()=>{
+ const h=harness();h.run({blockAdRequests:true});h.setAd(true);
+ const report=h.run({blockAdRequests:true});assert.match(report.status,/filtering needs attention/);
+ assert.equal(report.revealDisplay,true);assert.equal(report.position,undefined);
+});
 
 test('Ad Guard mutes detected ads, holds the checkpoint and restores saved audio for content',()=>{
  const h=harness();h.run({suppressAdOutput:true,volume:65});
@@ -87,6 +107,20 @@ test('output lock hides transport chrome and restores its exact styles for manua
   h.setAd(false);h.setBarrier(false);
  }
  h.run({locked:true,generation:2});h.run({locked:false,generation:3});assert.equal(h.controls[0].style.values.opacity,'.8');
+});
+test('temporary interaction restores controls while retaining full output layout and queue position',()=>{
+ const h=harness();h.controls[0].style.setProperty('opacity','.8','important');
+ h.run({locked:true});h.advance(5000);h.video.currentTime=40;
+ h.run({locked:true,interacting:true});
+ assert.equal(h.controls[0].style.getPropertyValue('opacity'),'.8');
+ assert.equal(h.controls[1].style.getPropertyValue('pointer-events'),'');
+ assert.equal(h.player.style.getPropertyValue('position'),'fixed');
+ assert.equal(h.video.style.getPropertyValue('width'),'100vw');
+ assert.equal(h.video.currentTime,40);
+ h.run({locked:true,interacting:false});
+ assert.equal(h.controls[0].style.getPropertyValue('visibility'),'hidden');
+ assert.equal(h.controls[1].style.getPropertyValue('pointer-events'),'none');
+ assert.equal(h.video.currentTime,40);
 });
 test('watch controller uses the normal matching YouTube page and applies seek only once per generation',()=>{
  const h=harness();let report=h.run();assert.equal(h.video.currentTime,35);assert.equal(h.video.paused,false);assert.equal(report.position,35);
