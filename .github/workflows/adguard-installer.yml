@@ -73,6 +73,15 @@ jobs:
           $source = $source.Replace('Visual Studio 18 2026', $generator)
           Set-Content -LiteralPath $script -Value $source -Encoding utf8
           Write-Output "Using $generator"
+      - name: Restore pinned LF line endings for browser header
+        shell: pwsh
+        run: |
+          $path = 'obs-plugin/vendor/browser-panel.hpp'
+          $bytes = [System.IO.File]::ReadAllBytes($path)
+          $text = [System.Text.Encoding]::UTF8.GetString($bytes)
+          [System.IO.File]::WriteAllText($path, $text.Replace("`r`n", "`n"), [System.Text.UTF8Encoding]::new($false))
+          $hash = (Get-FileHash -Algorithm SHA256 $path).Hash.ToLowerInvariant()
+          if ($hash -ne '519895569d7567b8677804f4031d96ff99fee5d1164600c48dabe15f13c4a253') { throw 'Pinned browser header does not match' }
       - name: Compile, test and package plugin installer
         shell: pwsh
         run: |
