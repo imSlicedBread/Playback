@@ -1,0 +1,21 @@
+name: Verify OBS installer build input
+on:
+  push:
+    branches: [build/obs-adguard-0.1.8]
+    paths: [.github/workflows/obs-build-input-check.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adguard-build-input
+          retention-days: 1
+          if-no-files-found: error
+          path: ops/adguard-build.patch.gz.b64
