@@ -3,7 +3,7 @@ name: Build OBS Ad Guard 0.1.8 installer
 on:
   push:
     branches: [build/obs-adguard-0.1.8]
-    paths: [ops/adguard-build.patch.gz.b64]
+    paths: [ops/adguard-build.patch.gz.b64, .github/workflows/obs-adguard-installer.yml]
   workflow_dispatch:
 
 permissions:
@@ -29,8 +29,12 @@ jobs:
           $ErrorActionPreference = 'Stop'
           @'
           import base64, gzip, hashlib, pathlib, subprocess
-          encoded = pathlib.Path('ops/adguard-build.patch.gz.b64').read_text()
-          data = base64.b64decode(encoded, validate=False)
+          encoded = pathlib.Path('ops/adguard-build.patch.gz.b64').read_text().strip()
+          # Correct two transcription errors in the transfer encoding, then
+          # require the unchanged SHA-256 of the original local source patch.
+          encoded = encoded.replace('n0aSldtxye9w1YAGNwA4rcxZZTS+jX4Xz9OlysX4eL9au2a3d', 'n0aSldtxye9w1YAGNwA4rcxZTS+jX4Xz9OlysX4eL9au2a3d')
+          encoded = encoded.replace('EqIZV3wBbxvv78mNxZ2ZqLyZ5vqkyqAmxsERzcwDFwAtNtAt', 'EqIZV3wBbxvv78mNxZ2ZqLyZy5vqkyqAmxsERzcwDFwAtNtAt')
+          data = base64.b64decode(encoded, validate=True)
           expected = '4809347614089171c72229b8bf1607a5615ecbbea799cf488a4a474b5a80491c'
           if hashlib.sha256(data).hexdigest() != expected:
               raise SystemExit('Ad Guard source patch checksum mismatch')
