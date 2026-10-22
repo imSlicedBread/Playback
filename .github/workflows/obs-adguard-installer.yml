@@ -1,0 +1,102 @@
+name: Build OBS Ad Guard 0.1.8 installer
+
+on:
+  push:
+    branches: [build/obs-adguard-0.1.8]
+    paths: [ops/adguard-build.patch.gz.b64]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Windows x64 plugin and installer
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify and apply the uploaded Ad Guard source patch
+        run: |
+          $ErrorActionPreference = 'Stop'
+          @'
+          import base64, gzip, hashlib, pathlib, subprocess
+          encoded = pathlib.Path('ops/adguard-build.patch.gz.b64').read_text()
+          data = base64.b64decode(encoded, validate=False)
+          expected = '4809347614089171c72229b8bf1607a5615ecbbea799cf488a4a474b5a80491c'
+          if hashlib.sha256(data).hexdigest() != expected:
+              raise SystemExit('Ad Guard source patch checksum mismatch')
+          patch = pathlib.Path('adguard-build.patch')
+          patch.write_bytes(gzip.decompress(data))
+          subprocess.run(['git', 'apply', '--check', '--ignore-space-change', str(patch)], check=True)
+          subprocess.run(['git', 'apply', '--ignore-space-change', str(patch)], check=True)
+          print('Applied the supplied v1.7.8 Ad Guard plugin and regression tests.')
+          '@ | python -
+          if ($LASTEXITCODE) { throw 'Source verification or patch application failed' }
+      - name: Run JavaScript checks and regression tests
+        run: |
+          npm run check
+          if ($LASTEXITCODE) { throw 'JavaScript syntax checks failed' }
+          npm test
+          if ($LASTEXITCODE) { throw 'JavaScript regression tests failed' }
+      - name: Download and verify the matching portable OBS runtime
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = Join-Path $env:RUNNER_TEMP 'obs-32.2.2-x64.zip'
+          $runtime = Join-Path $env:RUNNER_TEMP 'obs-32.2.2'
+          Invoke-WebRequest 'https://github.com/obsproject/obs-studio/releases/download/32.2.2/OBS-Studio-32.2.2-Windows-x64.zip' -OutFile $zip
+          $expected = '4d6e40e3ab155f56b30de517380566a206d74b63cdf5ad49aa596924768f97e1'
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'OBS runtime checksum mismatch' }
+          Expand-Archive -LiteralPath $zip -DestinationPath $runtime -Force
+          if (!(Test-Path "$runtime/bin/64bit/obs64.exe")) { throw 'Unexpected OBS archive layout' }
+          "OBS_BUILD_RUNTIME=$runtime" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Compile plugin and installer and run native tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:PATH = "$env:OBS_BUILD_RUNTIME/bin/64bit;$env:PATH"
+          & ./obs-plugin/build-windows.ps1 -ObsPath $env:OBS_BUILD_RUNTIME
+          if ($LASTEXITCODE) { throw 'Native build failed' }
+      - name: Check that the compiled plugin DLL loads
+        run: |
+          $ErrorActionPreference = 'Stop'
+          @'
+          import ctypes, os, pathlib
+          runtime = pathlib.Path(os.environ['OBS_BUILD_RUNTIME']) / 'bin' / '64bit'
+          with os.add_dll_directory(str(runtime)):
+              plugin = ctypes.WinDLL(str(pathlib.Path('obs-plugin/package/obs-plugins/64bit/fplayback-youtube.dll').resolve()))
+              for name in ('obs_module_load', 'obs_module_unload', 'obs_module_ver', 'obs_module_name'):
+                  getattr(plugin, name)
+              plugin.obs_module_name.restype = ctypes.c_char_p
+              print('Plugin imports resolve; module name:', plugin.obs_module_name().decode())
+          '@ | python -
+          if ($LASTEXITCODE) { throw 'Compiled DLL dependency/export check failed' }
+      - name: Upload installer, portable package and checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: fKey-Playback-OBS-Plugin-0.1.8-Windows-x64
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            obs-plugin/fKey-Playback-OBS-Plugin-Setup-0.1.8.exe
+            obs-plugin/fKey-Playback-OBS-Plugin-Setup-0.1.8.exe.sha256
+            obs-plugin/fplayback-youtube-0.1.8-windows-x64.zip
+            obs-plugin/fplayback-youtube-0.1.8-windows-x64.zip.sha256
+            adguard-build.patch
+      - name: Upload native build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs-adguard-native-build-diagnostics
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            obs-plugin/build/Testing/Temporary/*.log
+            obs-plugin/build/CMakeFiles/CMakeConfigureLog.yaml
