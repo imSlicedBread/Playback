@@ -71,6 +71,7 @@ jobs:
           $script = 'obs-plugin/build-windows.ps1'
           $source = Get-Content -Raw -LiteralPath $script
           $source = $source.Replace('Visual Studio 18 2026', $generator)
+          $source = $source.Replace('-DINSTALLER_SOURCE_ZIP=$sourceArchive', '-DINSTALLER_SOURCE_ZIP=$($sourceArchive.Replace([char]92,[char]47))')
           Set-Content -LiteralPath $script -Value $source -Encoding utf8
           Write-Output "Using $generator"
       - name: Restore pinned LF line endings for browser header
