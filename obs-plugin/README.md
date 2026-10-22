@@ -12,6 +12,12 @@ The result applies to the tested account and video. The plugin uses the account'
 existing access; account/age/content confirmations remain manual. The separate
 Browser Source embedded-player workflow has not been verified for members-only playback.
 
+## Ad Guard
+
+Plugin 0.1.8 adds **Hide ad video + mute ad audio** to the dock. It is off by default for new installs and saved in OBS preferences. Existing saved choices are retained. When a YouTube ad is detected, the native Playback source outputs black video and silent audio while the queue checkpoint is held. Content returns after the player reports a ready content frame. The normal transition timeout cannot reveal a detected ad.
+
+Ads still play and take their normal time in the signed-in output window. This setting masks the native OBS output; it does not skip ads or cover a separate Window Capture source. Disable it to show ads normally. Detection depends on YouTube player markers, so live ad behavior should be checked with your account. Sign-in and access/age/content confirmations remain manual.
+
 ## Install and test
 
 Built for **Windows x64, OBS 32.2.2 with Qt 6.11.1**, OBS Browser panel API 3.
@@ -21,7 +27,7 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.7.exe**, approve the Windows
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.8.exe**, approve the Windows
    administrator prompt, and click **Install / Update**. The installer detects
    the usual OBS installation; use **Browse** for a custom or portable folder.
    It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual

@@ -36,6 +36,7 @@
 #include "recovery-policy.hpp"
 #include "scene-setup.hpp"
 #include "output-resolution.hpp"
+#include "ad-output-guard.hpp"
 
 OBS_DECLARE_MODULE()
 void playback_register_capture();
@@ -44,6 +45,7 @@ void playback_set_output_resolution(uint32_t width,uint32_t height);
 uint64_t playback_begin_transition();
 void playback_transition_ready(uint64_t ticket,bool ready,bool reveal);
 void playback_cancel_transition();
+void playback_set_ad_output_suppressed(bool suppressed);
 const char *obs_module_description(void) { return "Playback queue controls for a signed-in YouTube watch window (experimental)"; }
 const char *obs_module_name(void) { return "Playback YouTube Output"; }
 
@@ -180,6 +182,8 @@ class Playback final : public QObject {
   QSettings *preferences = nullptr;
   QCheckBox *autoStart = nullptr;
   QCheckBox *outputLock = nullptr;
+  QCheckBox *suppressAds = nullptr;
+  AdOutputGuard adOutputGuard;
   QComboBox *resolution = nullptr;
   OutputResolution renderResolution;
   QTimer timer;
@@ -199,6 +203,8 @@ class Playback final : public QObject {
   bool watchdogHeld = false;
   qint64 lastTelemetry = 0;
 
+  void updateAdOutput() { playback_set_ad_output_suppressed(adOutputGuard.suppressed()); }
+  void holdAdOutputForNavigation() { adOutputGuard.beginNavigation(); updateAdOutput(); }
   void setStatus(const QString &message) { status->setText(message); }
   void request(const QString &path, const QJsonObject *body,
                std::function<void(int, QJsonObject)> done) {
@@ -226,6 +232,7 @@ class Playback final : public QObject {
   }
   void closeOutput() {
     playback_set_output_window(nullptr);
+    adOutputGuard.stop(); updateAdOutput();
     if (!output) return;
     output->savePlacement(*preferences);
     output->onClose={};
@@ -283,6 +290,7 @@ class Playback final : public QObject {
       recovery.reset();
       loadedVideo = video;
       const double position=std::max(0.0,current.value("position").toDouble());
+      holdAdOutputForNavigation();
       browser->setURL(("https://www.youtube.com/watch?v=" + video + "&t=" + QString::number(position,'f',3) + "s").toStdString());
       setStatus("Loading YouTube watch page…"); return;
     }
@@ -296,7 +304,7 @@ class Playback final : public QObject {
       {"transportOnly", snapshot.value("transportOnly").toBool()},
       {"position", current.value("position").toDouble()}, {"paused", current.value("paused").toBool()},
       {"voting", snapshot.value("vote").isObject()},
-      {"locked", outputLock->isChecked()},
+      {"locked", outputLock->isChecked()}, {"suppressAdOutput", suppressAds->isChecked()},
       {"volume", audio.value("volume").toInt(50)}, {"muted", audio.value("muted").toBool()}};
     auto code = script;
     code.replace("__PLAYBACK_COMMAND__", QString::fromUtf8(QJsonDocument(command).toJson(QJsonDocument::Compact)));
@@ -333,6 +341,8 @@ private slots:
     if (location.scheme() != "https" || location.host() != "www.youtube.com" ||
         location.path() != "/watch" || QUrlQuery(location).queryItemValue("v") != loadedVideo) return;
     lastTelemetry = watchdogClock.elapsed();
+    adOutputGuard.observe(result.value("advertisement").toBool(), result.value("displayReady").toBool(), result.value("revealDisplay").toBool());
+    updateAdOutput();
     if (fadeTicket && (result.contains("displayReady") || result.value("revealDisplay").toBool()))
       playback_transition_ready(fadeTicket,result.value("displayReady").toBool(),result.value("revealDisplay").toBool());
     if (result.contains("recover")) {
@@ -346,6 +356,7 @@ private slots:
         setStatus("Automatic recovery stopped after 3 reloads. Check YouTube, then Start queue / retry."); return;
       }
       nonce=QUuid::createUuid().toString(QUuid::WithoutBraces); endedSent=false;
+      holdAdOutputForNavigation();
       setStatus("Reloading YouTube at the saved queue position…"); browser->reloadPage(); return;
     }
     setStatus(result.value("status").toString().left(240));
@@ -380,6 +391,7 @@ public:
     recovery.reset(); watchdogHeld=false; lastTelemetry=watchdogClock.elapsed();
     preferences->setValue("port", activePort);
     loadedVideo.clear(); generation = -1;
+    holdAdOutputForNavigation();
     output->show(); poll();
   }
   explicit Playback(QObject *parent) : QObject(parent) {
@@ -396,6 +408,16 @@ public:
     outputLock=new QCheckBox("Lock output (size + controls)");
     outputLock->setChecked(true); layout->addWidget(outputLock);
     connect(outputLock,&QCheckBox::toggled,this,[this](bool) { applyOutputLock(); });
+    suppressAds = new QCheckBox("Hide ad video + mute ad audio");
+    suppressAds->setToolTip("Masks detected YouTube ads in the native OBS source. Ads may still run in the output window; this does not remove ad waiting time.");
+    suppressAds->setChecked(preferences->value("suppressAdOutput",false).toBool());
+    adOutputGuard.configure(suppressAds->isChecked(),false);
+    layout->addWidget(suppressAds);
+    connect(suppressAds,&QCheckBox::toggled,this,[this](bool enabled) {
+      preferences->setValue("suppressAdOutput",enabled);
+      adOutputGuard.configure(enabled,running); updateAdOutput();
+      if (running && browser) apply();
+    });
     status = new QLabel("Stopped"); status->setWordWrap(true); layout->addWidget(status);
     layout->addWidget(new QLabel("Output resolution"));
     auto *resolutionRow=new QHBoxLayout;
@@ -509,6 +531,8 @@ public:
     playback_cancel_transition(); fadeTicket=0;
     running = false; ++epoch; timer.stop();cancelRequests();port->setEnabled(true);
     pausePage();
+    if (browser) browser->executeJavaScript("window.__fPlaybackWatch?.detachAdGuard?.()");
+    holdAdOutputForNavigation();
     if (lease) {
       QJsonObject body{{"workerId", worker}};
       request("/api/worker/release", &body, [](int, QJsonObject) {});

@@ -13,18 +13,19 @@ test('Dashboard offers all rotation lanes and importer destinations with action 
     assert.ok(script.includes(`${lane}:`),`missing queue JS lane ${lane}`);
   }
   for(const id of ['queueMoveSelected','queueSelectAll','queueMoveTarget','queueSort','queueApplySort',
-    'playlistDestination','playlistOrder','addDestination']){
+    'playlistDestination','playlistOrder','addDestination','recycledSort','recycledApplySort']){
     assert.ok(html.includes(`id="${id}"`),id);
     assert.ok(script.includes(`$('${id}')`),`missing JS ${id}`);
   }
   assert.match(script,/action:'moveMany'/);
   assert.match(script,/moveInBatches\(ids,destination/);
   assert.match(script,/action\('sortUpcoming'/);
+  assert.match(script,/action\('sortRecycled'/);
   assert.match(script,/action\('move'/);
   assert.match(script,/destination:\$\('playlistDestination'\)\.value/);
   assert.match(script,/order:\$\('playlistOrder'\)\.value/);
   assert.match(html,/style\.css\?v=1\.5\.1/);
-  assert.match(html,/control\.js\?v=1\.5\.1/);
+  assert.match(html,/control\.js\?v=1\.7\.9/);
 });
 
 test('Bundled executable is used from local tools before relying on PATH',()=>{

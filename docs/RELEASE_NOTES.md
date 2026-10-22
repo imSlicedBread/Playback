@@ -1,3 +1,34 @@
+# fKey Playback v1.7.9 — Recycled sorting + plugin 0.1.8
+
+## Recycled queue ordering
+
+Open **Control → Recycled**, choose Title (A–Z), VOD date in title (oldest/newest first), or Manual, then click **Sort all Recycled + save order**. Sorting covers every page and ignores the search filter. The chosen order persists through restart and applies to new additions, moves, imports, completed videos and discovered titles. You can now add/import directly to Recycled without starting playback.
+
+Dates come from titles, not upload metadata: year-first dates such as `2023-05-12`, `2023.05.12`, `2023/05/12` and `2023_05_12` are supported. A year alone means January 1. Invalid or missing dates go last. Alphabetical title comparison breaks date ties. Manually reordering a row switches the lane to Manual. Existing stations default to Manual until an order is selected.
+
+## Optional ad masking
+
+The fKey Playback dock now offers **Hide ad video + mute ad audio**, off by default for new installs and saved between OBS sessions. Existing saved choices are retained. Detected YouTube advertisements produce black video and silent audio in the native Playback source while the saved queue position is held. Content returns after the player reports it ready. Ad suppression is independent of the normal transition timeout.
+
+Ads still run in the signed-in output window and take their normal time. This masks the native OBS source; it does not skip ads or cover a separate Window Capture source. Detection depends on YouTube player markers. Sign-in and access/age/content confirmations remain manual. Live ad behavior has not been newly verified for this release. Full request-level ad blocking is deferred to a separate browser-integration change; this feature only masks detected ads.
+
+The successful candidate branch is merged with its source materialized directly into the plugin files. This release retains the Windows startup fix and process cleanup from previous versions.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.9.zip** — updated station app, plugin source and documentation.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.8.exe** — updated Windows installer.
+- **fplayback-youtube-0.1.8-windows-x64.zip** — installer, plugin DLL, corresponding source and license.
+- Each download has a SHA-256 checksum.
+
+Stop Playback (including its automatic startup task), back up and preserve `data/` and launcher configuration, extract the station update and restart. Close OBS, run the 0.1.8 plugin installer, and restart OBS. Existing queues and settings are preserved; no database migration is needed. If you move the app to a new folder, rerun `INSTALL-AUTO-START.bat` there. Requires Windows x64 and OBS 32.2.2 / Qt 6.11.1; station requires Node.js 22.13 or newer.
+
+## Validation
+
+Validation covers JavaScript syntax and the full app suite, native plugin tests including the Ad Guard policy, installer build, release-package contents and SHA-256 checksums. Ad Guard regression tests exercise masking telemetry, browser mute restoration, long ads, queue checkpoint protection and the opt-out setting. Recycled tests cover title dates, full-lane sorting, automatic insertion, SQLite reload, unchanged playback state and authenticated controls.
+
+---
+
 # fKey Playback v1.7.8 — Windows startup fix
 
 Windows can deny Playback's process check when the instance recorded in the startup lock is running under another account, such as the automatic startup service. Playback now handles this without an uncaught `kill EPERM` stack trace and keeps the lock intact.

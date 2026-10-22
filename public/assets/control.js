@@ -3,6 +3,7 @@ import {singleFlight} from './single-flight.js?v=1.5.1';
 import {moveInBatches, BULK_MOVE_BATCH_SIZE} from './bulk-move.js?v=1.5.1';
 import {$,e,api,thumbnail,formatTime,showNotice,applyTheme,initAuth} from './common.js?v=1.5.1';
 let state=null,busy=false,scrubbing=false,scrubVideoId=null;
+let recycledSortSaved=null;
 let audioDesired=null,audioPreview=null,audioSending=false,audioTimer=null,audioEditing=false,lastAudibleVolume=50,lastAudioSend=0;
 async function action(action,props={}){
   if(busy)return false;busy=true;
@@ -167,6 +168,10 @@ function drawQueue(s){
   $('queueCount').textContent=`${playable} AVAILABLE`;
   $('rotationNumber').textContent=`ROTATION ${s.rotationNumber||1}`;
   $('rotationSummary').textContent=`${counts.playNext} priority · ${counts.upcoming} upcoming · ${counts.recycled} recycled · ${counts.nextRotation} deferred`;
+  $('recycledSortControls').classList.toggle('hidden',activeQueueLane!=='recycled');
+  const savedOrder=s.recycledOrder||'manual';
+  if(savedOrder!==recycledSortSaved&&document.activeElement!==$('recycledSort'))$('recycledSort').value=savedOrder;
+  recycledSortSaved=savedOrder;
   for(const [lane,count] of Object.entries({playNext:counts.playNext,current:counts.upcoming,recycled:counts.recycled,nextRotation:counts.nextRotation})){
     document.querySelector(`[data-count="${lane}"]`).textContent=count||0;
   }
@@ -186,7 +191,7 @@ function drawQueue(s){
     if(!visible.has(id)){row.element.remove();queueRows.delete(id);}
   }
   if(!pageView.items.length){
-    const msg=queueQuery?'No videos match this search.':activeQueueLane==='recycled'?'No completed videos in this rotation.':activeQueueLane==='nextRotation'?'Nothing deferred to the next rotation.':'No videos in this lane.';
+    const msg=queueQuery?'No videos match this search.':activeQueueLane==='recycled'?'No videos in Recycled.':activeQueueLane==='nextRotation'?'Nothing deferred to the next rotation.':'No videos in this lane.';
     if(!container.firstElementChild?.classList.contains('empty')||container.childElementCount!==1){
       container.replaceChildren(e('div',{class:'empty',text:msg}));
     }else if(container.firstElementChild.textContent!==msg){container.firstElementChild.textContent=msg;}
@@ -306,6 +311,7 @@ $('queueSearch').addEventListener('input',()=>{
 });
 $('queueClearSelection').addEventListener('click',()=>{queueSelection.clear();selectionVersion++;drawQueue(state);});
 $('queueApplySort').addEventListener('click',()=>action('sortUpcoming',{order:$('queueSort').value}));
+$('recycledApplySort').addEventListener('click',()=>action('sortRecycled',{order:$('recycledSort').value}));
 let voteKey=null;
 function drawVote(s){
   $('countdown').textContent=s.vote?`${s.vote.remaining}s REMAINING`:'INACTIVE';

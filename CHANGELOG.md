@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.7.9 — Recycled sorting and optional ad masking
+
+- Sort the entire Recycled lane by title or VOD date in the title; save the order and apply it to additions, moves, imports and completed videos. Undated titles go last; manual reordering disables automatic sorting.
+- Allow direct additions and imports to Recycled without starting playback.
+- Merge the successful Ad Guard candidate and store its source directly in the plugin files.
+- Plugin 0.1.8 adds a saved, optional (off by default) setting to hide detected ad video and mute ad audio in the native OBS source.
+- Hold queue position during ads and resume content after readiness; keep ad suppression separate from the transition timeout.
+- Observe player ad markers between station polls, reapply browser muting during ads, and detach observers on generation changes and stop.
+- Retain the Windows installer resource-path build fix and add Ad Guard regression coverage.
+- Package plugin and installer 0.1.8. No database migration is required.
+
 ## v1.7.8 — Windows startup lock handling
 
 - Handle Windows EPERM during the existing-process check without an uncaught stack trace. Preserve the lock when the process cannot be inspected.

@@ -10,13 +10,17 @@
   }
   if (location.origin !== 'https://www.youtube.com' || location.pathname !== '/watch' ||
       new URL(location.href).searchParams.get('v') !== command.videoId) return;
+  const isAdvertisement = () => {
+    const currentPlayer = document.querySelector('#movie_player');
+    return currentPlayer?.classList.contains('ad-showing') || currentPlayer?.classList.contains('ad-interrupting') || false;
+  };
   const previous = window.__fPlaybackWatch;
   const video = document.querySelector('video.html5-main-video');
   const now = performance.now();
   const sameGeneration = previous?.nonce === command.nonce && previous?.generation === command.generation;
   const preservePosition=!sameGeneration && command.transportOnly===true && previous?.applied &&
-    previous.video===video && previous.latestCommand?.videoId===command.videoId;
-  if (!sameGeneration) previous?.detach?.();
+    previous.video===video && previous.latestCommand?.videoId===command.videoId && !isAdvertisement();
+  if (!sameGeneration) { previous?.detach?.(); previous?.detachAdGuard?.(); }
   const state = sameGeneration ? previous
     : { nonce: command.nonce, generation: command.generation, applied: false, played: false, progressAt: now, lastPosition: null, autoplayBlocked: false };
   if (preservePosition) {
@@ -31,8 +35,16 @@
   }
   window.__fPlaybackWatch = state;
   const report = value => {
+    // Recheck at emission time: a queued layout callback must never reveal an
+    // ad or report its position after the player changes modes.
+    const advertisement = isAdvertisement();
+    if (advertisement) {
+      const suppress = state.latestCommand?.suppressAdOutput === true;
+      value = { status: suppress ? 'Advertisement hidden + muted — queue position held'
+        : 'Advertisement — queue position held', displayReady: false, revealDisplay: !suppress };
+    }
     document.title = 'fPlayback:' + command.nonce + ':' + JSON.stringify({
-      generation: command.generation, videoId: command.videoId, href: location.href, sample: now, ...value
+      generation: command.generation, videoId: command.videoId, href: location.href, sample: performance.now(), ...value, advertisement
     });
   };
   const player = document.querySelector('#movie_player');
@@ -48,7 +60,55 @@
   };
   const recover = reason => report({status:'Recovering stalled YouTube playback…',recover:reason});
   state.latestCommand = command; state.report = report;
-  const advertisement=player?.classList.contains('ad-showing');
+  // Observe only player mode changes, not the entire document. This also runs
+  // between the one-second station polls. Native output gating is separate
+  // from the fade timeout and provides the actual opaque OBS video mask.
+  const matchingPage = () => window.__fPlaybackWatch === state &&
+    location.origin === 'https://www.youtube.com' && location.pathname === '/watch' &&
+    new URL(location.href).searchParams.get('v') === state.latestCommand.videoId;
+  const guardAdvertisement = () => {
+    if (!matchingPage()) return;
+    if (!isAdvertisement()) {
+      if (state.adActive) {
+        state.adActive = false;
+        state.layoutReady = false;
+        state.checkLayout?.();
+      }
+      return;
+    }
+    state.adActive = true;
+    state.applied = false;
+    state.invalidateLayout?.();
+    state.layoutReady = false;
+    state.progressAt = performance.now(); state.lastPosition = null;
+    if (state.latestCommand.suppressAdOutput === true && state.guardVideo) {
+      state.adMuted = true;
+      if (!state.guardVideo.muted) state.guardVideo.muted = true;
+    } else if (state.adMuted && state.guardVideo) {
+      state.adMuted = false;
+      state.guardVideo.muted = state.latestCommand.muted;
+      state.guardVideo.volume = state.latestCommand.volume / 100;
+    }
+    state.report({});
+  };
+  if (state.guardPlayer !== player || state.guardVideo !== video) {
+    state.detachAdGuard?.();
+    state.guardPlayer = player; state.guardVideo = video;
+    const observer = player ? new MutationObserver(guardAdvertisement) : null;
+    observer?.observe(player, { attributes: true, attributeFilter: ['class'], childList: true });
+    // YouTube can reset mute during an ad pod; keep the browser itself quiet
+    // too, without changing the user's saved station volume/mute settings.
+    const volumeChanged = () => {
+      if (matchingPage() && isAdvertisement() && state.latestCommand.suppressAdOutput === true && video && !video.muted)
+        video.muted = true;
+    };
+    video?.addEventListener('volumechange', volumeChanged);
+    state.detachAdGuard = () => {
+      observer?.disconnect(); video?.removeEventListener('volumechange', volumeChanged);
+      state.guardPlayer = null; state.guardVideo = null;
+    };
+  }
+  const advertisement=isAdvertisement();
   const barrier=hasBarrier();
   // Lock only the ordinary player chrome. Access prompts and advertisements
   // retain their original UI; users unlock the native window to interact.
@@ -71,7 +131,8 @@
     element.style.setProperty('pointer-events','none','important');
   }
   // Ads and access barriers must never advance or overwrite the saved queue position.
-  if (advertisement) { state.applied=false; resetWatchdog(); report({ status: 'Advertisement — queue position held', revealDisplay:true }); return; }
+  if (advertisement) { guardAdvertisement(); return; }
+  state.adActive = false;
   if (barrier) {
     state.applied=false; resetWatchdog();
     report({ status: 'YouTube needs attention. Open the output window to check access or confirm playback.', revealDisplay:true }); return;
@@ -83,15 +144,15 @@
   }
   if (state.video !== video) {
     state.detach?.(); state.video = video;
-    state.checkLayout=null;state.layoutReady=false;
+    state.checkLayout=null;state.invalidateLayout=null;state.layoutReady=false;
     if (!preservePosition) state.applied=false;
     const ended = () => {
       const latest = state.latestCommand;
-      if (window.__fPlaybackWatch !== state || !state.played || latest.paused || latest.voting ||
+      if (window.__fPlaybackWatch !== state || !state.applied || !state.played || latest.paused || latest.voting ||
           video.seeking || !positionMatches(video.currentTime,performance.now()) ||
           location.origin !== 'https://www.youtube.com' || location.pathname !== '/watch' ||
           new URL(location.href).searchParams.get('v') !== latest.videoId ||
-          document.querySelector('#movie_player')?.classList.contains('ad-showing') ||
+          isAdvertisement() ||
           hasBarrier()) return;
       state.report({ status: 'Video ended', ended: true });
     };
@@ -113,6 +174,7 @@
   applyLayout();
   if (!state.checkLayout) {
     let frame=null,stableSince=null;
+    state.invalidateLayout=()=>{stableSince=null;state.layoutReady=false;};
     state.layoutReady=false;
     const fullSize=element=>{
       const rect=element?.getBoundingClientRect();
@@ -124,7 +186,11 @@
       if (window.__fPlaybackWatch!==state || state.video!==video ||
           location.origin!=='https://www.youtube.com' || location.pathname!=='/watch' ||
           new URL(location.href).searchParams.get('v')!==state.latestCommand.videoId) return;
-      if (player?.classList.contains('ad-showing') || hasBarrier()) {
+      if (isAdvertisement()) {
+        state.layoutReady=false;stableSince=null;
+        guardAdvertisement(); return;
+      }
+      if (hasBarrier()) {
         state.layoutReady=false;stableSince=null;
         state.report({status:'YouTube needs attention',revealDisplay:true});return;
       }
@@ -176,6 +242,7 @@
   state.checkpoint=video.currentTime; state.checkpointAt=now;
   video.volume = command.volume / 100;
   video.muted = command.muted;
+  state.adMuted = false;
   if (command.paused || command.voting) {
     video.pause();
   } else if (video.paused && !video.ended) {

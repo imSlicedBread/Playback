@@ -16,6 +16,8 @@
 #include <cmath>
 #include <atomic>
 static std::atomic<bool> captureEnabled{false};
+static std::atomic<bool> captureSuppressed{false};
+void playback_audio_set_suppressed(bool suppressed) {captureSuppressed.store(suppressed);}
 void playback_audio_set_enabled(bool enabled) {captureEnabled.store(enabled);}
 using Microsoft::WRL::ComPtr;
 
@@ -141,13 +143,14 @@ struct BrowserAudio {
         BYTE *bytes=nullptr; UINT32 frames=0; DWORD flags=0; UINT64 timestamp=0;
         if (FAILED(input->GetBuffer(&bytes,&frames,&flags,nullptr,&timestamp))) { healthy=false; break; }
         std::vector<float> silence;
-        if ((flags&AUDCLNT_BUFFERFLAGS_SILENT) || !bytes) { silence.resize(size_t(frames)*2); bytes=reinterpret_cast<BYTE *>(silence.data()); }
+        const bool suppressed=captureSuppressed.load();
+        if (suppressed || (flags&AUDCLNT_BUFFERFLAGS_SILENT) || !bytes) { silence.resize(size_t(frames)*2); bytes=reinterpret_cast<BYTE *>(silence.data()); }
         obs_source_audio audio{};
         audio.data[0]=bytes; audio.frames=frames; audio.speakers=SPEAKERS_STEREO;
         audio.format=AUDIO_FORMAT_FLOAT; audio.samples_per_sec=48000;
         audio.timestamp=(flags&AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR)||!timestamp ? os_gettime_ns() : timestamp*100;
         obs_source_output_audio(source,&audio);
-        if (!signaled && !(flags&AUDCLNT_BUFFERFLAGS_SILENT)) {
+        if (!suppressed && !signaled && !(flags&AUDCLNT_BUFFERFLAGS_SILENT)) {
           const auto *samples=reinterpret_cast<const float *>(bytes);
           for (size_t i=0;i<size_t(frames)*2;++i) if (std::isfinite(samples[i]) && std::abs(samples[i])>.0001f) {
             blog(LOG_INFO,"[fplayback-audio] Receiving non-silent browser audio"); signaled=true; break;

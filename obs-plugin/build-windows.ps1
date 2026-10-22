@@ -36,7 +36,7 @@ foreach ($name in @('obs', 'obs-frontend-api', 'libobs-winrt')) {
   if ($LASTEXITCODE) { throw 'Import library generation failed' }
 }
 @('#pragma once', '#define OBS_RELEASE_CANDIDATE 0', '#define OBS_BETA 0') | Set-Content -LiteralPath "$imports/obsconfig.h" -Encoding ascii
-& cmake -S $root -B "$root/build" -G 'Visual Studio 18 2026' -A x64 "-DCMAKE_PREFIX_PATH=$deps/qt" "-DOBS_HEADERS=$deps/obs/obs-studio-32.2.2" "-DOBS_BROWSER_HEADERS=$root/vendor" "-DOBS_IMPORT_LIBS=$imports" "-DOBS_RUNTIME_PATH=$ObsPath/bin/64bit" "-DINSTALLER_SOURCE_ZIP=$sourceArchive"
+& cmake -S $root -B "$root/build" -G 'Visual Studio 18 2026' -A x64 "-DCMAKE_PREFIX_PATH=$deps/qt" "-DOBS_HEADERS=$deps/obs/obs-studio-32.2.2" "-DOBS_BROWSER_HEADERS=$root/vendor" "-DOBS_IMPORT_LIBS=$imports" "-DOBS_RUNTIME_PATH=$ObsPath/bin/64bit" "-DINSTALLER_SOURCE_ZIP=$($sourceArchive.Replace([char]92,[char]47))"
 if ($LASTEXITCODE) { throw 'CMake configuration failed' }
 & cmake --build "$root/build" --config RelWithDebInfo --parallel
 if ($LASTEXITCODE) { throw 'Plugin compilation failed' }
@@ -50,10 +50,10 @@ New-Item -ItemType Directory -Force $sourcePath | Out-Null
 foreach ($name in @('src', 'vendor', 'CMakeLists.txt', 'build-windows.ps1', 'install-local.ps1', 'resources.qrc', 'watch-controller.js', 'README.md', 'LICENSE')) {
   Copy-Item -LiteralPath (Join-Path $root $name) -Destination $sourcePath -Recurse -Force
 }
-$installer = Join-Path $root 'fKey-Playback-OBS-Plugin-Setup-0.1.7.exe'
-Copy-Item -LiteralPath "$root/package/fKey-Playback-OBS-Plugin-Setup-0.1.7.exe" -Destination $installer -Force
+$installer = Join-Path $root 'fKey-Playback-OBS-Plugin-Setup-0.1.8.exe'
+Copy-Item -LiteralPath "$root/package/fKey-Playback-OBS-Plugin-Setup-0.1.8.exe" -Destination $installer -Force
 ((Get-FileHash -LiteralPath $installer).Hash.ToLowerInvariant()+'  '+(Split-Path -Leaf $installer)) | Set-Content -LiteralPath ($installer+'.sha256') -Encoding ascii
-Compress-Archive -LiteralPath "$root/package/obs-plugins", "$root/package/source", "$root/package/README.md", "$root/package/LICENSE", $installer -DestinationPath "$root/fplayback-youtube-0.1.7-windows-x64.zip" -Force
-((Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.7-windows-x64.zip").Hash.ToLowerInvariant()+'  fplayback-youtube-0.1.7-windows-x64.zip') | Set-Content -LiteralPath "$root/fplayback-youtube-0.1.7-windows-x64.zip.sha256" -Encoding ascii
-Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.7-windows-x64.zip" -Algorithm SHA256 | Format-List
+Compress-Archive -LiteralPath "$root/package/obs-plugins", "$root/package/source", "$root/package/README.md", "$root/package/LICENSE", $installer -DestinationPath "$root/fplayback-youtube-0.1.8-windows-x64.zip" -Force
+((Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.8-windows-x64.zip").Hash.ToLowerInvariant()+'  fplayback-youtube-0.1.8-windows-x64.zip') | Set-Content -LiteralPath "$root/fplayback-youtube-0.1.8-windows-x64.zip.sha256" -Encoding ascii
+Get-FileHash -LiteralPath "$root/fplayback-youtube-0.1.8-windows-x64.zip" -Algorithm SHA256 | Format-List
 Write-Output "Built plugin: $root/package/obs-plugins/64bit/fplayback-youtube.dll"

@@ -9,6 +9,11 @@
 #include "output-resolution.hpp"
 
 static std::atomic<HWND> outputWindow{nullptr};
+static std::atomic<bool> adOutputSuppressed{false};
+void playback_set_ad_output_suppressed(bool suppressed) {
+  adOutputSuppressed.store(suppressed);
+  playback_audio_set_suppressed(suppressed);
+}
 static std::atomic<uint64_t> outputResolution{OutputResolution{}.packed()};
 void playback_set_output_window(HWND window) { outputWindow.store(window);playback_audio_set_enabled(window!=nullptr); }
 void playback_set_output_resolution(uint32_t width,uint32_t height) {
@@ -105,6 +110,17 @@ static void render(void *data, gs_effect_t *) {
   const auto size=OutputResolution::unpack(outputResolution.load());
   const auto window=outputWindow.load();
   if (!window) {state->cached=false;state->fade.cancel();return;}
+  if (adOutputSuppressed.load()) {
+    // Never cache an ad frame or let the normal fade timeout reveal it.
+    state->cached=false; state->fade.cancel();
+    auto *solid=obs_get_base_effect(OBS_EFFECT_SOLID);
+    if (solid) {
+      vec4 black{}; black.w=1.f;
+      gs_effect_set_vec4(gs_effect_get_param_by_name(solid,"color"),&black);
+      while (gs_effect_loop(solid,"Solid")) gs_draw_sprite(nullptr,0,size.width,size.height);
+    }
+    return;
+  }
   const bool active=state->capture && state->window==window && winrt_capture_active(state->capture);
   if (!state->fadeEffect || !state->outgoing || !state->incoming) {
     if (active) {

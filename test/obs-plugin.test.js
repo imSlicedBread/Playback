@@ -33,6 +33,39 @@ function harness(){
  }};
 }
 
+test('Ad Guard mutes detected ads, holds the checkpoint and restores saved audio for content',()=>{
+ const h=harness();h.run({suppressAdOutput:true,volume:65});
+ h.setAd(true);h.video.currentTime=8;
+ const ad=h.run({suppressAdOutput:true,volume:65});
+ assert.equal(ad.advertisement,true);assert.equal(ad.displayReady,false);assert.equal(ad.revealDisplay,false);
+ assert.equal(ad.position,undefined);assert.equal(ad.ended,undefined);assert.equal(h.video.muted,true);
+ h.video.muted=false;h.listeners.get('volumechange')();assert.equal(h.video.muted,true);
+ h.setAd(false);const content=h.run({suppressAdOutput:true,volume:65});
+ assert.equal(content.advertisement,false);assert.equal(h.video.currentTime,35);
+ assert.equal(h.video.muted,false);assert.equal(h.video.volume,.65);
+});
+
+test('Ad Guard keeps long ads hidden and does not report ad completion or watchdog recovery',()=>{
+ const h=harness();h.run({suppressAdOutput:true});h.setAd(true);
+ h.video.currentTime=240;h.video.ended=true;
+ h.advance(120000);h.frame();
+ const ad=h.run({suppressAdOutput:true});
+ assert.equal(ad.displayReady,false);assert.equal(ad.revealDisplay,false);
+ assert.equal(ad.recover,undefined);assert.equal(ad.ended,undefined);assert.equal(ad.position,undefined);
+ h.context.document.title='unchanged';h.listeners.get('ended')();
+ assert.equal(h.context.document.title,'unchanged');
+});
+
+test('Ad Guard opt-out reveals ads and restores audio without changing the queue checkpoint',()=>{
+ const h=harness();h.run({suppressAdOutput:true});h.setAd(true);
+ h.run({suppressAdOutput:true});assert.equal(h.video.muted,true);
+ const visible=h.run({suppressAdOutput:false,volume:40});
+ assert.equal(visible.revealDisplay,true);assert.equal(h.video.muted,false);assert.equal(h.video.volume,.4);
+ assert.equal(visible.position,undefined);
+ h.setAd(false);h.run({suppressAdOutput:false,volume:40,muted:true});
+ assert.equal(h.video.muted,true);assert.equal(h.video.currentTime,35);
+});
+
 test('channel watermark is hidden while locked and restored when unlocked or showing ads or access prompts',()=>{
  const h=harness();h.watermark.style.setProperty('opacity','.7','important');
  h.run({locked:true});assert.equal(h.watermark.style.getPropertyValue('visibility'),'hidden');
