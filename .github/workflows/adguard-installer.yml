@@ -1,0 +1,95 @@
+name: Playback Ad Guard candidate installer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/adguard-installer.yml'
+      - '.ci/adguard-plugin-0.1.8.patch.gz.b64'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    if: github.head_ref == 'build/adguard-plugin-0.1.8'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Ad Guard 0.1.8 source patch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $encoded = (Get-Content -Raw '.ci/adguard-plugin-0.1.8.patch.gz.b64').Trim()
+          $inputBytes = [Convert]::FromBase64String($encoded)
+          $stream = [System.IO.MemoryStream]::new($inputBytes)
+          $decompressor = [System.IO.Compression.GZipStream]::new($stream, [System.IO.Compression.CompressionMode]::Decompress)
+          $output = [System.IO.File]::Create('adguard.patch')
+          $decompressor.CopyTo($output)
+          $output.Dispose(); $decompressor.Dispose(); $stream.Dispose()
+          git apply --check adguard.patch
+          if ($LASTEXITCODE) { throw 'Ad Guard patch does not match current source' }
+          git apply adguard.patch
+          if ($LASTEXITCODE) { throw 'Ad Guard patch failed' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript checks
+        shell: pwsh
+        run: |
+          npm run check
+          if ($LASTEXITCODE) { throw 'JS check failed' }
+          npm test
+          if ($LASTEXITCODE) { throw 'JS tests failed' }
+      - name: Download and verify official OBS 32.2.2 portable runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = Join-Path $env:RUNNER_TEMP 'obs.zip'
+          Invoke-WebRequest -Uri 'https://github.com/obsproject/obs-studio/releases/download/32.2.2/OBS-Studio-32.2.2-Windows-x64.zip' -OutFile $archive
+          $hash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          if ($hash -ne '4d6e40e3ab155f56b30de517380566a206d74b63cdf5ad49aa596924768f97e1') { throw 'OBS runtime SHA-256 mismatch' }
+          $folder = Join-Path $env:RUNNER_TEMP 'obs-portable'
+          Expand-Archive -LiteralPath $archive -DestinationPath $folder -Force
+          if (!(Test-Path (Join-Path $folder 'bin/64bit/obs64.exe'))) {
+            $possible = @(Get-ChildItem -LiteralPath $folder -Recurse -Filter 'obs64.exe' -File)
+            if ($possible.Count -ne 1) { throw 'Cannot locate OBS portable runtime' }
+            $folder = (Get-Item (Join-Path $possible[0].Directory.FullName '../..')).FullName
+          }
+          if (!(Test-Path (Join-Path $folder 'bin/64bit/obs.dll'))) { throw 'OBS is missing obs.dll' }
+          "OBS_PATH=$folder" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Select installed Visual Studio generator
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $version = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationVersion
+          if (!$version) { throw 'No Visual Studio C++ toolset available' }
+          $major = [int]($version -split '\.')[0]
+          $generator = switch ($major) { 17 { 'Visual Studio 17 2022' } 18 { 'Visual Studio 18 2026' } default { throw "Unsupported Visual Studio version $version" } }
+          $script = 'obs-plugin/build-windows.ps1'
+          $source = Get-Content -Raw -LiteralPath $script
+          $source = $source.Replace('Visual Studio 18 2026', $generator)
+          Set-Content -LiteralPath $script -Value $source -Encoding utf8
+          Write-Output "Using $generator"
+      - name: Compile, test and package plugin installer
+        shell: pwsh
+        run: |
+          .\obs-plugin\build-windows.ps1 -ObsPath $env:OBS_PATH
+          if ($LASTEXITCODE) { throw 'Plugin build failed' }
+          if (!(Test-Path 'obs-plugin/fKey-Playback-OBS-Plugin-Setup-0.1.8.exe')) { throw 'Installer not created' }
+          if (!(Test-Path 'obs-plugin/package/obs-plugins/64bit/fplayback-youtube.dll')) { throw 'Plugin DLL not created' }
+          Get-FileHash -Algorithm SHA256 'obs-plugin/fKey-Playback-OBS-Plugin-Setup-0.1.8.exe' | Format-List
+      - name: Upload installer and native plugin artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Playback-AdGuard-OBS-Plugin-0.1.8-Windows-x64
+          if-no-files-found: error
+          path: |
+            obs-plugin/fKey-Playback-OBS-Plugin-Setup-0.1.8.exe
+            obs-plugin/fKey-Playback-OBS-Plugin-Setup-0.1.8.exe.sha256
+            obs-plugin/fplayback-youtube-0.1.8-windows-x64.zip
+            obs-plugin/fplayback-youtube-0.1.8-windows-x64.zip.sha256
+            obs-plugin/package/obs-plugins/64bit/fplayback-youtube.dll
+          retention-days: 14
