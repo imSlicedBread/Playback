@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.7.11 — Recycled sorting UI cleanup
+
+- Show Upcoming sorting only on Upcoming and Recycled sorting only on Recycled.
+- Guard sorting actions against an inactive lane and refresh the dashboard script cache version.
+- Preserve saved Recycled ordering, automatic insertion and plugin/installer 0.1.9. No database migration or plugin reinstall is needed.
+
 ## v1.7.10 — ad filtering and output interaction
 
 - Package OBS plugin and installer 0.1.9 with experimental request filtering in the existing signed-in OBS Chromium profile.

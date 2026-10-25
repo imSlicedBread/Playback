@@ -1,3 +1,22 @@
+# fKey Playback v1.7.11 — Recycled sorting UI cleanup
+
+The Recycled tab now shows its own **Sort all Recycled + save order** controls without the unrelated **Apply to Upcoming** row. Upcoming sorting appears only on Upcoming. Sort actions also check the active lane, preventing a stale or hidden control from changing another queue.
+
+Recycled sorting still covers the entire lane, saves title A–Z or VOD-date ordering, and places new entries in that order. This release changes the dashboard UI only; queue ordering behavior and OBS plugin 0.1.9 are unchanged.
+
+## Downloads and upgrade
+
+- **Playback-v1.7.11.zip** and its SHA-256 checksum — updated station app, source, documentation and tests.
+- Plugin installer **0.1.9** and plugin ZIP are the unchanged downloads from v1.7.10, with their checksums.
+
+Stop Playback and its startup task before updating. Preserve `data/` and launcher configuration, extract the update, then restart the station and refresh the dashboard. If moving the app folder, rerun `INSTALL-AUTO-START.bat`. No database migration or plugin reinstall is required for existing plugin 0.1.9 users.
+
+## Validation
+
+JavaScript syntax checks and the full existing app suite pass locally (191 passed, one platform-specific check skipped). GitHub CI verifies Windows and Linux before publication. Dashboard JavaScript uses a new cache version so the cleanup loads after refreshing.
+
+---
+
 # fKey Playback v1.7.10 — ad blocking and Interact button
 
 Plugin 0.1.9 adds **Block ads before playback (experimental)**, enabled by default. It filters known YouTube ad delivery URLs and recognized ad-placement data before playback in OBS's existing Chromium runtime, using the same signed-in profile. Playback queue controls, saved positions and audio routing remain available. Ad masking is disabled while request filtering is enabled, avoiding an added black-screen hold for missed ads.

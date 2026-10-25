@@ -168,6 +168,7 @@ function drawQueue(s){
   $('queueCount').textContent=`${playable} AVAILABLE`;
   $('rotationNumber').textContent=`ROTATION ${s.rotationNumber||1}`;
   $('rotationSummary').textContent=`${counts.playNext} priority · ${counts.upcoming} upcoming · ${counts.recycled} recycled · ${counts.nextRotation} deferred`;
+  $('upcomingSortControls').classList.toggle('hidden',activeQueueLane!=='current');
   $('recycledSortControls').classList.toggle('hidden',activeQueueLane!=='recycled');
   const savedOrder=s.recycledOrder||'manual';
   if(savedOrder!==recycledSortSaved&&document.activeElement!==$('recycledSort'))$('recycledSort').value=savedOrder;
@@ -310,8 +311,8 @@ $('queueSearch').addEventListener('input',()=>{
   clearTimeout(searchTimer);searchTimer=setTimeout(()=>{queueQuery=$('queueSearch').value;queuePageIndex=0;drawQueue(state);$('queue').scrollTop=0;},180);
 });
 $('queueClearSelection').addEventListener('click',()=>{queueSelection.clear();selectionVersion++;drawQueue(state);});
-$('queueApplySort').addEventListener('click',()=>action('sortUpcoming',{order:$('queueSort').value}));
-$('recycledApplySort').addEventListener('click',()=>action('sortRecycled',{order:$('recycledSort').value}));
+$('queueApplySort').addEventListener('click',()=>{if(activeQueueLane==='current')return action('sortUpcoming',{order:$('queueSort').value});});
+$('recycledApplySort').addEventListener('click',()=>{if(activeQueueLane==='recycled')return action('sortRecycled',{order:$('recycledSort').value});});
 let voteKey=null;
 function drawVote(s){
   $('countdown').textContent=s.vote?`${s.vote.remaining}s REMAINING`:'INACTIVE';

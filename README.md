@@ -1,4 +1,4 @@
-# fKey Playback 1.7.10
+# fKey Playback 1.7.11
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
@@ -6,7 +6,11 @@ Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS 
 
 Supporting documentation: [release notes](docs/RELEASE_NOTES.md), [storage verification](docs/BUILD-REPORT.md), and [historical performance measurements](docs/PERFORMANCE.md).
 
-## New in v1.7.10 — ad request filtering and output interaction
+## New in v1.7.11 — clearer Recycled sorting controls
+
+Each queue tab now shows only its own sorting controls. Upcoming shows **Apply to Upcoming**; Recycled shows **Sort all Recycled + save order**, with title and VOD-date ordering. Hidden controls cannot sort another lane. The saved Recycled order and automatic insertion behavior are unchanged. OBS plugin 0.1.9 is unchanged; no plugin reinstall or database migration is needed.
+
+## Included from v1.7.10 — ad request filtering and output interaction
 
 Plugin 0.1.9 adds **Block ads before playback (experimental)**, enabled by default, using the existing signed-in OBS YouTube profile. It blocks known ad requests and removes recognized player ad data before playback, preserving Playback queue controls. With filtering enabled, ad masking is disabled so missed ads do not become a black-screen wait. This is targeted YouTube filtering, not a complete AdGuard engine or a guarantee against future ads.
 
