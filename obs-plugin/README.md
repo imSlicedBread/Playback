@@ -1,4 +1,4 @@
-# fKey Playback OBS plugin — 0.1.10 — OBS 32 and OBS 33
+# fKey Playback OBS plugin — 0.1.11 — OBS 32 and OBS 33
 
 This native plugin opens a **normal YouTube watch page**, using OBS Browser's
 default browser context. It does not use an iframe or a Chrome extension. Sign
@@ -14,12 +14,12 @@ Browser Source embedded-player workflow has not been verified for members-only p
 
 ## OBS 32 and OBS 33 builds
 
-Playback v1.7.12 provides separate Windows x64 builds. Use the installer matching your installed OBS version; each build retains an exact CEF version/API-hash guard.
+Playback v1.7.13 provides separate Windows x64 builds. Use the installer matching your installed OBS version; each build retains an exact CEF version/API-hash guard.
 
 | OBS | Chromium / CEF | Installer |
 | --- | --- | --- |
-| 32.2.2 / Qt 6.11.1 | Chromium 127.0.6533.120 / CEF 127.145.7 | `fKey-Playback-OBS-Plugin-Setup-0.1.10.exe` |
-| 33.0.0 / Qt 6.11.1 | Chromium 150.0.7871.252 / CEF 150.0.20 | `fKey-Playback-OBS-Plugin-Setup-0.1.10-OBS33.exe` |
+| 32.2.2 / Qt 6.11.1 | Chromium 127.0.6533.120 / CEF 127.145.7 | `fKey-Playback-OBS-Plugin-Setup-0.1.11.exe` |
+| 33.0.0 / Qt 6.11.1 | Chromium 150.0.7871.252 / CEF 150.0.20 | `fKey-Playback-OBS-Plugin-Setup-0.1.11-OBS33.exe` |
 
 OBS 33 uses `core/obs-browser` for its built-in browser. This plugin still installs in the legacy third-party plugin folder supported by OBS 33. Neither installer replaces OBS, Chromium, or account data. The filtered child browser uses that OBS instance's existing global request context; no cookie copying, separate login store, extension or remote debugging port is introduced. OBS's own profile migration remains responsible for carrying a login across an OBS upgrade.
 
@@ -58,7 +58,7 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.10.exe**, approve the Windows
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.11.exe**, approve the Windows
    administrator prompt, and click **Install / Update**. The installer detects
    the usual OBS installation; use **Browse** for a custom or portable folder.
    It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual
@@ -232,3 +232,5 @@ Pause/resume commands now preserve the current browser frame and do not seek bac
 ## Stopping and cleanup
 
 Stop output closes the dedicated browser/window, releases its worker lease, cancels pending requests/retries and releases capture textures and browser audio capture. Start queue / retry recreates the output using the existing account session and saved placement. OBS shutdown closes the output before its scene/browser teardown and joins the audio capture thread. Shared OBS browser processes may remain while other OBS sources use them; the plugin does not terminate unrelated processes. Minimizing or closing a locked output still parks it intentionally so capture can continue; use Stop output to release it.
+
+Plugin 0.1.11 synchronizes the lower-third title with the visible video after the crossfade. Update the station to v1.7.13 as well. Older browser outputs retain their existing behavior.

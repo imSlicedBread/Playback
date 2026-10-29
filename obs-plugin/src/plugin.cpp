@@ -357,7 +357,7 @@ class Playback final : public QObject {
     if (!running || busy || rebuildingBrowser) return;
     logResources();
     busy = true; const auto turn = epoch;
-    QJsonObject claim{{"workerId", worker}};
+    QJsonObject claim{{"workerId", worker}, {"displaySync", true}};
     request("/api/worker/claim", &claim, [this, turn](int code, QJsonObject) {
       if (turn != epoch || !running) { busy = false; return; }
       lease = code == 200;
@@ -405,6 +405,13 @@ private slots:
     }
     setStatus(result.value("status").toString().left(240));
     QJsonObject body{{"workerId", worker}, {"generation", generation}};
+    // The same validated readiness signal releases the video crossfade and title.
+    if (result.value("displayReady").toBool() || result.value("revealDisplay").toBool()) {
+      QJsonObject display{{"workerId", worker}, {"generation", generation}, {"videoId", loadedVideo},
+                          {"displayReady", result.value("displayReady").toBool()},
+                          {"revealDisplay", result.value("revealDisplay").toBool()}};
+      request("/api/worker/display", &display, [](int, QJsonObject) {});
+    }
     const auto turn = epoch;
     if (result.value("ended").toBool() && !endedSent) {
       endedSent = true;

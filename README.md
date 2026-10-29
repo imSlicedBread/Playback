@@ -1,4 +1,4 @@
-# fKey Playback 1.7.12
+# fKey Playback 1.7.13
 
 Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS Browser Source and a separate operator dashboard.
 
@@ -6,9 +6,13 @@ Made by **fKey Labs Inc.** A persistent, local 24/7 YouTube station with an OBS 
 
 Supporting documentation: [release notes](docs/RELEASE_NOTES.md), [storage verification](docs/BUILD-REPORT.md), and [historical performance measurements](docs/PERFORMANCE.md).
 
-## New in v1.7.12 — OBS 33 support and long-running recovery
+## New in v1.7.13 — overlay title sync
 
-Plugin **0.1.10** provides separate installers for **OBS 32.2.2** and **OBS 33.0.0** (Windows x64 / Qt 6.11.1). Choose the **-OBS33** installer for OBS 33. Both keep experimental ad filtering, the existing OBS browser account context, Playback queue controls and Interact. The installer and running plugin check the matching Chromium runtime; no OBS/Chromium DLLs or login data are replaced.
+The OBS overlay keeps the outgoing video's title while the next video loads, then changes after the 300 ms crossfade. Update the station and install plugin **0.1.11** for your OBS version. Next and Previous were verified live in OBS 33; the original playback position was restored after testing. No database migration is needed.
+
+## Included from v1.7.12 — OBS 33 support and long-running recovery
+
+Plugin **0.1.11** provides separate installers for **OBS 32.2.2** and **OBS 33.0.0** (Windows x64 / Qt 6.11.1). Choose the **-OBS33** installer for OBS 33. Both keep experimental ad filtering, the existing OBS browser account context, Playback queue controls and Interact. The installer and running plugin check the matching Chromium runtime; no OBS/Chromium DLLs or login data are replaced.
 
 Renderer crashes recreate Playback's browser at the saved queue checkpoint, subject to bounded recovery attempts. The recognized generic YouTube playback error is retried after 30 seconds while access/content prompts remain manual. Expired output records and title-lookup caches are now bounded, browser callback lifetimes are tightened, and five-minute resource summaries are written to the OBS log.
 
@@ -66,7 +70,7 @@ The fKey Playback OBS dock now saves an output render resolution: 720p, 1080p, 1
 
 ## Included from v1.7.0 — OBS plugin installer and automatic setup
 
-Run **fKey-Playback-OBS-Plugin-Setup-0.1.10.exe** with OBS closed, approve the Windows prompt, and click **Install / Update**. The installer detects OBS, checks compatibility, and backs up the previous plugin. In **Docks → fKey Playback**, **Add Playback source to current scene** sets up both video and overlay. Minimize parks the output out of view while capture continues. See the [plugin guide](obs-plugin/README.md) or **OBS Plugin Setup** in the dashboard sidebar. Members-only playback was user-verified with a signed-in, entitled account.
+Run **fKey-Playback-OBS-Plugin-Setup-0.1.11.exe** with OBS closed, approve the Windows prompt, and click **Install / Update**. The installer detects OBS, checks compatibility, and backs up the previous plugin. In **Docks → fKey Playback**, **Add Playback source to current scene** sets up both video and overlay. Minimize parks the output out of view while capture continues. See the [plugin guide](obs-plugin/README.md) or **OBS Plugin Setup** in the dashboard sidebar. Members-only playback was user-verified with a signed-in, entitled account.
 
 ## New in v1.6.1 — OBS plugin and accurate version reporting
 

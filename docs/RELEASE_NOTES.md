@@ -1,3 +1,28 @@
+# fKey Playback v1.7.13 — overlay title sync
+
+The overlay now keeps the outgoing video's title while the native OBS output holds its frame. It changes to the incoming title after the 300 ms video crossfade, rather than when the queue advances.
+
+Update **both the station app and OBS plugin 0.1.11**. Choose the matching Windows x64 installer: OBS **32.2.2** uses the standard installer; OBS **33.0.0** uses **-OBS33**. Existing signed-in browser sessions, queue controls, ad filtering and recovery remain in place. No database migration is required.
+
+## Downloads
+
+- **Playback-v1.7.13.zip** — station app, source, tests and documentation.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.11.exe** — OBS 32.2.2 installer.
+- **fplayback-youtube-0.1.11-windows-x64.zip** — OBS 32 plugin, installer, corresponding source and licenses.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.11-OBS33.exe** — OBS 33.0.0 installer.
+- **fplayback-youtube-0.1.11-OBS33-windows-x64.zip** — OBS 33 plugin, installer, corresponding source and licenses.
+- SHA-256 checksums accompany all downloads.
+
+Close OBS before installing. Stop Playback and its startup task before extracting the station update; preserve `data/` and launcher configuration. Restart the station and OBS afterward.
+
+## Verification
+
+Syntax checks and the full app suite pass: **195 passed, one platform-specific skip**. The new regression test covers outgoing-title retention, fade completion, stale/wrong-video readiness, worker ownership, title discovery, Previous, lease expiry and public-response privacy. Both OBS plugin builds and native tests are checked for this release.
+
+Live OBS 33 Next and Previous testing, including a local output recording, confirmed that the old title remains during loading and the incoming title appears after the crossfade. Video/audio resumed, and the original playback position was restored. Slower network loading can still hold the outgoing frame longer; this change does not preload the next video. Existing ad-filtering, members-only and long-duration memory-testing limitations from v1.7.12 still apply.
+
+---
+
 # fKey Playback v1.7.12 — OBS 33 support, crash recovery and memory fixes
 
 Update both the station app and the plugin. Plugin **0.1.10** now has separate Windows x64 builds for **OBS 32.2.2 / Chromium 127** and **OBS 33.0.0 / Chromium 150**, both with Qt 6.11.1. Use the **-OBS33** installer only for OBS 33.0.0. Installers reject the wrong OBS/Qt/CEF version before replacing files, and the running plugin retains its API-hash check. Neither installer changes OBS's Chromium files or account data.

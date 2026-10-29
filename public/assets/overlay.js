@@ -4,7 +4,7 @@ const hud=$('hud'),voteMount=$('voteMount');
 let titleKey='',voteKey='';
 async function refresh(){
  try{
-  const s=await api('public?compact=1');
+  const s=await api('overlay');
   applyTheme(s.settings.colors);applyLowerThird(hud,s.settings.lowerThird);
   $('hudChannel').textContent=s.settings.channelLabel||'fKey Playback';
   $('hudDuration').textContent=`DURATION ${formatTime(s.current?.duration||NaN)}`;
@@ -19,7 +19,7 @@ async function refresh(){
   }
  }catch{
   hud.classList.add('hidden');voteMount.classList.add('hidden');titleKey='';voteKey='';
- }finally{setTimeout(refresh,1000);}
+ }finally{setTimeout(refresh,250);}
 }
 // Visuals only: this source never claims playback or loads another YouTube player.
 refresh();

@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.7.13 — overlay title sync
+
+- Hold the outgoing overlay title until the next video finishes its 300 ms crossfade in the native OBS output.
+- Validate readiness against the current worker, video ID and queue generation; ignore stale reports and retain compatibility with older outputs.
+- Ship plugin/installers 0.1.11 for OBS 32.2.2 and 33.0.0. Update both station and plugin; no database migration.
+- Verify live Next/Previous title timing in OBS 33 and add automated readiness, revocation and privacy coverage.
+
 ## v1.7.12 — OBS 33 support, crash recovery and memory fixes
 
 - Ship separate plugin/installer 0.1.10 targets for OBS 32.2.2 / CEF 127 and OBS 33.0.0 / CEF 150, preserving ad filtering, browser context and queue controls.
