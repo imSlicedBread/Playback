@@ -8,6 +8,7 @@
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QElapsedTimer>
+#include <QEventLoop>
 #include <QFile>
 #include <QProcess>
 #include <QFileInfo>
@@ -17,9 +18,32 @@
 #include <atomic>
 #include <iostream>
 #include <cstring>
+#include <psapi.h>
+#include <tlhelp32.h>
+#include <map>
+#include <set>
 
 namespace {
 quint16 fixturePort=0;
+struct Resources {uint64_t privateBytes=0;DWORD handles=0;unsigned processes=0;};
+Resources resources(){
+  std::map<DWORD,DWORD> parents;const auto snapshot=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
+  PROCESSENTRY32W entry{};entry.dwSize=sizeof(entry);
+  if(snapshot!=INVALID_HANDLE_VALUE){
+    if(Process32FirstW(snapshot,&entry))do{parents[entry.th32ProcessID]=entry.th32ParentProcessID;}while(Process32NextW(snapshot,&entry));
+    CloseHandle(snapshot);
+  }
+  std::set<DWORD> owned{GetCurrentProcessId()};bool changed=true;
+  while(changed){changed=false;for(const auto &[pid,parent]:parents)if(owned.count(parent)&&!owned.count(pid)){owned.insert(pid);changed=true;}}
+  Resources result;
+  for(const auto pid:owned){
+    const auto process=OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ,FALSE,pid);if(!process)continue;
+    PROCESS_MEMORY_COUNTERS_EX info{};DWORD handles=0;
+    if(GetProcessMemoryInfo(process,reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&info),sizeof(info)))result.privateBytes+=info.PrivateUsage;
+    if(GetProcessHandleCount(process,&handles))result.handles+=handles;
+    ++result.processes;CloseHandle(process);
+  }return result;
+}
 const char *page=R"HTML(<!doctype html><html><body><div id="movie_player"><video class="html5-main-video"></video></div><script>
 const video=document.querySelector('video');let position=0,paused=true;
 Object.defineProperties(video,{readyState:{get:()=>4},duration:{get:()=>240},currentTime:{get:()=>position,set:value=>position=value},paused:{get:()=>paused},ended:{get:()=>false},videoWidth:{get:()=>1280},videoHeight:{get:()=>720}});
@@ -54,9 +78,11 @@ class App : public CefApp,public CefBrowserProcessHandler {
 
 int main(int argc,char **argv){
   std::cout.setf(std::ios::unitbuf);
-  if(argc!=4)return 2;
+  if(argc!=4&&argc!=5)return 2;
+  const bool soak=argc==5&&std::string(argv[4])=="--soak";
   const QString runtime=QString::fromLocal8Bit(argv[1]);
-  SetDllDirectoryW(reinterpret_cast<LPCWSTR>((runtime+"/obs-plugins/64bit").utf16()));
+  const QString browserRuntime=QFile::exists(runtime+"/core/obs-browser/libcef.dll") ? runtime+"/core/obs-browser" : runtime+"/obs-plugins/64bit";
+  SetDllDirectoryW(reinterpret_cast<LPCWSTR>(browserRuntime.utf16()));
   QApplication app(argc,argv);
   QTemporaryDir profile; if(!profile.isValid()||!FilteredBrowser::runtimeCompatible())return 3;
   for(const auto &entry:{std::pair<const char *,const char *>{"certificate.pem",fixtureCertificate},{"key.pem",fixtureKey},{"fixture.html",page}}){
@@ -72,7 +98,7 @@ int main(int argc,char **argv){
   settings.command_line_args_disabled=true;
   CefString(&settings.root_cache_path)=profile.path().toStdString();
   CefString(&settings.cache_path)=(profile.path()+"/browser").toStdString();
-  CefString(&settings.browser_subprocess_path)=(runtime+"/obs-plugins/64bit/obs-browser-page.exe").toStdString();
+  CefString(&settings.browser_subprocess_path)=(browserRuntime+"/obs-browser-page.exe").toStdString();
   settings.log_severity=LOGSEVERITY_DISABLE;
   if(!CefInitialize(args,settings,new App,nullptr))return 4;
   std::cout<<"Isolated Chromium initialized\n";
@@ -118,15 +144,41 @@ int main(int argc,char **argv){
     if(elapsed.elapsed()>3000)result=7;
   }
   if(result==0){
+    Resources baseline,final;
+    const int cycles=soak?50:2;
+    for(int cycle=0;cycle<cycles&&result==0;++cycle){
     FilteredBrowser reopened(nullptr,"https://www.youtube.com/account-cookie-fixture",false);
     reopened.setAttribute(Qt::WA_DontShowOnScreen);reopened.resize(640,360);
     result=13;
-    QObject::connect(&reopened,&FilteredBrowser::titleChanged,[&](const QString &title){if(title.startsWith("continuity:")){result=title=="continuity:passed"?0:13;app.quit();}});
+    bool crashed=false;
+    QObject::connect(&reopened,&FilteredBrowser::rendererCrashed,[&](int,int){crashed=true;result=0;app.quit();});
+    QObject::connect(&reopened,&FilteredBrowser::titleChanged,[&](const QString &title){if(title.startsWith("continuity:")){
+      if(title!="continuity:passed"){result=13;app.quit();return;}
+      if(cycle==0){reopened.setURL("chrome://crash");return;}
+      result=0;app.quit();
+    }});
     QTimer::singleShot(10000,&reopened,&QApplication::quit);reopened.show();app.exec();reopened.closeBrowser();
-    if(result==0)std::cout<<"Browser reopen retained the existing global account-context cookie\n";
+    if(cycle==0&&!crashed)result=14;
+    if(result==0)std::cout<<"Browser cycle "<<cycle<<": cookie retained; "<<(crashed?"renderer crash detected":"clean shutdown")<<"\n";
+    // Give exited renderer processes a chance to leave the process snapshot.
+    QEventLoop idle;QTimer::singleShot(200,&idle,&QEventLoop::quit);idle.exec();
+    const auto sample=resources();
+    std::cout<<"resources,"<<cycle<<","<<sample.privateBytes<<","<<sample.handles<<","<<sample.processes<<"\n";
+    if(cycle==5)baseline=sample;final=sample;
+    }
+    if(soak&&result==0){
+      // Smoke-test budgets after warmup, not a claim of zero leaks or a real
+      // multi-day YouTube/GPU soak. Includes this fixture's owned process tree.
+      if(final.privateBytes>baseline.privateBytes+128ULL*1024*1024||final.handles>baseline.handles+128||final.processes>baseline.processes+2)result=15;
+      std::cout<<"Warm baseline/final private bytes: "<<baseline.privateBytes<<"/"<<final.privateBytes<<" handles: "<<baseline.handles<<"/"<<final.handles<<" processes: "<<baseline.processes<<"/"<<final.processes<<"\n";
+    }
   }
   CefShutdown();
   server.terminate();if(!server.waitForFinished(2000)){server.kill();server.waitForFinished(2000);}
+  QElapsedTimer shutdownWait;shutdownWait.start();
+  while(resources().processes>1&&shutdownWait.elapsed()<3000)Sleep(50);
+  if(resources().processes>1){std::cerr<<"Owned child process remained after shutdown\n";result=16;}
+  else std::cout<<"Owned child processes after shutdown: 0\n";
   if(result==0)std::cout<<"CEF interception, ad request blocking, cookie continuity, access response preservation and shutdown passed\n";
   return result;
 }

@@ -3,9 +3,13 @@
 #include "ad-response-policy.hpp"
 #include "include/cef_browser.h"
 #include "include/cef_client.h"
+#include "include/cef_request_handler.h"
 #include "include/cef_task.h"
 #include "include/cef_parser.h"
 #include "include/cef_version.h"
+#if CEF_VERSION_MAJOR >= 150
+#include "include/cef_version_info.h"
+#endif
 #include "include/cef_api_hash.h"
 #include "include/cef_devtools_message_observer.h"
 #include "include/cef_request_context.h"
@@ -22,6 +26,14 @@
 #include <cstring>
 
 namespace {
+const char *runtimeApiHash(){
+  if(cef_version_info(0)!=CEF_VERSION_MAJOR)return nullptr;
+#if CEF_VERSION_MAJOR >= 150
+  return cef_api_hash(CEF_API_VERSION,0);
+#else
+  return cef_api_hash(0);
+#endif
+}
 class Task : public CefTask {
   std::function<void()> work;
 public:
@@ -31,7 +43,7 @@ public:
 };
 void post(std::function<void()> work){CefPostTask(TID_UI,new Task(std::move(work)));}
 using Result=std::function<void(bool,QJsonObject)>;
-class Client final : public CefClient,public CefLifeSpanHandler,public CefDisplayHandler,public CefLoadHandler,public CefDevToolsMessageObserver {
+class Client final : public CefClient,public CefLifeSpanHandler,public CefDisplayHandler,public CefLoadHandler,public CefRequestHandler,public CefDevToolsMessageObserver {
   QPointer<FilteredBrowser> receiver;
   CefRefPtr<CefBrowser> browser;
   CefRefPtr<CefRegistration> observer;
@@ -42,13 +54,14 @@ class Client final : public CefClient,public CefLifeSpanHandler,public CefDispla
   QString destination;
   void notify(std::function<void(FilteredBrowser *)> callback){
     const auto guard=receiver;
-    QMetaObject::invokeMethod(QCoreApplication::instance(),[guard,callback](){if(guard)callback(guard);},Qt::QueuedConnection);
+    if(guard)QMetaObject::invokeMethod(guard.data(),[guard,callback](){if(guard)callback(guard);},Qt::QueuedConnection);
   }
   void status(const QString &text){notify([text](auto *widget){emit widget->filterStatus(text);});}
   void later(std::function<void()> work,int ms){
     // Qt owns/cancels these timers with the widget. No delayed task retains
     // plugin callbacks inside CEF after the output/module is destroyed.
-    notify([work=std::move(work),ms](auto *widget){QTimer::singleShot(ms,widget,[work](){post(work);});});
+    CefRefPtr<Client> self=this;
+    notify([self,work=std::move(work),ms](auto *widget){QTimer::singleShot(ms,widget,[self,work](){if(!self->closing&&!self->closed)post(work);});});
   }
   void command(const char *method,const QJsonObject &params,Result result={}){
     if(!browser||closed)return;
@@ -88,7 +101,7 @@ class Client final : public CefClient,public CefLifeSpanHandler,public CefDispla
       browser->GetMainFrame()->LoadURL(destination.toStdString());return;
     }
     const char *method=nullptr;QJsonObject params;
-    if(step==0){method="Network.enable";}
+    if(step==0){method="Network.enable";params={{"maxTotalBufferSize",1024*1024},{"maxResourceBufferSize",1024*1024},{"maxPostDataSize",0}};}
     if(step==1){method="Network.setBypassServiceWorker";params={{"bypass",enabled}};}
     if(step==2){
       method="Network.setBlockedURLs";QJsonArray urls;
@@ -128,6 +141,12 @@ public:
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override{return this;}
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override{return this;}
   CefRefPtr<CefLoadHandler> GetLoadHandler() override{return this;}
+  CefRefPtr<CefRequestHandler> GetRequestHandler() override{return this;}
+  void OnRenderProcessTerminated(CefRefPtr<CefBrowser>,TerminationStatus termination,int error,const CefString &) override{
+    if(closing||closed)return;
+    ready=false;++configEpoch;callbacks.clear();paused.clear();
+    notify([termination,error](auto *widget){emit widget->rendererCrashed(int(termination),error);});
+  }
   void OnLoadStart(CefRefPtr<CefBrowser>,CefRefPtr<CefFrame> frame,TransitionType) override{
     if(frame->IsMain())frame->ExecuteJavaScript("window.close=()=>{}",frame->GetURL(),0);
   }
@@ -164,8 +183,12 @@ public:
   void OnBeforeClose(CefRefPtr<CefBrowser>) override{
     callbacks.clear();paused.clear();observer=nullptr;browser=nullptr;closed=true;
   }
-  bool OnBeforePopup(CefRefPtr<CefBrowser>,CefRefPtr<CefFrame>,const CefString &,const CefString &,
-      WindowOpenDisposition,bool,const CefPopupFeatures &,CefWindowInfo &,CefRefPtr<CefClient> &,
+  bool OnBeforePopup(CefRefPtr<CefBrowser>,CefRefPtr<CefFrame>,
+#if CEF_VERSION_MAJOR >= 150
+      int,
+#endif
+      const CefString &,const CefString &,
+      CefLifeSpanHandler::WindowOpenDisposition,bool,const CefPopupFeatures &,CefWindowInfo &,CefRefPtr<CefClient> &,
       CefBrowserSettings &,CefRefPtr<CefDictionaryValue> &,bool *) override{return true;}
   void OnTitleChange(CefRefPtr<CefBrowser>,const CefString &title) override{
     const auto value=QString::fromStdString(title.ToString());notify([value](auto *widget){emit widget->titleChanged(value);});
@@ -196,7 +219,7 @@ public:
     CefRefPtr<Client> self=this;
     // A missed body/result must never leave a request (or the queue) hung.
     later([self,request](){self->resume(request);},3000);
-    command("Fetch.getResponseBody",{{"requestId",request}},[this,event,request,headers,html](bool ok,QJsonObject response){
+    command("Fetch.getResponseBody",{{"requestId",request}},[this,request,headers,html](bool ok,QJsonObject response){
       if(!paused.count(request))return;
       if(!ok||!enabled||closing){status("Player response body unavailable; original response retained");resume(request);return;}
       auto body=response.value("body").toString().toUtf8();
@@ -222,7 +245,14 @@ public:
 struct FilteredBrowser::Impl {CefRefPtr<Client> client;bool started=false;};
 bool FilteredBrowser::runtimeCompatible(){
   return cef_version_info(0)==CEF_VERSION_MAJOR&&cef_version_info(1)==CEF_VERSION_MINOR&&
-    cef_version_info(2)==CEF_VERSION_PATCH&&std::strcmp(cef_api_hash(0),CEF_API_HASH_PLATFORM)==0;
+    cef_version_info(2)==CEF_VERSION_PATCH&&runtimeApiHash()&&std::strcmp(runtimeApiHash(),CEF_API_HASH_PLATFORM)==0;
+}
+QString FilteredBrowser::runtimeCompatibilityError(){
+  const auto actual=QString("%1.%2.%3").arg(cef_version_info(0)).arg(cef_version_info(1)).arg(cef_version_info(2));
+  const auto expected=QString("%1.%2.%3").arg(CEF_VERSION_MAJOR).arg(CEF_VERSION_MINOR).arg(CEF_VERSION_PATCH);
+  const auto *hash=runtimeApiHash();
+  return QString("Browser runtime mismatch: detected CEF %1; this plugin build requires CEF %2. API compatibility: %3. Install the matching OBS 32 or OBS 33 plugin build. Send Help > Log Files > Upload Current Log File to support. Account data was not changed.")
+    .arg(actual,expected,hash&&std::strcmp(hash,CEF_API_HASH_PLATFORM)==0?"matched":"mismatched");
 }
 FilteredBrowser::FilteredBrowser(QWidget *parent,const std::string &url,bool block):QWidget(parent),impl(std::make_unique<Impl>()){
   setAttribute(Qt::WA_NativeWindow);setFocusPolicy(Qt::StrongFocus);

@@ -20,18 +20,19 @@ function harness(){
   querySelector(selector){if(selector==='video.html5-main-video')return video;if(selector==='#movie_player')return player;return barrier?{getClientRects:()=>[{}],textContent:'Access required'}:null;}};
  const promo={style:style(),textContent:'YouTube Premium Get YouTube without the ads No thanks 1 month free',
   getClientRects(){return this.style.getPropertyValue('display')==='none'?[]:[{}];}};
- let promotion=false;
+ let promotion=false,playerError=false;
+ const transientError={matches:selector=>selector==='.ytp-error-content-wrap',getClientRects:()=>[{}],textContent:'An error occurred. Please try again later. (Playback ID: example) Learn More'};
  const controls=[{style:style()},{style:style()}];
  const watermark={style:style()};
  document.querySelectorAll=selector=>selector.startsWith('.ytp-chrome-bottom')?[...controls,...(selector.includes('.ytp-watermark')?[watermark]:[])]:
-   [...(promotion?[promo]:[]),...(barrier?[{getClientRects:()=>[{}],textContent:'Confirmation required'}]:[])];
+   [...(promotion?[promo]:[]),...(barrier?[{getClientRects:()=>[{}],textContent:'Confirmation required'}]:[]),...(playerError?[transientError]:[])];
  let ad=false,barrier=false,now=0;
  const frames=new Map(),observers=new Set();let frameId=0;
  const context={window:{innerWidth:1280,innerHeight:720},document,URL,performance:{now:()=>now},location:new URL('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
   requestAnimationFrame(cb){frames.set(++frameId,cb);return frameId;},cancelAnimationFrame(id){frames.delete(id);},
   MutationObserver:class{constructor(cb){this.cb=cb;observers.add(cb);}observe(){}disconnect(){observers.delete(this.cb);}}};
  const defaults={nonce:'nonce',generation:1,videoId:'dQw4w9WgXcQ',position:35,volume:70,muted:false,paused:false,voting:false};
- return {video,player,controls,watermark,promo,context,listeners,setPromotion(value){promotion=value;},frame(ms=0){now+=ms;const pending=[...frames.values()];frames.clear();for(const cb of pending)cb();},setSmallLayout(value){smallLayout=value;for(const cb of observers)cb();},advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
+ return {video,player,controls,watermark,promo,context,listeners,setPlayerError(value){playerError=value;},setPromotion(value){promotion=value;},frame(ms=0){now+=ms;const pending=[...frames.values()];frames.clear();for(const cb of pending)cb();},setSmallLayout(value){smallLayout=value;for(const cb of observers)cb();},advance(ms){now+=ms;},setAd(value){ad=value;},setBarrier(value){barrier=value;},run(fields={}){
   document.title='YouTube';vm.runInNewContext(source.replace('__PLAYBACK_COMMAND__',JSON.stringify({...defaults,...fields})),context);
   return document.title.startsWith('fPlayback:')?JSON.parse(document.title.slice('fPlayback:nonce:'.length)):null;
  }};
@@ -233,6 +234,22 @@ test('watchdog detects stalled and buffering playback without advancing the queu
   h.advance(1);const report=h.run();assert.equal(report.recover,readyState===2?'buffering':'stalled');
   assert.equal(report.position,undefined);assert.equal(report.ended,undefined);assert.equal(h.video.currentTime,35);
   h.advance(1000);assert.equal(h.run().recover,report.recover);
+ }
+});
+test('generic player errors after 135 hours request bounded native recovery without saving an error position',()=>{
+ const h=harness();h.advance(135*60*60*1000);h.run();h.setPlayerError(true);
+ assert.match(h.run().status,/retrying/);h.advance(29999);assert.equal(h.run().recover,undefined);
+ h.advance(1);const result=h.run();assert.equal(result.recover,'player-error');
+ assert.equal(result.position,undefined);assert.equal(result.ended,undefined);assert.equal(h.video.currentTime,35);
+ h.setPlayerError(false);h.run();h.setPlayerError(true);assert.equal(h.run().recover,undefined);
+});
+test('generic error recovery never overrides access prompts, pauses, votes or ads',()=>{
+ for(const mode of ['barrier','paused','voting','ad']){
+  const h=harness();h.run();h.setPlayerError(true);
+  if(mode==='barrier')h.setBarrier(true);if(mode==='ad')h.setAd(true);
+  const command=mode==='paused'?{paused:true}:mode==='voting'?{voting:true}:{};
+  h.run(command);h.advance(60000);assert.equal(h.run(command).recover,undefined);
+  h.setBarrier(false);h.setAd(false);assert.equal(h.run().recover,undefined);
  }
 });
 test('watchdog resets on genuine progress, seeks and generation changes',()=>{

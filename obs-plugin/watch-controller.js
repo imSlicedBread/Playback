@@ -76,11 +76,12 @@
       element.style.setProperty('display','none','important');element.style.setProperty('visibility','hidden','important');element.style.setProperty('pointer-events','none','important');
     }
   };
-  const hasBarrier = () => {
+  const barrierElements = () => {
     suppressPromotions();
     const elements = document.querySelectorAll('ytd-enforcement-message-view-model, .ytp-error-content-wrap, #error-screen:not([hidden]), tp-yt-paper-dialog, ytd-confirm-dialog-renderer');
-    return Array.from(elements).some(element => element.getClientRects().length && element.textContent.trim());
+    return Array.from(elements).filter(element => element.getClientRects().length && element.textContent.trim());
   };
+  const hasBarrier = () => barrierElements().length>0;
   const resetWatchdog = () => { state.progressAt = now; state.lastPosition = null; };
   const positionMatches = (position,sampleNow=now) => {
     if (!state.applied || sampleNow >= state.positionGuardUntil) return true;
@@ -138,7 +139,11 @@
     };
   }
   const advertisement=isAdvertisement();
-  const barrier=hasBarrier();
+  const barriers=barrierElements();
+  const barrier=barriers.length>0;
+  const transientPlayerError=barrier && barriers.every(element=>
+    element.matches?.('.ytp-error-content-wrap') &&
+    /^An error occurred\.?\s+Please try again later\.?(?:\s|$)/i.test(element.textContent.trim()));
   // Lock only the ordinary player chrome. Access prompts and advertisements
   // retain their original UI. Interaction does not unlock the output size.
   const chrome=Array.from(document.querySelectorAll('.ytp-chrome-bottom, .ytp-chrome-top, .ytp-gradient-bottom, .ytp-gradient-top, .ytp-tooltip, .ytp-watermark, .branding-img-container, .iv-branding'));
@@ -160,12 +165,19 @@
     element.style.setProperty('pointer-events','none','important');
   }
   // Ads and access barriers must never advance or overwrite the saved queue position.
-  if (advertisement) { guardAdvertisement(); return; }
+  if (advertisement) { state.transientErrorSince=null; guardAdvertisement(); return; }
   state.adActive = false;
   if (barrier) {
     state.applied=false; resetWatchdog();
+    if(transientPlayerError && !command.paused && !command.voting){
+      state.transientErrorSince ??= now;
+      if(now-state.transientErrorSince>=30000){recover('player-error');return;}
+      report({status:'YouTube playback error — retrying at the saved position shortly.',revealDisplay:true});return;
+    }
+    state.transientErrorSince=null;
     report({ status: 'YouTube needs attention. Open the output window to check access or confirm playback.', revealDisplay:true }); return;
   }
+  state.transientErrorSince=null;
   if (!video || video.readyState < 1 || !Number.isFinite(video.duration) || video.duration <= 0) {
     if (command.paused || command.voting || state.autoplayBlocked) resetWatchdog();
     else if (now-state.progressAt >= 30000) { recover('startup'); return; }

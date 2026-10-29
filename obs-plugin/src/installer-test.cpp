@@ -22,6 +22,22 @@ int wmain(int argc,wchar_t **argv) {
   const std::vector<pi::Payload> payloads{{dll,reinterpret_cast<const unsigned char *>("new-plugin"),10},
     {L"data/obs-plugins/fplayback-youtube/LICENSE",reinterpret_cast<const unsigned char *>("license"),7}};
   bool rejected=false;try {pi::validate(root);}catch(...) {rejected=true;}expect(rejected,"Reject non-OBS folders");
+  const auto probe=root/L"compatibility-probe";
+  const auto browserRelative=pi::browserFolder(pi::fs::path());
+  for (const auto &relative:std::vector<pi::fs::path>{L"bin/64bit/obs64.exe",L"bin/64bit/Qt6Core.dll",L"bin/64bit/libobs-winrt.dll",browserRelative/L"obs-browser.dll"}) {
+    pi::fs::create_directories((probe/relative).parent_path());
+    pi::fs::copy_file(pi::fs::path(argv[2])/relative,probe/relative);
+  }
+  rejected=false;try {pi::validate(probe);}catch(...) {rejected=true;}
+  expect(rejected,"Matching OBS/Qt with missing CEF is rejected");
+  const auto cef=pi::browserFolder(probe)/L"libcef.dll";
+  pi::fs::copy_file(pi::fs::path(argv[2])/L"bin/64bit/Qt6Core.dll",cef);
+  rejected=false;try {pi::validate(probe);}catch(...) {rejected=true;}
+  expect(rejected,"Matching OBS/Qt with mismatched CEF is rejected");
+  pi::fs::remove(cef);
+  pi::fs::copy_file(pi::browserFolder(pi::fs::path(argv[2]))/L"libcef.dll",cef);
+  pi::validate(probe);
+  expect(!pi::fs::exists(probe/dll),"Compatibility checks never install or replace the plugin");
   const auto first=pi::install(root,payloads);
   expect(equals(root/dll,"new-plugin"),"Fresh installation matches payload");
   write(root/dll,"old-plugin");

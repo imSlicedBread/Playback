@@ -1,3 +1,39 @@
+# fKey Playback v1.7.12 — OBS 33 support, crash recovery and memory fixes
+
+Update both the station app and the plugin. Plugin **0.1.10** now has separate Windows x64 builds for **OBS 32.2.2 / Chromium 127** and **OBS 33.0.0 / Chromium 150**, both with Qt 6.11.1. Use the **-OBS33** installer only for OBS 33.0.0. Installers reject the wrong OBS/Qt/CEF version before replacing files, and the running plugin retains its API-hash check. Neither installer changes OBS's Chromium files or account data.
+
+## Changes
+
+- Preserve experimental ad-request/player-data filtering, the existing OBS global browser account context, Playback queue controls, output resolution/lock, overlay setup and Interact in both builds. OBS itself owns login-profile migration during an upgrade.
+- Detect renderer termination and recreate only Playback's browser at the saved station checkpoint, with the same output window and normal paused/voting controls. Recovery shares the existing three-attempts-per-five-minutes budget for the current video; Stop invalidates pending retries. Full OBS-process crashes cannot be recovered by its plugin.
+- Retry YouTube's recognized English “An error occurred. Please try again later” player screen after 30 seconds without reporting an error position or completing/skipping the queue entry. Membership, sign-in, age and content prompts remain manual.
+- Remove expired output acknowledgements and cap retained records at 256. Bound title-lookup cache/history to 5,000 entries while retaining titles saved in the queue.
+- Bind queued browser callbacks to widget lifetime, stop closed-browser deadline tasks, remove an unused full request-event capture, and cap Chromium diagnostic network buffers at 1 MiB.
+- Log whole-OBS private/working memory, handles, pending HTTP count and plugin uptime every five minutes during playback; log renderer exit codes and detected runtime incompatibilities separately. Whole-OBS memory includes other plugins and is not a GPU-memory measurement.
+
+## Downloads
+
+- **Playback-v1.7.12.zip** — updated station app, tests, plugin source and documentation.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.10.exe** — OBS **32.2.2** installer.
+- **fplayback-youtube-0.1.10-windows-x64.zip** — OBS 32 installer, DLL, corresponding source and licenses.
+- **fKey-Playback-OBS-Plugin-Setup-0.1.10-OBS33.exe** — OBS **33.0.0** installer.
+- **fplayback-youtube-0.1.10-OBS33-windows-x64.zip** — OBS 33 installer, DLL, corresponding source and licenses.
+- Every download has a SHA-256 checksum. Future OBS patch/runtime builds are not automatically claimed as tested.
+
+Stop Playback and its startup task, back up and preserve `data/` and launcher configuration, extract the station update, and restart it. Close OBS before running the matching plugin installer. Existing plugin files are backed up. If moving the station folder, rerun `INSTALL-AUTO-START.bat`. No database migration is needed. Node.js 22.13+ is required.
+
+## Verification and limits
+
+Syntax checks and the full app suite pass locally: **194 passed, one platform-specific test skipped**. Each OBS target passes **10 native tests**, including real Chromium filtering, cookie continuity, pause/resume/seek, Premium layout recovery, a deliberate isolated renderer crash, 50 browser lifecycle cycles, child-process cleanup, GPU fade/scene fixtures and installer checks.
+
+The separate portable OBS 33 host test loaded the plugin against Chromium 150 and reported real video progress. Pause held position, seek landed at 120 seconds while paused, and resume advanced again. It used a fresh isolated profile; **live entitled members-only playback on OBS 33 remains unverified**. Tests preserve a synthetic account-context cookie across recreation/crash, not a live Google membership entitlement. Live visual output/audio/overlay verification on the affected user's OBS 33 setup is still needed.
+
+The short memory fixture did not show runaway growth, but uses synthetic video state with GPU disabled. It does **not** rule out multi-day YouTube, decoder, driver or GPU leaks. The reported original 135-hour failure remains unconfirmed; supplied follow-up logs showed an OBS 33 runtime change and graphics-device resets. The new recovery and diagnostics should not be described as a confirmed fix for that original cause.
+
+Ad filtering remains experimental targeted YouTube filtering, not the complete AdGuard engine or guaranteed ad coverage. See `docs/OBS33-COMPATIBILITY.md` and `docs/MEMORY-AND-CRASH-RECOVERY.md` for evidence and limitations.
+
+---
+
 # fKey Playback v1.7.11 — Recycled sorting UI cleanup
 
 The Recycled tab now shows its own **Sort all Recycled + save order** controls without the unrelated **Apply to Upcoming** row. Upcoming sorting appears only on Upcoming. Sort actions also check the active lane, preventing a stale or hidden control from changing another queue.

@@ -14,6 +14,7 @@ public:
   explicit FilteredBrowser(QWidget *parent,const std::string &url,bool blockAds);
   ~FilteredBrowser() override;
   static bool runtimeCompatible();
+  static QString runtimeCompatibilityError();
   void setURL(const std::string &url);
   void executeJavaScript(const std::string &script);
   void reloadPage();
@@ -24,6 +25,7 @@ signals:
   void titleChanged(QString title);
   void urlChanged(QString url);
   void filterStatus(QString status);
+  void rendererCrashed(int terminationStatus,int errorCode);
 protected:
   void showEvent(QShowEvent *event) override;
   void resizeEvent(QResizeEvent *event) override;

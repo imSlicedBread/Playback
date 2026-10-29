@@ -37,3 +37,17 @@ test('Queued lookups use bounded concurrency, deduplicate IDs and preserve user-
   assert.equal(peak,1);assert.deepEqual(calls,[id]);assert.deepEqual(changes,[[id,'Official Video Title']]);
   q.close();
 });
+
+test('Long-running title lookup churn retains bounded history without losing saved titles',async()=>{
+ const videos=new Map(Array.from({length:5500},(_,i)=>{const videoId=String(i).padStart(11,'0');return [videoId,{videoId,title:`YouTube · ${videoId}`}];}));
+ const engine={state:{current:null,suggestions:[]},allQueued:()=>[...videos.values()],applyDiscoveredTitle(id,title){videos.get(id).title=title;}};
+ const q=new TitleMetadataQueue(engine,{resolver:async id=>`Discovered ${id}`,concurrency:2});
+ const ids=[...videos.keys()];
+ for(let i=0;i<ids.length;i+=500){
+  q.enqueue(ids.slice(i,i+500));while(q.active||q.pending.size)await new Promise(resolve=>setImmediate(resolve));
+ }
+ assert.equal(videos.get(ids[0]).title,`Discovered ${ids[0]}`);
+ assert.equal(videos.get(ids.at(-1)).title,`Discovered ${ids.at(-1)}`);
+ assert.equal(q.cache.size,5000);assert.equal(q.seen.size,5000);assert.equal(q.inflight.size,0);
+ q.close();assert.equal(q.cache.size,0);assert.equal(q.seen.size,0);
+});

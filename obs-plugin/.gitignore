@@ -5,3 +5,6 @@ package/
 *.zip.sha256
 *.exe
 *.exe.sha256
+
+build-obs33/
+package-obs33/

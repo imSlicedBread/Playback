@@ -1,4 +1,4 @@
-# fKey Playback OBS plugin — 0.1.9 — ad filtering and interaction
+# fKey Playback OBS plugin — 0.1.10 — OBS 32 and OBS 33
 
 This native plugin opens a **normal YouTube watch page**, using OBS Browser's
 default browser context. It does not use an iframe or a Chrome extension. Sign
@@ -12,6 +12,21 @@ The result applies to the tested account and video. The plugin uses the account'
 existing access; account/age/content confirmations remain manual. The separate
 Browser Source embedded-player workflow has not been verified for members-only playback.
 
+## OBS 32 and OBS 33 builds
+
+Playback v1.7.12 provides separate Windows x64 builds. Use the installer matching your installed OBS version; each build retains an exact CEF version/API-hash guard.
+
+| OBS | Chromium / CEF | Installer |
+| --- | --- | --- |
+| 32.2.2 / Qt 6.11.1 | Chromium 127.0.6533.120 / CEF 127.145.7 | `fKey-Playback-OBS-Plugin-Setup-0.1.10.exe` |
+| 33.0.0 / Qt 6.11.1 | Chromium 150.0.7871.252 / CEF 150.0.20 | `fKey-Playback-OBS-Plugin-Setup-0.1.10-OBS33.exe` |
+
+OBS 33 uses `core/obs-browser` for its built-in browser. This plugin still installs in the legacy third-party plugin folder supported by OBS 33. Neither installer replaces OBS, Chromium, or account data. The filtered child browser uses that OBS instance's existing global request context; no cookie copying, separate login store, extension or remote debugging port is introduced. OBS's own profile migration remains responsible for carrying a login across an OBS upgrade.
+
+Build the OBS 33 variant with `./build-windows.ps1 -ObsMajor 33 -ObsPath 'C:/path/to/OBS-33'`. The default build targets OBS 32.2.2. Variant build/package folders and filenames remain separate.
+
+The CEF 150 SDK is pinned to OBS 33.0.0's official `CMakePresets.json` SHA-256 (`54cd191a3f56bb1f05be22b95e1fa8041061b38bd5fe94e0776fb34dd599f341`). The OBS 33 source archive is pinned too; Qt 6.11.1 and the unchanged browser panel ABI are used by both variants.
+
 ## Experimental request filtering
 
 The dock's **Interact with output** button temporarily enables mouse and keyboard input and restores the YouTube player controls. **Finish interaction** hides the controls and restores input locking. The selected output resolution and full-window player layout stay in place. Parking/closing the output, stopping it, or starting the queue ends interaction; interaction is never saved across restarts. These buttons live in the OBS dock, outside the captured output. Visible YouTube controls during interaction can appear on the broadcast.
@@ -24,7 +39,7 @@ Ad masking is disabled while request filtering is enabled, so a missed ad is not
 
 When output is locked, recognized YouTube Premium marketing popups are hidden without clicking their buttons and the full-window player layout is restored. Actual access and confirmation prompts remain visible. Unlocking restores promotional elements' original styles.
 
-The CEF SDK is pinned to the exact 127.145.7 runtime shipped with the tested OBS 32.2.2 installation, including an API-hash check before creating the browser. The build downloads the SHA-256-verified official SDK and rebuilds its wrapper with Qt's dynamic runtime. CEF's license is included under `vendor/CEF-LICENSE.txt`. Developer builds also require Python 3.10+ for the isolated loopback HTTPS fixture; the installed plugin does not require Python.
+Each CEF SDK is pinned to its matching runtime in the compatibility table, including an API-hash check before creating the browser. The build downloads the SHA-256-verified official SDK and rebuilds its wrapper with Qt's dynamic runtime. CEF's license is included under `vendor/CEF-LICENSE.txt`. Developer builds also require Python 3.10+ for the isolated loopback HTTPS fixture; the installed plugin does not require Python.
 
 Automated acceptance uses real Chromium, an isolated temporary profile and a loopback HTTPS server: ad delivery blocked before reaching the server, initial/API ad data removed, cookie continuity across browser recreation, access responses and signed media URL preservation, Playback pause/resume/seek, Premium-popup layout recovery and browser shutdown. The fixture's host mapping, test TLS certificate and certificate-error switch exist only in the test executable, not the plugin. No live account credentials are used in automated tests.
 
@@ -43,7 +58,7 @@ uses OBS's Windows Graphics Capture library directly: ordinary Window Capture
 excludes windows owned by OBS itself.
 
 1. Close OBS. Back up your OBS scene collection/profile.
-2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.9.exe**, approve the Windows
+2. Double-click **fKey-Playback-OBS-Plugin-Setup-0.1.10.exe**, approve the Windows
    administrator prompt, and click **Install / Update**. The installer detects
    the usual OBS installation; use **Browse** for a custom or portable folder.
    It checks OBS 32.2.2 / Qt 6.11.1 before installing. Start OBS from your usual
@@ -104,6 +119,18 @@ Test pause/resume, seek, replay, previous, force skip, audio, Play Next, Play No
 and interrupted-video resumption, plus a complete voting round. Then test a
 members-only video using an entitled account. Check access still works after
 restarting OBS. These live checks are not replaced by the automated tests.
+
+## Long-running playback and renderer recovery
+
+The plugin detects CEF renderer termination and recreate only Playback's browser, retaining the global account context, output window/resolution and saved queue checkpoint. Paused/voting state remains under station control. Renderer crashes share the existing three-recovery-attempts-per-five-minutes budget; repeated crashes hold for manual retry. Stop cancels pending retries. This cannot recover an entire OBS process crash.
+
+Every five minutes while running, `[fplayback-resources]` records OBS-process private/working memory, handle count, pending HTTP requests and plugin uptime in the OBS log. These are whole-OBS measurements, including other plugins, not a per-Playback allocation or GPU-memory measurement. `[fplayback-browser]` records renderer termination codes.
+
+Native acceptance includes an actual isolated renderer crash, account-cookie continuity after recreation, and 50 browser creation/closure cycles with process-tree memory and handle measurements. This short fixture uses synthetic video state and disables GPU; it is not a multi-day signed-in YouTube or GPU-memory soak. Station output acknowledgements expire and are capped at 256; title lookup caches/history are capped at 5,000 without removing titles saved in the queue.
+
+## Browser runtime mismatch
+
+The output checks CEF's version and API hash before creating a browser. The selected plugin variant must match both the OBS version and its browser runtime in the table above. If rejected, send support the exact dock diagnostic and the link from **Help → Log Files → Upload Current Log File**, together with the failing video URL. Do not replace Chromium DLLs individually or remove the API compatibility check. The installer now rejects missing or mismatched CEF version resources before replacing the plugin; the running plugin still verifies the API hash.
 
 ## Output resolution
 

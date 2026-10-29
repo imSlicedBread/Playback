@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.7.12 — OBS 33 support, crash recovery and memory fixes
+
+- Ship separate plugin/installer 0.1.10 targets for OBS 32.2.2 / CEF 127 and OBS 33.0.0 / CEF 150, preserving ad filtering, browser context and queue controls.
+- Add bounded renderer-crash recreation, generic player-error recovery, runtime diagnostics and installer runtime validation.
+- Expire/cap output acknowledgements and title lookup history/cache; tighten browser callback cleanup and diagnostic network buffers.
+- Add five-minute resource logging, real renderer-crash and 50-cycle browser tests, plus cache churn and simulated long-uptime coverage.
+- No database migration; update the station and install the plugin matching OBS. Multi-day resource use and live OBS 33 members-only access remain unverified.
+
 ## v1.7.11 — Recycled sorting UI cleanup
 
 - Show Upcoming sorting only on Upcoming and Recycled sorting only on Recycled.

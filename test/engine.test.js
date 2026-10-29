@@ -105,6 +105,10 @@ test('Output sync acknowledgement stores actual rendered revision only',t=>{
   const {engine,clock}=newEngine(t);
   engine.outputAck('obs-one',4,{clean:false});assert.equal(engine.getOutputStatus()[0].layoutRevision,4);
   clock.now+=16001;assert.equal(engine.getOutputStatus().length,0);
+  assert.equal(engine.outputAcks.size,0,'Expired outputs are removed from memory');
+  for(let i=0;i<1000;i++)engine.outputAck(`recreated-output-${i}`,i);
+  assert.equal(engine.getOutputStatus().length,256);
+  assert.equal(engine.getOutputStatus().at(-1).id,'recreated-output-999');
 });
 
 test('Legacy JSON recovery preserves available queue/playhead and makes conservative defaults',()=>{

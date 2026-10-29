@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <cmath>
 #include <windows.h>
+#include <psapi.h>
 #include <QElapsedTimer>
 #include "recovery-policy.hpp"
 #include "scene-setup.hpp"
@@ -209,7 +210,18 @@ class Playback final : public QObject {
   QElapsedTimer watchdogClock;
   RecoveryPolicy recovery;
   bool watchdogHeld = false;
+  bool rendererUnavailable = false, rebuildingBrowser = false, crashRetryPending = false;
   qint64 lastTelemetry = 0;
+  qint64 lastResourceLog = -300000;
+  void logResources() {
+    const auto now=watchdogClock.elapsed();
+    if(now-lastResourceLog<300000)return;
+    lastResourceLog=now;
+    PROCESS_MEMORY_COUNTERS_EX memory{};DWORD handles=0;
+    if(GetProcessMemoryInfo(GetCurrentProcess(),reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&memory),sizeof(memory))&&GetProcessHandleCount(GetCurrentProcess(),&handles))
+      blog(LOG_INFO,"[fplayback-resources] OBS process uptime_ms=%lld private_mb=%llu working_mb=%llu handles=%lu pending_http=%d",now,
+        static_cast<unsigned long long>(memory.PrivateUsage/(1024*1024)),static_cast<unsigned long long>(memory.WorkingSetSize/(1024*1024)),handles,int(requests.size()));
+  }
 
   void updateAdOutput() { playback_set_ad_output_suppressed(adOutputGuard.suppressed()); }
   void configureAdMask(){
@@ -244,6 +256,7 @@ class Playback final : public QObject {
     busy=false;
   }
   void closeOutput() {
+    rendererUnavailable=false;crashRetryPending=false;
     setInteracting(false);
     playback_set_output_window(nullptr);
     adOutputGuard.stop(); updateAdOutput();
@@ -296,6 +309,8 @@ class Playback final : public QObject {
     return true;
   }
   void apply() {
+    if(rebuildingBrowser)return;
+    if(rendererUnavailable){setStatus(watchdogHeld ? "Browser crash recovery stopped after 3 attempts. Check OBS log, then Start queue / retry." : "Browser renderer stopped — waiting to recover the saved queue position…");return;}
     const auto current = snapshot.value("current").toObject();
     const auto video = current.value("videoId").toString();
     const auto nextGeneration = snapshot.value("generation").toInteger(-1);
@@ -339,7 +354,8 @@ class Playback final : public QObject {
     browser->executeJavaScript(code.toStdString());
   }
   void poll() {
-    if (!running || busy) return;
+    if (!running || busy || rebuildingBrowser) return;
+    logResources();
     busy = true; const auto turn = epoch;
     QJsonObject claim{{"workerId", worker}};
     request("/api/worker/claim", &claim, [this, turn](int code, QJsonObject) {
@@ -375,7 +391,7 @@ private slots:
       playback_transition_ready(fadeTicket,result.value("displayReady").toBool(),result.value("revealDisplay").toBool());
     if (result.contains("recover")) {
       const auto reason = result.value("recover").toString();
-      if (reason != "startup" && reason != "buffering" && reason != "stalled") return;
+      if (reason != "startup" && reason != "buffering" && reason != "stalled" && reason != "player-error") return;
       if (watchdogHeld || snapshot.value("vote").isObject() || snapshot.value("current").toObject().value("paused").toBool()) return;
       const auto decision = recovery.request(watchdogClock.elapsed());
       if (decision == RecoveryDecision::Cooldown) { setStatus("Waiting before retrying stalled YouTube playback…"); return; }
@@ -404,6 +420,7 @@ private slots:
   }
 public:
   void start() {
+    if(rendererUnavailable&&browser){stop();closeOutput();}
     if (!ensureBrowser()) {
       if (cef && !cef->initialized() && initializationRetries++ < 20) {
         const auto turn = epoch;
@@ -413,6 +430,7 @@ public:
     }
     initializationRetries = 0;
     if (running) stop();
+    rendererUnavailable=false;crashRetryPending=false;
     setInteracting(false);
     activePort = port->value(); worker = QUuid::createUuid().toString(QUuid::WithoutBraces);
     ++epoch; running = true;timer.start();port->setEnabled(false);
@@ -551,7 +569,9 @@ public:
     if (!cef) { setStatus("OBS Browser is unavailable."); return false; }
     if (!cef->init_browser()) { setStatus("Initializing OBS browser…"); return false; }
     if(!FilteredBrowser::runtimeCompatible()){
-      setStatus("Request-filter browser requires the matching OBS 32.2.2 Chromium runtime. No account data was changed.");return false;
+      const auto diagnostic=FilteredBrowser::runtimeCompatibilityError();
+      blog(LOG_ERROR,"[fplayback-browser] %s",diagnostic.toUtf8().constData());
+      setStatus(diagnostic);return false;
     }
     output = new OutputWindow;
     output->setWindowTitle("Playback YouTube Output"); output->resize(1280, 720);
@@ -562,15 +582,12 @@ public:
     output->windowHandle()->setProperty("isOBSProjectorWindow",true);
     SetWindowDisplayAffinity(outputHandle,WDA_NONE);
     auto *layout = new QVBoxLayout(output); layout->setContentsMargins(0, 0, 0, 0);
-    browser = new FilteredBrowser(output,"https://www.youtube.com/",blockAds->isChecked());
+    attachBrowser("https://www.youtube.com/");
     if (!browser) { delete output; output = nullptr; setStatus("OBS could not create the YouTube browser."); return false; }
-    browser->allowAllPopups(false); layout->addWidget(browser);
+    browser->allowAllPopups(false);
     applyOutputLock();
     output->restorePlacement(*preferences);
     playback_set_output_window(outputHandle);
-    // QCefWidget's metaobject lives in obs-browser, not in this DLL.
-    connect(browser, SIGNAL(titleChanged(QString)), this, SLOT(telemetry(QString)));
-    connect(browser,&FilteredBrowser::filterStatus,this,[this](const QString &message){filterStatus->setText(message);});
     output->onClose = [this]() {
       stop();
       QTimer::singleShot(0,this,[this]() {if(!running)closeOutput();});
@@ -578,7 +595,48 @@ public:
     output->onPark = [this]() {setInteracting(false);};
     return true;
   }
+  void attachBrowser(const std::string &url) {
+    browser=new FilteredBrowser(output,url,blockAds->isChecked());
+    output->layout()->addWidget(browser);
+    connect(browser,&FilteredBrowser::titleChanged,this,&Playback::telemetry);
+    connect(browser,&FilteredBrowser::filterStatus,this,[this](const QString &message){filterStatus->setText(message);});
+    auto *created=browser;
+    connect(browser,&FilteredBrowser::rendererCrashed,this,[this,created](int termination,int error){
+      if(browser==created)handleRendererCrash(termination,error);
+    });
+  }
+  void handleRendererCrash(int termination,int error) {
+    blog(LOG_WARNING,"[fplayback-browser] Renderer terminated: status=%d error=%d uptime_ms=%lld",termination,error,watchdogClock.elapsed());
+    rendererUnavailable=true;
+    nonce=QUuid::createUuid().toString(QUuid::WithoutBraces);
+    if(!running||!output){setStatus("Browser renderer stopped. Start queue / retry when ready.");return;}
+    if(watchdogHeld||crashRetryPending)return;
+    const auto decision=recovery.request(watchdogClock.elapsed());
+    if(decision==RecoveryDecision::Hold){watchdogHeld=true;setStatus("Browser crash recovery stopped after 3 attempts. Check OBS log, then Start queue / retry.");return;}
+    if(decision==RecoveryDecision::Cooldown){
+      crashRetryPending=true;const auto turn=epoch;
+      QTimer::singleShot(15000,this,[this,turn,termination,error](){
+        if(turn!=epoch||!running)return;
+        crashRetryPending=false;handleRendererCrash(termination,error);
+      });return;
+    }
+    // Keep the capture HWND, size, placement and global account context. Replace
+    // only this dead browser, never the OBS process or another browser source.
+    rebuildingBrowser=true;
+    nonce=QUuid::createUuid().toString(QUuid::WithoutBraces);
+    auto *failed=browser;browser=nullptr;
+    disconnect(failed,nullptr,this,nullptr);failed->closeBrowser();delete failed;
+    const auto current=snapshot.value("current").toObject();
+    const auto video=current.value("videoId").toString();
+    static const QRegularExpression valid("^[A-Za-z0-9_-]{11}$");
+    const auto url=valid.match(video).hasMatch() ? QString("https://www.youtube.com/watch?v=%1&t=%2s").arg(video).arg(std::max(0.0,current.value("position").toDouble()),0,'f',3) : QString("https://www.youtube.com/");
+    attachBrowser(url.toStdString());
+    generation=-1;endedSent=false;rendererUnavailable=false;rebuildingBrowser=false;
+    fadeTicket=playback_begin_transition();applyOutputLock();browser->show();
+    setStatus("Browser restarted at the saved queue position.");
+  }
   void stop() {
+    crashRetryPending=false;
     setInteracting(false);
     playback_cancel_transition(); fadeTicket=0;
     running = false; ++epoch; timer.stop();cancelRequests();port->setEnabled(true);

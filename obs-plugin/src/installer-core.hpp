@@ -11,7 +11,12 @@
 #include <atomic>
 
 namespace playback_installer {
+#ifndef PLAYBACK_OBS33
+#define PLAYBACK_OBS33 0
+#endif
+inline constexpr bool obs33=PLAYBACK_OBS33!=0;
 namespace fs=std::filesystem;
+inline fs::path browserFolder(const fs::path &root){return root/(obs33?L"core/obs-browser":L"obs-plugins/64bit");}
 struct Payload { fs::path relative; const unsigned char *bytes; size_t size; };
 inline std::vector<unsigned char> read(const fs::path &path) {
   std::ifstream file(path,std::ios::binary);
@@ -31,12 +36,15 @@ inline bool versionMatches(const fs::path &path, int major, int minor, int patch
 inline void validate(const fs::path &root) {
   if (!root.is_absolute()) throw std::runtime_error("Choose the full OBS installation folder.");
   if (!fs::is_regular_file(root/L"bin/64bit/obs64.exe") ||
-      !fs::is_regular_file(root/L"obs-plugins/64bit/obs-browser.dll") ||
       !fs::is_regular_file(root/L"bin/64bit/libobs-winrt.dll"))
     throw std::runtime_error("Choose the OBS installation folder containing bin and obs-plugins.");
-  if (!versionMatches(root/L"bin/64bit/obs64.exe",32,2,2) ||
+  if (!versionMatches(root/L"bin/64bit/obs64.exe",obs33?33:32,obs33?0:2,obs33?0:2) ||
       !versionMatches(root/L"bin/64bit/Qt6Core.dll",6,11,1))
-    throw std::runtime_error("This plugin requires OBS 32.2.2 with Qt 6.11.1 (Windows x64). Your OBS installation was not changed.");
+    throw std::runtime_error(obs33?"This installer requires OBS 33.0.0 with Qt 6.11.1. Use the matching OBS plugin installer. Nothing was changed.":"This installer requires OBS 32.2.2 with Qt 6.11.1. Use the matching OBS plugin installer. Nothing was changed.");
+  if(!fs::is_regular_file(browserFolder(root)/L"obs-browser.dll"))
+    throw std::runtime_error("The matching OBS browser module is missing. Reinstall the complete supported OBS build; do not replace individual Chromium DLLs. Nothing was changed.");
+  if (!versionMatches(browserFolder(root)/L"libcef.dll",obs33?150:127,obs33?0:145,obs33?20:7))
+    throw std::runtime_error(obs33?"OBS browser runtime is missing or incompatible. This build requires CEF 150.0.20. Nothing was changed.":"OBS browser runtime is missing or incompatible. This build requires CEF 127.145.7. Nothing was changed.");
 }
 inline fs::path install(const fs::path &root, const std::vector<Payload> &payloads,
                         const std::function<void(size_t)> &afterCommit={}) {
